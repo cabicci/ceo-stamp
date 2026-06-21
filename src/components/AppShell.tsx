@@ -16,6 +16,7 @@ const navItems = [
 function Sidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { t } = useTranslation();
+  const { isAdmin } = useIsAdmin();
 
   return (
     <aside
