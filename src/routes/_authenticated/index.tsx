@@ -112,8 +112,8 @@ function ProjectsPage() {
         <div
           className="text-sm py-2 px-3 mb-6"
           style={{
-            color: "var(--stamp)",
-            border: "1px solid var(--stamp)",
+            color: "var(--danger)",
+            border: "1px solid var(--danger)",
             borderRadius: "3px",
           }}
         >
@@ -333,8 +333,8 @@ function ProjectForm({
           <div
             className="text-sm py-2 px-3"
             style={{
-              color: "var(--stamp)",
-              border: "1px solid var(--stamp)",
+              color: "var(--danger)",
+              border: "1px solid var(--danger)",
               borderRadius: "3px",
             }}
           >
