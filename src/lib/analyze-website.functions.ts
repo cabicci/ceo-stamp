@@ -6,22 +6,6 @@ const InputSchema = z.object({
   projectId: z.string().uuid(),
 });
 
-const SYSTEM_PROMPT = `You are a senior brand strategist analyzing a company's website to produce a structured brand intelligence draft. The output is a DRAFT that a human marketer will review and edit.
-
-Return ONLY valid JSON (no prose, no markdown fences) matching exactly this shape:
-{
-  "business_model": string,
-  "target_audience": string,
-  "tone_of_voice": string,
-  "usps": string[],
-  "pain_points": string[],
-  "personas": Array<{ "name": string, "pain_points": string[], "objections": string[] }>,
-  "content_gaps": string[],
-  "content_pillars": string[]
-}
-
-Write all values in Arabic (Modern Standard Arabic). Be concrete and specific to the actual website content, not generic. Each array should contain 3-6 items. Personas should contain 2-3 distinct personas.`;
-
 function stripHtml(html: string): string {
   return html
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
@@ -77,12 +61,10 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
       const homepage = await fetchPage(project.website_url);
       const pages = [homepage];
 
-      // JS-rendered-site guard: if the stripped text is too thin, the site is
-      // almost certainly client-rendered (React/Next/SPA shell) and our
-      // server-side fetch only sees the empty HTML scaffold.
+      // JS-rendered-site guard.
       if (homepage.text.length < 400) {
         throw new Error(
-          "الموقع يعتمد على رندر JavaScript في المتصفح، فالنسخة المستخرجة فاضية تقريبًا. محتاجين خدمة رندر (مثل Browserless) لاستخراج المحتوى الفعلي.",
+          "الموقع يعتمد على رندر JavaScript في المتصفح، فالنسخة المستخرجة فاضية تقريبًا. لو الموقع وراء تسجيل دخول، اربطه واستخدم \"حلّل الصفحات المحمية\".",
         );
       }
 
@@ -91,40 +73,14 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
         .update({ status: "analyzing", pages_scraped: pages })
         .eq("id", analysisRow.id);
 
-      const userContent = `Website URL: ${project.website_url}\n\n--- PAGE CONTENT ---\n${pages
-        .map((p) => `# ${p.url}\n${p.text}`)
-        .join("\n\n")}`;
-
-      const { callAI } = await import("@/lib/ai/ai.server");
-      const analysis = (await callAI({
-        task: "website_analysis",
-        systemPrompt: SYSTEM_PROMPT,
-        userContent,
-        jsonMode: true,
-      })) as Record<string, unknown>;
-
-      const analysisJson = analysis as unknown as Record<string, never>;
-
-      await supabase
-        .from("website_analysis")
-        .update({
-          status: "done",
-          pages_scraped: pages,
-          ai_analysis: analysisJson,
-          error_message: null,
-        })
-        .eq("id", analysisRow.id);
-
-      await supabase.from("brand_profiles").upsert(
-        {
-          project_id: project.id,
-          tone_of_voice: (analysis.tone_of_voice as string) ?? "",
-          personas: (analysis.personas as never) ?? [],
-          usps: (analysis.usps as never) ?? [],
-          content_pillars: (analysis.content_pillars as never) ?? [],
-        },
-        { onConflict: "project_id" },
-      );
+      const { runAnalysisOverPages } = await import("./analysis-pipeline.server");
+      await runAnalysisOverPages({
+        supabase,
+        projectId: project.id,
+        websiteUrl: project.website_url,
+        analysisId: analysisRow.id,
+        pages,
+      });
 
       return { analysisId: analysisRow.id };
     } catch (err) {
@@ -136,6 +92,7 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
       throw err;
     }
   });
+
 
 const SaveSchema = z.object({
   projectId: z.string().uuid(),
