@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Link2, RotateCcw, ShieldCheck, X } from "lucide-react";
+import { Plus, Trash2, Link2, RotateCcw, ShieldCheck, X, Sparkles } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { startConnectSession, captureSession } from "@/lib/connect-site.functions";
+import { scrapeAuthenticated } from "@/lib/scrape-authenticated.functions";
+
 
 type Row = {
   id: string;
@@ -29,6 +31,10 @@ export function ConnectedSitesSection({ projectId }: { projectId: string }) {
 
   const startFn = useServerFn(startConnectSession);
   const captureFn = useServerFn(captureSession);
+  const scrapeFn = useServerFn(scrapeAuthenticated);
+  const [scrapingFor, setScrapingFor] = useState<string | null>(null);
+  const [scrapeStage, setScrapeStage] = useState<string>("");
+
 
   async function load() {
     const { data } = await supabase
@@ -101,6 +107,37 @@ export function ConnectedSitesSection({ projectId }: { projectId: string }) {
     setActive(null);
     await load();
   }
+
+  async function handleScrape(row: Row) {
+    setScrapingFor(row.id);
+    setScrapeStage("بيتم فتح الجلسة…");
+    // Lightweight stage advancer (visual only).
+    const t1 = window.setTimeout(() => setScrapeStage("بيتم قراءة الصفحات المحمية…"), 1500);
+    const t2 = window.setTimeout(() => setScrapeStage("بيتم التحليل…"), 8000);
+    try {
+      const res = await scrapeFn({ data: { connectedSiteId: row.id } });
+      if (!res.ok) {
+        if (res.authExpired) {
+          alert(res.message);
+        } else {
+          alert(res.message);
+        }
+      } else {
+        // Notify the parent page to refresh the analysis form.
+        window.dispatchEvent(new CustomEvent("analysis-refresh"));
+      }
+      await load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "فشل تحليل الصفحات المحمية");
+      await load();
+    } finally {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      setScrapingFor(null);
+      setScrapeStage("");
+    }
+  }
+
 
   return (
     <section className="mb-8">
@@ -232,8 +269,12 @@ export function ConnectedSitesSection({ projectId }: { projectId: string }) {
             row={r}
             onConnect={() => handleConnect(r)}
             onDelete={() => handleDelete(r.id)}
+            onScrape={() => handleScrape(r)}
+            scraping={scrapingFor === r.id}
+            scrapeStage={scrapingFor === r.id ? scrapeStage : ""}
           />
         ))}
+
       </div>
 
       {active && (
@@ -267,10 +308,16 @@ function SiteRow({
   row,
   onConnect,
   onDelete,
+  onScrape,
+  scraping,
+  scrapeStage,
 }: {
   row: Row;
   onConnect: () => void;
   onDelete: () => void;
+  onScrape: () => void;
+  scraping: boolean;
+  scrapeStage: string;
 }) {
   const meta = statusMeta(row.status);
   const expired =
@@ -287,6 +334,7 @@ function SiteRow({
         backgroundColor: "var(--paper)",
       }}
     >
+
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-1.5">
@@ -347,19 +395,37 @@ function SiteRow({
               اربط تاني
             </button>
           ) : isConnected ? (
-            <button
-              type="button"
-              onClick={onConnect}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm"
-              style={{
-                border: "1px solid var(--hairline)",
-                color: "var(--ink-text)",
-                borderRadius: "3px",
-              }}
-            >
-              <RotateCcw size={14} strokeWidth={1.75} />
-              تحديث الجلسة
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={onScrape}
+                disabled={scraping}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm disabled:opacity-60"
+                style={{
+                  backgroundColor: "var(--accent-strong)",
+                  color: "#FFFFFF",
+                  borderRadius: "3px",
+                }}
+              >
+                <Sparkles size={14} strokeWidth={1.75} />
+                {scraping ? scrapeStage || "جارٍ التحليل…" : "حلّل الصفحات المحمية"}
+              </button>
+              <button
+                type="button"
+                onClick={onConnect}
+                disabled={scraping}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm disabled:opacity-60"
+                style={{
+                  border: "1px solid var(--hairline)",
+                  color: "var(--ink-text)",
+                  borderRadius: "3px",
+                }}
+              >
+                <RotateCcw size={14} strokeWidth={1.75} />
+                تحديث الجلسة
+              </button>
+            </>
+
           ) : (
             <button
               type="button"
