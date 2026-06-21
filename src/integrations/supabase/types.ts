@@ -159,6 +159,53 @@ export type Database = {
           },
         ]
       }
+      connected_sites: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          expires_at: string | null
+          id: string
+          label: string
+          last_connected_at: string | null
+          login_url: string
+          project_id: string
+          session_data_encrypted: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          expires_at?: string | null
+          id?: string
+          label: string
+          last_connected_at?: string | null
+          login_url: string
+          project_id: string
+          session_data_encrypted?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          expires_at?: string | null
+          id?: string
+          label?: string
+          last_connected_at?: string | null
+          login_url?: string
+          project_id?: string
+          session_data_encrypted?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "connected_sites_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_items: {
         Row: {
           adapted_from_id: string | null
