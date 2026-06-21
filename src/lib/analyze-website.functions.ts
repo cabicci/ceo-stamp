@@ -68,6 +68,7 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
         .map((p) => `# ${p.url}\n${p.text}`)
         .join("\n\n")}`;
 
+      const { callAI } = await import("@/lib/ai/ai.server");
       const analysis = (await callAI({
         task: "website_analysis",
         systemPrompt: SYSTEM_PROMPT,
