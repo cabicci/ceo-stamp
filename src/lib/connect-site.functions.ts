@@ -77,13 +77,21 @@ export const startConnectSession = createServerFn({ method: "POST" })
       const session = await bb.createSession({ contextId, persist: true });
       const debug = await bb.getDebugUrls(session.id);
 
+      // Persist the (encrypted) contextId now so capture-session can find it
+      // even if the browser tab is closed unexpectedly. The cookies still
+      // live ONLY inside Browserbase; this row holds an encrypted handle.
+      const handle = crypto.encrypt(
+        JSON.stringify({ contextId, startedAt: new Date().toISOString() }),
+      );
       await sb
         .from("connected_sites")
         .update({
           status: "connecting",
           error_message: null,
+          session_data_encrypted: handle,
         })
         .eq("id", site.id);
+
 
       return {
         sessionId: session.id,
