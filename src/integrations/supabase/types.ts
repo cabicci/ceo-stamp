@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_copies: {
+        Row: {
+          adapted_from_id: string | null
+          body: string | null
+          campaign_id: string
+          created_at: string
+          cta: string | null
+          framework_applied: string | null
+          headline: string | null
+          id: string
+          locale: string
+          platform: string
+          rationale: string | null
+          status: string
+          variant_label: string | null
+        }
+        Insert: {
+          adapted_from_id?: string | null
+          body?: string | null
+          campaign_id: string
+          created_at?: string
+          cta?: string | null
+          framework_applied?: string | null
+          headline?: string | null
+          id?: string
+          locale?: string
+          platform: string
+          rationale?: string | null
+          status?: string
+          variant_label?: string | null
+        }
+        Update: {
+          adapted_from_id?: string | null
+          body?: string | null
+          campaign_id?: string
+          created_at?: string
+          cta?: string | null
+          framework_applied?: string | null
+          headline?: string | null
+          id?: string
+          locale?: string
+          platform?: string
+          rationale?: string | null
+          status?: string
+          variant_label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_copies_adapted_from_id_fkey"
+            columns: ["adapted_from_id"]
+            isOneToOne: false
+            referencedRelation: "ad_copies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ad_copies_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brand_profiles: {
         Row: {
           brand_colors: Json | null
@@ -51,6 +114,110 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: true
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          channels: Json
+          created_at: string
+          end_date: string | null
+          id: string
+          objective: string
+          project_id: string
+          start_date: string | null
+          status: string
+        }
+        Insert: {
+          channels?: Json
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          objective: string
+          project_id: string
+          start_date?: string | null
+          status?: string
+        }
+        Update: {
+          channels?: Json
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          objective?: string
+          project_id?: string
+          start_date?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_items: {
+        Row: {
+          adapted_from_id: string | null
+          campaign_id: string
+          content_type: string | null
+          copy: string | null
+          created_at: string
+          framework_applied: string | null
+          id: string
+          locale: string
+          media_brief: string | null
+          platform: string
+          rationale: string | null
+          scheduled_date: string | null
+          status: string
+        }
+        Insert: {
+          adapted_from_id?: string | null
+          campaign_id: string
+          content_type?: string | null
+          copy?: string | null
+          created_at?: string
+          framework_applied?: string | null
+          id?: string
+          locale?: string
+          media_brief?: string | null
+          platform: string
+          rationale?: string | null
+          scheduled_date?: string | null
+          status?: string
+        }
+        Update: {
+          adapted_from_id?: string | null
+          campaign_id?: string
+          content_type?: string | null
+          copy?: string | null
+          created_at?: string
+          framework_applied?: string | null
+          id?: string
+          locale?: string
+          media_brief?: string | null
+          platform?: string
+          rationale?: string | null
+          scheduled_date?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_items_adapted_from_id_fkey"
+            columns: ["adapted_from_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_items_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
             referencedColumns: ["id"]
           },
         ]
