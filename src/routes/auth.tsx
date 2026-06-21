@@ -66,7 +66,7 @@ function AuthPage() {
       className="min-h-screen flex items-center justify-center px-6 relative"
       style={{ backgroundColor: "var(--paper)" }}
     >
-      <FloatingLanguageToggle>
+      <FloatingLanguageToggle />
       <div
         className="w-full max-w-md"
         style={{
