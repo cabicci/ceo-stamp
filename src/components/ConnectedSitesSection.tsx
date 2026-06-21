@@ -269,8 +269,12 @@ export function ConnectedSitesSection({ projectId }: { projectId: string }) {
             row={r}
             onConnect={() => handleConnect(r)}
             onDelete={() => handleDelete(r.id)}
+            onScrape={() => handleScrape(r)}
+            scraping={scrapingFor === r.id}
+            scrapeStage={scrapingFor === r.id ? scrapeStage : ""}
           />
         ))}
+
       </div>
 
       {active && (
@@ -304,10 +308,16 @@ function SiteRow({
   row,
   onConnect,
   onDelete,
+  onScrape,
+  scraping,
+  scrapeStage,
 }: {
   row: Row;
   onConnect: () => void;
   onDelete: () => void;
+  onScrape: () => void;
+  scraping: boolean;
+  scrapeStage: string;
 }) {
   const meta = statusMeta(row.status);
   const expired =
@@ -324,6 +334,7 @@ function SiteRow({
         backgroundColor: "var(--paper)",
       }}
     >
+
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-1.5">
