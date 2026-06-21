@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { callAI } from "@/lib/ai/ai";
 
 const InputSchema = z.object({
   projectId: z.string().uuid(),
@@ -69,6 +68,7 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
         .map((p) => `# ${p.url}\n${p.text}`)
         .join("\n\n")}`;
 
+      const { callAI } = await import("@/lib/ai/ai.server");
       const analysis = (await callAI({
         task: "website_analysis",
         systemPrompt: SYSTEM_PROMPT,
