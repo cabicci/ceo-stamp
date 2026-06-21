@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { StatusStamp } from "@/components/StatusStamp";
+import { useTranslation } from "@/i18n/I18nProvider";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -71,6 +72,8 @@ function StatusRow({
 }
 
 function Dashboard() {
+  const { t } = useTranslation();
+
   return (
     <AppShell>
       <header className="mb-12">
@@ -78,32 +81,29 @@ function Dashboard() {
           className="font-mono text-[10px] uppercase tracking-[0.22em] mb-3"
           style={{ color: "var(--brass)" }}
         >
-          Foundation · Preview
+          {t("dashboard.eyebrow")}
         </div>
         <h1
           className="font-display text-[44px] leading-[1.05]"
           style={{ color: "var(--ink-text)", fontWeight: 500 }}
         >
-          The Ledger &amp; The Stamp
+          {t("dashboard.title")}
         </h1>
         <p
           className="mt-4 max-w-2xl text-sm leading-relaxed"
           style={{ color: "var(--ink-text)" }}
-        >
-          App shell, design tokens, and the signature{" "}
-          <em>StatusStamp</em> component. Feature surfaces — Projects,
-          Analysis, Campaigns, Review — are not built yet.
-        </p>
+          dangerouslySetInnerHTML={{ __html: t("dashboard.intro") }}
+        />
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card label="StatusStamp · English">
-          <div className="flex items-center justify-center py-10">
+        <Card label={t("dashboard.cards.stampEn")}>
+          <div className="flex items-center justify-center py-10" dir="ltr" lang="en">
             <StatusStamp language="en" />
           </div>
         </Card>
 
-        <Card label="StatusStamp · Arabic">
+        <Card label={t("dashboard.cards.stampAr")}>
           <div
             className="flex items-center justify-center py-10"
             dir="rtl"
@@ -113,14 +113,26 @@ function Dashboard() {
           </div>
         </Card>
 
-        <Card label="Status Vocabulary">
-          <StatusRow code="DRAFT" label="Awaiting AI generation pass" swatch="var(--brass)" />
-          <StatusRow code="IN REVIEW" label="Queued for human approval" swatch="var(--steel)" />
-          <StatusRow code="APPROVED" label="Sealed — uses the stamp" swatch="var(--stamp)" />
+        <Card label={t("dashboard.cards.vocab")}>
+          <StatusRow
+            code={t("dashboard.statusCode.draft")}
+            label={t("dashboard.status.draft")}
+            swatch="var(--brass)"
+          />
+          <StatusRow
+            code={t("dashboard.statusCode.inReview")}
+            label={t("dashboard.status.inReview")}
+            swatch="var(--steel)"
+          />
+          <StatusRow
+            code={t("dashboard.statusCode.approved")}
+            label={t("dashboard.status.approved")}
+            swatch="var(--stamp)"
+          />
         </Card>
 
-        <Card label="Palette">
-          <div className="grid grid-cols-4 gap-3">
+        <Card label={t("dashboard.cards.palette")}>
+          <div className="grid grid-cols-4 gap-3" dir="ltr">
             {[
               ["INK", "#1B2027"],
               ["PAPER", "#EAEBE6"],

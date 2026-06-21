@@ -1,0 +1,38 @@
+{
+  "brand": {
+    "tagline": "Command · Ledger",
+    "version": "v0.1 · Internal"
+  },
+  "nav": {
+    "projects": "Projects",
+    "analysis": "Analysis",
+    "campaigns": "Campaigns",
+    "review": "Review"
+  },
+  "language": {
+    "toggle": "Language",
+    "ar": "العربية",
+    "en": "English"
+  },
+  "dashboard": {
+    "eyebrow": "Foundation · Preview",
+    "title": "The Ledger & The Stamp",
+    "intro": "App shell, design tokens, and the signature <em>StatusStamp</em> component. Feature surfaces — Projects, Analysis, Campaigns, Review — are not built yet.",
+    "cards": {
+      "stampEn": "StatusStamp · English",
+      "stampAr": "StatusStamp · Arabic",
+      "vocab": "Status Vocabulary",
+      "palette": "Palette"
+    },
+    "status": {
+      "draft": "Awaiting AI generation pass",
+      "inReview": "Queued for human approval",
+      "approved": "Sealed — uses the stamp"
+    },
+    "statusCode": {
+      "draft": "DRAFT",
+      "inReview": "IN REVIEW",
+      "approved": "APPROVED"
+    }
+  }
+}
