@@ -7,7 +7,8 @@
     "projects": "Projects",
     "analysis": "Analysis",
     "campaigns": "Campaigns",
-    "review": "Review"
+    "review": "Review",
+    "admin": "Admin"
   },
   "language": {
     "toggle": "Language",
@@ -44,6 +45,32 @@
       "saving": "Saving…",
       "cancel": "Cancel",
       "urlError": "Add a project name and a valid website URL."
+    }
+  },
+  "admin": {
+    "eyebrow": "Oversight",
+    "title": "Admin dashboard",
+    "totals": {
+      "users": "Users",
+      "projects": "Projects",
+      "campaigns": "Campaigns",
+      "content": "Content items"
+    },
+    "users": {
+      "title": "All users",
+      "email": "Email",
+      "role": "Role",
+      "projects": "Projects",
+      "signupDate": "Signed up",
+      "empty": "No users yet."
+    },
+    "projects": {
+      "title": "Recent projects",
+      "name": "Project",
+      "owner": "Owner",
+      "website": "Website",
+      "created": "Created",
+      "empty": "No projects yet."
     }
   }
 }
