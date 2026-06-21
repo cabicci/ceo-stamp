@@ -113,10 +113,17 @@ function ProjectDetail() {
   useEffect(() => {
     loadProject();
     loadLatestAnalysis();
+    const onRefresh = () => {
+      loadLatestAnalysis();
+      startPolling();
+    };
+    window.addEventListener("analysis-refresh", onRefresh);
     return () => {
+      window.removeEventListener("analysis-refresh", onRefresh);
       if (pollRef.current) window.clearInterval(pollRef.current);
     };
   }, [id]);
+
 
   function startPolling() {
     if (pollRef.current) window.clearInterval(pollRef.current);
