@@ -78,6 +78,22 @@ function Sidebar() {
               </li>
             );
           })}
+          {isAdmin && (
+            <li>
+              <Link
+                to="/admin"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-[3px] text-sm transition-colors"
+                style={{
+                  color: pathname === "/admin" ? "var(--ink-text)" : "var(--muted-text)",
+                  backgroundColor: pathname === "/admin" ? "var(--accent)" : "transparent",
+                  fontWeight: pathname === "/admin" ? 600 : 400,
+                }}
+              >
+                <Shield size={16} strokeWidth={1.5} />
+                <span>{t("nav.admin")}</span>
+              </Link>
+            </li>
+          )}
         </ul>
       </nav>
 
