@@ -31,6 +31,10 @@ export function ConnectedSitesSection({ projectId }: { projectId: string }) {
 
   const startFn = useServerFn(startConnectSession);
   const captureFn = useServerFn(captureSession);
+  const scrapeFn = useServerFn(scrapeAuthenticated);
+  const [scrapingFor, setScrapingFor] = useState<string | null>(null);
+  const [scrapeStage, setScrapeStage] = useState<string>("");
+
 
   async function load() {
     const { data } = await supabase
@@ -103,6 +107,37 @@ export function ConnectedSitesSection({ projectId }: { projectId: string }) {
     setActive(null);
     await load();
   }
+
+  async function handleScrape(row: Row) {
+    setScrapingFor(row.id);
+    setScrapeStage("بيتم فتح الجلسة…");
+    // Lightweight stage advancer (visual only).
+    const t1 = window.setTimeout(() => setScrapeStage("بيتم قراءة الصفحات المحمية…"), 1500);
+    const t2 = window.setTimeout(() => setScrapeStage("بيتم التحليل…"), 8000);
+    try {
+      const res = await scrapeFn({ data: { connectedSiteId: row.id } });
+      if (!res.ok) {
+        if (res.authExpired) {
+          alert(res.message);
+        } else {
+          alert(res.message);
+        }
+      } else {
+        // Notify the parent page to refresh the analysis form.
+        window.dispatchEvent(new CustomEvent("analysis-refresh"));
+      }
+      await load();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "فشل تحليل الصفحات المحمية");
+      await load();
+    } finally {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      setScrapingFor(null);
+      setScrapeStage("");
+    }
+  }
+
 
   return (
     <section className="mb-8">
