@@ -395,19 +395,37 @@ function SiteRow({
               اربط تاني
             </button>
           ) : isConnected ? (
-            <button
-              type="button"
-              onClick={onConnect}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm"
-              style={{
-                border: "1px solid var(--hairline)",
-                color: "var(--ink-text)",
-                borderRadius: "3px",
-              }}
-            >
-              <RotateCcw size={14} strokeWidth={1.75} />
-              تحديث الجلسة
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={onScrape}
+                disabled={scraping}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm disabled:opacity-60"
+                style={{
+                  backgroundColor: "var(--accent-strong)",
+                  color: "#FFFFFF",
+                  borderRadius: "3px",
+                }}
+              >
+                <Sparkles size={14} strokeWidth={1.75} />
+                {scraping ? scrapeStage || "جارٍ التحليل…" : "حلّل الصفحات المحمية"}
+              </button>
+              <button
+                type="button"
+                onClick={onConnect}
+                disabled={scraping}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm disabled:opacity-60"
+                style={{
+                  border: "1px solid var(--hairline)",
+                  color: "var(--ink-text)",
+                  borderRadius: "3px",
+                }}
+              >
+                <RotateCcw size={14} strokeWidth={1.75} />
+                تحديث الجلسة
+              </button>
+            </>
+
           ) : (
             <button
               type="button"
