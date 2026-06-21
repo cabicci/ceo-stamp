@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Link2, RotateCcw, ShieldCheck, X } from "lucide-react";
+import { Plus, Trash2, Link2, RotateCcw, ShieldCheck, X, Sparkles } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { startConnectSession, captureSession } from "@/lib/connect-site.functions";
+import { scrapeAuthenticated } from "@/lib/scrape-authenticated.functions";
+
 
 type Row = {
   id: string;
