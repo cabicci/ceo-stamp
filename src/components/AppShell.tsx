@@ -1,9 +1,10 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { FolderOpen, LineChart, Megaphone, CheckSquare, LogOut } from "lucide-react";
+import { FolderOpen, LineChart, Megaphone, CheckSquare, LogOut, Shield } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "@/i18n/I18nProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 const navItems = [
   { key: "projects", to: "/", icon: FolderOpen },
@@ -15,6 +16,7 @@ const navItems = [
 function Sidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { t } = useTranslation();
+  const { isAdmin } = useIsAdmin();
 
   return (
     <aside
@@ -76,6 +78,22 @@ function Sidebar() {
               </li>
             );
           })}
+          {isAdmin && (
+            <li>
+              <Link
+                to="/admin"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-[3px] text-sm transition-colors"
+                style={{
+                  color: pathname === "/admin" ? "var(--ink-text)" : "var(--muted-text)",
+                  backgroundColor: pathname === "/admin" ? "var(--accent)" : "transparent",
+                  fontWeight: pathname === "/admin" ? 600 : 400,
+                }}
+              >
+                <Shield size={16} strokeWidth={1.5} />
+                <span>{t("nav.admin")}</span>
+              </Link>
+            </li>
+          )}
         </ul>
       </nav>
 
