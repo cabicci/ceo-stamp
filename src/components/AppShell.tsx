@@ -1,7 +1,8 @@
-import { Link, useRouterState } from "@tanstack/react-router";
-import { FolderOpen, LineChart, Megaphone, CheckSquare } from "lucide-react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { FolderOpen, LineChart, Megaphone, CheckSquare, LogOut } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation, type Locale } from "@/i18n/I18nProvider";
+import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
   { key: "projects", to: "/", icon: FolderOpen },
@@ -100,18 +101,40 @@ function Sidebar() {
       </nav>
 
       <div
-        className="px-6 py-5 flex items-center justify-between gap-3"
+        className="px-6 py-5 space-y-4"
         style={{ borderTop: "1px solid rgba(201,203,195,0.12)" }}
       >
-        <span
-          className="font-mono text-[10px] uppercase tracking-[0.16em]"
-          style={{ color: "var(--brass)" }}
-        >
-          {t("brand.version")}
-        </span>
-        <LanguageToggle />
+        <div className="flex items-center justify-between gap-3">
+          <span
+            className="font-mono text-[10px] uppercase tracking-[0.16em]"
+            style={{ color: "var(--brass)" }}
+          >
+            {t("brand.version")}
+          </span>
+          <LanguageToggle />
+        </div>
+        <SignOutButton />
       </div>
     </aside>
+  );
+}
+
+function SignOutButton() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        await supabase.auth.signOut();
+        navigate({ to: "/auth", replace: true });
+      }}
+      className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em]"
+      style={{ color: "rgba(234,235,230,0.62)" }}
+    >
+      <LogOut size={12} strokeWidth={1.5} />
+      {t("auth.signOut")}
+    </button>
   );
 }
 
