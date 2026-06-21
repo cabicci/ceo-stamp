@@ -14,25 +14,36 @@
     "ar": "العربية",
     "en": "English"
   },
-  "dashboard": {
-    "eyebrow": "Foundation · Preview",
-    "title": "The Ledger & The Stamp",
-    "intro": "App shell, design tokens, and the signature <em>StatusStamp</em> component. Feature surfaces — Projects, Analysis, Campaigns, Review — are not built yet.",
-    "cards": {
-      "stampEn": "StatusStamp · English",
-      "stampAr": "StatusStamp · Arabic",
-      "vocab": "Status Vocabulary",
-      "palette": "Palette"
-    },
-    "status": {
-      "draft": "Awaiting AI generation pass",
-      "inReview": "Queued for human approval",
-      "approved": "Sealed — uses the stamp"
-    },
-    "statusCode": {
-      "draft": "DRAFT",
-      "inReview": "IN REVIEW",
-      "approved": "APPROVED"
+  "auth": {
+    "eyebrowLogin": "Sign in · Internal",
+    "eyebrowSignup": "Create account",
+    "email": "Email address",
+    "password": "Password",
+    "submitLogin": "Sign in",
+    "submitSignup": "Create account",
+    "loading": "Working…",
+    "toggleToSignup": "No account yet? Create one",
+    "toggleToLogin": "Already have an account? Sign in",
+    "genericError": "Something went wrong. Try again.",
+    "signOut": "Sign out"
+  },
+  "projects": {
+    "eyebrow": "The Ledger",
+    "title": "Projects",
+    "add": "New project",
+    "loading": "Loading…",
+    "empty": "Nothing in the ledger yet. Add your first project to get started.",
+    "backToList": "Back to projects",
+    "detailEyebrow": "Project file",
+    "detailPlaceholder": "Analysis and campaigns will live here.",
+    "form": {
+      "title": "New project",
+      "name": "Project name",
+      "url": "Website URL",
+      "save": "Save",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "urlError": "Add a project name and a valid website URL."
     }
   }
 }
