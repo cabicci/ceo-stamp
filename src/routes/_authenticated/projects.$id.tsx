@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/i18n/I18nProvider";
 import { useServerFn } from "@tanstack/react-start";
 import { analyzeWebsite, saveAnalysisEdits } from "@/lib/analyze-website.functions";
+import { ConnectedSitesSection } from "@/components/ConnectedSitesSection";
+
 
 export const Route = createFileRoute("/_authenticated/projects/$id")({
   head: () => ({
@@ -224,9 +226,12 @@ function ProjectDetail() {
           />
         )}
       </section>
+
+      <ConnectedSitesSection projectId={project.id} />
     </AppShell>
   );
 }
+
 
 // -----------------------------------------------------------------------------
 // Sub-components
