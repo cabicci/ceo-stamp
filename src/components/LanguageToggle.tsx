@@ -8,12 +8,16 @@ export function LanguageToggle() {
   ];
   return (
     <div
-      className="inline-flex items-center font-mono text-[10px] tracking-[0.18em]"
-      style={{ border: "1px solid var(--hairline)", borderRadius: "2px" }}
+      className="inline-flex items-center gap-0.5 font-mono text-[10px] tracking-[0.18em] p-0.5"
+      style={{
+        backgroundColor: "var(--surface)",
+        border: "1px solid var(--hairline)",
+        borderRadius: "3px",
+      }}
       role="group"
       aria-label="Language"
     >
-      {options.map((opt, idx) => {
+      {options.map((opt) => {
         const active = locale === opt.value;
         return (
           <button
@@ -22,9 +26,11 @@ export function LanguageToggle() {
             onClick={() => setLocale(opt.value)}
             className="px-2.5 py-1 transition-colors"
             style={{
-              backgroundColor: active ? "var(--accent)" : "transparent",
+              backgroundColor: active ? "var(--paper)" : "transparent",
               color: active ? "var(--ink-text)" : "var(--muted-text)",
-              borderInlineStart: idx === 0 ? "none" : "1px solid var(--hairline)",
+              border: active ? "1px solid var(--hairline)" : "1px solid transparent",
+              borderRadius: "2px",
+              boxShadow: active ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
               fontWeight: active ? 600 : 500,
             }}
             aria-pressed={active}
@@ -43,14 +49,7 @@ export function LanguageToggle() {
  */
 export function FloatingLanguageToggle() {
   return (
-    <div
-      className="fixed top-4 start-4 z-50 p-1.5"
-      style={{
-        backgroundColor: "var(--surface)",
-        border: "1px solid var(--hairline)",
-        borderRadius: "3px",
-      }}
-    >
+    <div className="fixed top-4 start-4 z-50">
       <LanguageToggle />
     </div>
   );
