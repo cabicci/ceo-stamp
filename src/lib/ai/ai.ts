@@ -170,7 +170,9 @@ function stripJsonFences(raw: string): string {
   return fenced ? fenced[1].trim() : trimmed;
 }
 
-export async function callAI<T = unknown>(args: CallAIArgs): Promise<T | string> {
+export async function callAI(args: CallAIArgs & { jsonMode: true }): Promise<unknown>;
+export async function callAI(args: CallAIArgs & { jsonMode?: false }): Promise<string>;
+export async function callAI(args: CallAIArgs): Promise<unknown> {
   const route = TASK_ROUTING[args.task];
   if (!route) throw new Error(`No provider route configured for task "${args.task}"`);
   const provider = PROVIDERS[route.provider];
@@ -186,7 +188,7 @@ export async function callAI<T = unknown>(args: CallAIArgs): Promise<T | string>
 
   const cleaned = stripJsonFences(raw);
   try {
-    return JSON.parse(cleaned) as T;
+    return JSON.parse(cleaned);
   } catch (err) {
     throw new Error(
       `callAI jsonMode: failed to parse JSON from ${route.provider}/${route.model}. ` +

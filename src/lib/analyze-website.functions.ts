@@ -69,19 +69,21 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
         .map((p) => `# ${p.url}\n${p.text}`)
         .join("\n\n")}`;
 
-      const analysis = await callAI<Record<string, unknown>>({
+      const analysis = (await callAI({
         task: "website_analysis",
         systemPrompt: SYSTEM_PROMPT,
         userContent,
         jsonMode: true,
-      });
+      })) as Record<string, unknown>;
+
+      const analysisJson = analysis as unknown as Record<string, never>;
 
       await supabase
         .from("website_analysis")
         .update({
           status: "complete",
           pages_scraped: pages,
-          ai_analysis: analysis,
+          ai_analysis: analysisJson,
         })
         .eq("id", analysisRow.id);
 
@@ -89,14 +91,14 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
         {
           project_id: project.id,
           tone_of_voice: (analysis.tone_of_voice as string) ?? "",
-          personas: analysis.personas ?? [],
-          usps: analysis.usps ?? [],
-          content_pillars: analysis.content_pillars ?? [],
+          personas: (analysis.personas as never) ?? [],
+          usps: (analysis.usps as never) ?? [],
+          content_pillars: (analysis.content_pillars as never) ?? [],
         },
         { onConflict: "project_id" },
       );
 
-      return { analysisId: analysisRow.id, analysis };
+      return { analysisId: analysisRow.id };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       await supabase
