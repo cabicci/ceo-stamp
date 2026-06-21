@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      brand_profiles: {
+        Row: {
+          brand_colors: Json | null
+          content_pillars: Json | null
+          id: string
+          personas: Json | null
+          project_id: string
+          tone_of_voice: string | null
+          updated_at: string
+          usps: Json | null
+        }
+        Insert: {
+          brand_colors?: Json | null
+          content_pillars?: Json | null
+          id?: string
+          personas?: Json | null
+          project_id: string
+          tone_of_voice?: string | null
+          updated_at?: string
+          usps?: Json | null
+        }
+        Update: {
+          brand_colors?: Json | null
+          content_pillars?: Json | null
+          id?: string
+          personas?: Json | null
+          project_id?: string
+          tone_of_voice?: string | null
+          updated_at?: string
+          usps?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brand_profiles_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           created_at: string
@@ -37,6 +78,44 @@ export type Database = {
           website_url?: string
         }
         Relationships: []
+      }
+      website_analysis: {
+        Row: {
+          ai_analysis: Json | null
+          analyzed_at: string
+          error_message: string | null
+          id: string
+          pages_scraped: Json | null
+          project_id: string
+          status: string
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          analyzed_at?: string
+          error_message?: string | null
+          id?: string
+          pages_scraped?: Json | null
+          project_id: string
+          status?: string
+        }
+        Update: {
+          ai_analysis?: Json | null
+          analyzed_at?: string
+          error_message?: string | null
+          id?: string
+          pages_scraped?: Json | null
+          project_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_analysis_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
