@@ -1,9 +1,10 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { FolderOpen, LineChart, Megaphone, CheckSquare, LogOut } from "lucide-react";
+import { FolderOpen, LineChart, Megaphone, CheckSquare, LogOut, Shield } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "@/i18n/I18nProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 const navItems = [
   { key: "projects", to: "/", icon: FolderOpen },
