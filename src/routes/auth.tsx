@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/i18n/I18nProvider";
+import { FloatingLanguageToggle } from "@/components/LanguageToggle";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -62,9 +63,10 @@ function AuthPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center px-6"
+      className="min-h-screen flex items-center justify-center px-6 relative"
       style={{ backgroundColor: "var(--paper)" }}
     >
+      <FloatingLanguageToggle />
       <div
         className="w-full max-w-md"
         style={{
