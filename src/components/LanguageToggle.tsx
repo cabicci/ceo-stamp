@@ -9,7 +9,7 @@ export function LanguageToggle() {
   return (
     <div
       className="inline-flex items-center font-mono text-[10px] tracking-[0.18em]"
-      style={{ border: "1px solid rgba(201,203,195,0.18)", borderRadius: "2px" }}
+      style={{ border: "1px solid var(--hairline)", borderRadius: "2px" }}
       role="group"
       aria-label="Language"
     >
@@ -22,9 +22,9 @@ export function LanguageToggle() {
             onClick={() => setLocale(opt.value)}
             className="px-2.5 py-1 transition-colors"
             style={{
-              backgroundColor: active ? "var(--brass)" : "transparent",
-              color: active ? "var(--ink)" : "var(--brass)",
-              borderInlineStart: idx === 0 ? "none" : "1px solid rgba(201,203,195,0.18)",
+              backgroundColor: active ? "var(--accent)" : "transparent",
+              color: active ? "var(--ink-text)" : "var(--muted-text)",
+              borderInlineStart: idx === 0 ? "none" : "1px solid var(--hairline)",
               fontWeight: active ? 600 : 500,
             }}
             aria-pressed={active}
@@ -40,16 +40,15 @@ export function LanguageToggle() {
 /**
  * Fixed-position language toggle for pages without the sidebar (auth, full-screen).
  * Sits in the top-inline-start corner; mirrors automatically in RTL.
- * Uses an ink-tinted backdrop so it stays legible on paper-toned pages.
  */
 export function FloatingLanguageToggle() {
   return (
     <div
       className="fixed top-4 start-4 z-50 p-1.5"
       style={{
-        backgroundColor: "var(--ink)",
+        backgroundColor: "var(--surface)",
+        border: "1px solid var(--hairline)",
         borderRadius: "3px",
-        boxShadow: "0 1px 2px rgba(20,22,26,0.12)",
       }}
     >
       <LanguageToggle />

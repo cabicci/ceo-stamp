@@ -19,21 +19,36 @@ function Sidebar() {
   return (
     <aside
       className="fixed inset-y-0 start-0 w-64 flex flex-col"
-      style={{ backgroundColor: "var(--ink)", color: "var(--paper)" }}
+      style={{
+        backgroundColor: "var(--surface)",
+        color: "var(--ink-text)",
+        borderInlineEnd: "1px solid var(--hairline)",
+      }}
     >
       <div className="px-6 pt-8 pb-10">
-        {/* Brand wordmark — fixed Latin, never translated */}
+        {/* Brand wordmark — fixed Latin, never translated.
+            The yellow accent dot is the brand color expression. */}
         <h1
-          className="font-display text-[28px] leading-none"
-          style={{ color: "var(--paper)", fontWeight: 500 }}
+          className="font-display text-[28px] leading-none inline-flex items-baseline gap-1"
+          style={{ color: "var(--ink-text)", fontWeight: 500 }}
           dir="ltr"
           lang="en"
         >
           Marketing CEO
+          <span
+            aria-hidden="true"
+            style={{
+              display: "inline-block",
+              width: "8px",
+              height: "8px",
+              borderRadius: "999px",
+              backgroundColor: "var(--accent)",
+            }}
+          />
         </h1>
         <div
           className="mt-3 font-mono text-[10px] uppercase tracking-[0.18em]"
-          style={{ color: "var(--brass)" }}
+          style={{ color: "var(--muted-text)" }}
         >
           {t("brand.tagline")}
         </div>
@@ -50,9 +65,9 @@ function Sidebar() {
                   to={item.to}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-[3px] text-sm transition-colors"
                   style={{
-                    color: active ? "var(--paper)" : "rgba(234,235,230,0.62)",
-                    backgroundColor: active ? "rgba(234,235,230,0.06)" : "transparent",
-                    borderInlineStart: active ? "2px solid var(--brass)" : "2px solid transparent",
+                    color: active ? "var(--ink-text)" : "var(--muted-text)",
+                    backgroundColor: active ? "var(--accent)" : "transparent",
+                    fontWeight: active ? 600 : 400,
                   }}
                 >
                   <Icon size={16} strokeWidth={1.5} />
@@ -66,12 +81,12 @@ function Sidebar() {
 
       <div
         className="px-6 py-5 space-y-4"
-        style={{ borderTop: "1px solid rgba(201,203,195,0.12)" }}
+        style={{ borderTop: "1px solid var(--hairline)" }}
       >
         <div className="flex items-center justify-between gap-3">
           <span
             className="font-mono text-[10px] uppercase tracking-[0.16em]"
-            style={{ color: "var(--brass)" }}
+            style={{ color: "var(--muted-text)" }}
           >
             {t("brand.version")}
           </span>
@@ -93,8 +108,8 @@ function SignOutButton() {
         await supabase.auth.signOut();
         navigate({ to: "/auth", replace: true });
       }}
-      className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em]"
-      style={{ color: "rgba(234,235,230,0.62)" }}
+      className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors hover:opacity-80"
+      style={{ color: "var(--muted-text)" }}
     >
       <LogOut size={12} strokeWidth={1.5} />
       {t("auth.signOut")}

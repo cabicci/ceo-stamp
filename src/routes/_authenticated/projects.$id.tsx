@@ -17,7 +17,7 @@ export const Route = createFileRoute("/_authenticated/projects/$id")({
   ),
   errorComponent: ({ error }) => (
     <AppShell>
-      <p style={{ color: "var(--stamp)" }}>{error.message}</p>
+      <p style={{ color: "var(--danger)" }}>{error.message}</p>
     </AppShell>
   ),
 });

@@ -25,22 +25,29 @@
   --color-primary-foreground: var(--paper);
   --color-secondary: var(--hairline);
   --color-secondary-foreground: var(--ink-text);
-  --color-muted: var(--hairline);
-  --color-muted-foreground: var(--brass);
-  --color-accent: var(--steel);
-  --color-accent-foreground: var(--paper);
-  --color-destructive: var(--stamp);
+  --color-muted: var(--surface);
+  --color-muted-foreground: var(--muted-text);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--ink-text);
+  --color-destructive: var(--danger);
   --color-destructive-foreground: #ffffff;
   --color-border: var(--hairline);
   --color-input: var(--hairline);
-  --color-ring: var(--steel);
+  --color-ring: var(--accent);
 
   --color-ink: var(--ink);
   --color-paper: var(--paper);
+  --color-surface: var(--surface);
   --color-ink-text: var(--ink-text);
-  --color-stamp: var(--stamp);
-  --color-steel: var(--steel);
-  --color-brass: var(--brass);
+  --color-muted-text: var(--muted-text);
+  --color-stamp: var(--approve);
+  --color-approve: var(--approve);
+  --color-review: var(--review);
+  --color-draft: var(--draft);
+  --color-danger: var(--danger);
+  --color-steel: var(--review);
+  --color-brass: var(--muted-text);
+  --color-accent-strong: var(--accent-strong);
   --color-hairline: var(--hairline);
 
   --font-display: "Fraunces", serif;
@@ -50,13 +57,26 @@
 }
 
 :root {
-  --ink: #1B2027;
-  --paper: #EAEBE6;
-  --ink-text: #232A33;
-  --stamp: #B23A2E;
-  --steel: #4C6B8A;
-  --brass: #8A7B4E;
-  --hairline: #C9CBC3;
+  /* New palette — "soft pastel yellow on clean light base" */
+  --paper: #FFFFFF;
+  --surface: #FBF8EC;
+  --accent: #F5D547;
+  --accent-strong: #1A1B1F;
+  --ink-text: #1A1B1F;
+  --muted-text: #6B6B66;
+  --approve: #16A34A;
+  --review: #2563EB;
+  --draft: #9A9A92;
+  --hairline: #ECE9DA;
+  --danger: #B23A2E;
+
+  /* Legacy aliases — map old token names to new palette semantics
+     so existing components keep working without a full rewrite. */
+  --ink: var(--accent-strong);     /* primary buttons / dark fills */
+  --stamp: var(--approve);         /* StatusStamp (green) */
+  --steel: var(--review);          /* URL / link text (blue) */
+  --brass: var(--muted-text);      /* eyebrows, meta, dates */
+
   --radius: 4px;
 }
 
