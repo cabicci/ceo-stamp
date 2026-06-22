@@ -317,6 +317,7 @@ export interface CallAIChatArgs {
   systemPrompt: string;
   messages: ChatTurn[];
   jsonMode?: boolean;
+  logContext?: AILogContext;
 }
 
 export async function callAIChat(args: CallAIChatArgs & { jsonMode: true }): Promise<unknown>;
