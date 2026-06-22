@@ -35,11 +35,13 @@ function resolvePath(
   return resolved;
 }
 
+export type TranslateFn = (key: string, vars?: Record<string, string | number>) => string;
+
 type I18nContextValue = {
   locale: Locale;
   dir: Direction;
   setLocale: (l: Locale) => void;
-  t: (key: string, vars?: Record<string, string | number>) => string;
+  t: TranslateFn;
 };
 
 const I18nContext = createContext<I18nContextValue | null>(null);

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { ArrowLeft, ArrowSquareOut, Plus, Trash, Sparkle, ArrowCounterClockwise, FloppyDisk } from "@phosphor-icons/react";
+import { ArrowLeft, ArrowSquareOut, Plus, Trash, Sparkle, ArrowCounterClockwise, FloppyDisk, Lock, CheckCircle, CaretDown, CaretUp } from "@phosphor-icons/react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/i18n/I18nProvider";
@@ -9,7 +9,7 @@ import { analyzeWebsite, saveAnalysisEdits } from "@/lib/analyze-website.functio
 import { ConnectedSitesSection } from "@/components/ConnectedSitesSection";
 import { AvailableChannelsSettings } from "@/components/AvailableChannelsSettings";
 import { PackageGallery } from "@/components/PackageGallery";
-import { localizedPackageName, type AdaptedPlan, type Channel } from "@/lib/campaign-packages";
+import { ALL_CHANNELS, localizedPackageName, type AdaptedPlan, type Channel } from "@/lib/campaign-packages";
 import { formatFrameworksDisplay } from "@/lib/marketing-frameworks";
 import { StrategistChat } from "@/components/StrategistChat";
 import { approveCampaignPlan } from "@/lib/strategist-chat.functions";
@@ -93,9 +93,25 @@ function ProjectDetail() {
   const [project, setProject] = useState<Project | null | undefined>(undefined);
   const [latest, setLatest] = useState<AnalysisRow | null>(null);
   const [running, setRunning] = useState(false);
+  const [availableChannels, setAvailableChannels] = useState<Channel[]>([]);
+  const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set([1]));
   const pollRef = useRef<number | null>(null);
 
   const analyzeFn = useServerFn(analyzeWebsite);
+
+  async function loadAvailableChannels() {
+    const { data } = await supabase
+      .from("brand_profiles")
+      .select("available_channels")
+      .eq("project_id", id)
+      .maybeSingle();
+    const raw = (data?.available_channels ?? []) as unknown;
+    const parsed = Array.isArray(raw)
+      ? (raw.filter((c) => ALL_CHANNELS.includes(c as Channel)) as Channel[])
+      : [];
+    setAvailableChannels(parsed);
+    return parsed;
+  }
 
   async function loadProject() {
     const { data } = await supabase
@@ -121,6 +137,7 @@ function ProjectDetail() {
   useEffect(() => {
     loadProject();
     loadLatestAnalysis();
+    loadAvailableChannels();
     const onRefresh = () => {
       loadLatestAnalysis();
       startPolling();
@@ -132,6 +149,41 @@ function ProjectDetail() {
     };
   }, [id]);
 
+  const status = latest?.status ?? "idle";
+  const isWorking = running || status === "scraping" || status === "analyzing";
+  const analysisDone = status === "done";
+  const channelsSet = availableChannels.length > 0;
+
+  const step1Complete = analysisDone;
+  const step2Complete = analysisDone;
+  const step3Complete = channelsSet;
+  const step2Unlocked = analysisDone;
+  const step3Unlocked = analysisDone;
+  const step4Unlocked = channelsSet;
+
+  const currentStep: number = !analysisDone ? 1 : !channelsSet ? 3 : 4;
+
+  useEffect(() => {
+    setExpandedSteps((prev) => {
+      const next = new Set(prev);
+      next.add(currentStep);
+      if (analysisDone) {
+        next.add(2);
+        next.add(3);
+      }
+      if (channelsSet) next.add(4);
+      return next;
+    });
+  }, [currentStep, analysisDone, channelsSet]);
+
+  function toggleStep(step: number) {
+    setExpandedSteps((prev) => {
+      const next = new Set(prev);
+      if (next.has(step)) next.delete(step);
+      else next.add(step);
+      return next;
+    });
+  }
 
   function startPolling() {
     if (pollRef.current) window.clearInterval(pollRef.current);
@@ -176,9 +228,6 @@ function ProjectDetail() {
   }
   if (project === null) throw notFound();
 
-  const status = latest?.status ?? "idle";
-  const isWorking = running || status === "scraping" || status === "analyzing";
-
   return (
     <AppShell>
       <Link
@@ -200,35 +249,155 @@ function ProjectDetail() {
         <ProjectSettingsForm project={project} onSaved={loadProject} />
       </header>
 
-      <section className="mb-8">
-        <SectionLabel>{t("analysis.title")}</SectionLabel>
+      <WizardProgress
+        currentStep={currentStep}
+        step1Complete={step1Complete}
+        step2Complete={step2Complete}
+        step3Complete={step3Complete}
+        step4Unlocked={step4Unlocked}
+      />
 
-        {status === "idle" && (
-          <IdleCard onAnalyze={handleAnalyze} disabled={isWorking} />
-        )}
+      <div className="space-y-4">
+        <WizardStepPanel
+          step={1}
+          title={t("projects.flow.step1.title")}
+          subtitle={t("projects.flow.step1.subtitle")}
+          complete={step1Complete}
+          locked={false}
+          expanded={expandedSteps.has(1)}
+          onToggle={() => toggleStep(1)}
+          isCurrent={currentStep === 1}
+        >
+          <p
+            className="text-sm mb-4 leading-relaxed"
+            style={{ color: "var(--muted-text)" }}
+          >
+            {t("projects.flow.step1.oneTimeNote")}
+          </p>
 
-        {isWorking && <RunningCard status={status} />}
+          {status === "idle" && (
+            <IdleCard onAnalyze={handleAnalyze} disabled={isWorking} />
+          )}
 
-        {status === "error" && !isWorking && (
-          <ErrorCard
-            message={latest?.error_message ?? t("analysis.unknownError")}
-            onRetry={handleAnalyze}
-          />
-        )}
+          {isWorking && <RunningCard status={status} />}
 
-        {status === "done" && !isWorking && latest && (
-          <AnalysisEditor
+          {status === "error" && !isWorking && (
+            <ErrorCard
+              message={latest?.error_message ?? t("analysis.unknownError")}
+              onRetry={handleAnalyze}
+            />
+          )}
+
+          {analysisDone && !isWorking && (
+            <Card accent>
+              <div className="flex items-start gap-3">
+                <CheckCircle
+                  size={22}
+                  strokeWidth={1.75}
+                  style={{ color: "var(--review)", flexShrink: 0 }}
+                />
+                <div>
+                  <p className="text-sm mb-4" style={{ color: "var(--ink-text)" }}>
+                    {t("projects.flow.step1.completeSummary")}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleAnalyze}
+                    disabled={isWorking}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm"
+                    style={{
+                      border: "1px solid var(--hairline)",
+                      color: "var(--ink-text)",
+                      borderRadius: "3px",
+                    }}
+                  >
+                    <ArrowCounterClockwise size={14} strokeWidth={1.75} />
+                    {t("analysis.reanalyze")}
+                  </button>
+                </div>
+              </div>
+            </Card>
+          )}
+        </WizardStepPanel>
+
+        <WizardStepPanel
+          step={2}
+          title={t("projects.flow.step2.title")}
+          subtitle={t("projects.flow.step2.subtitle")}
+          complete={step2Complete}
+          locked={!step2Unlocked}
+          lockedMessage={t("projects.flow.locked.needsAnalysis")}
+          expanded={expandedSteps.has(2)}
+          onToggle={() => toggleStep(2)}
+          isCurrent={currentStep === 2}
+        >
+          {analysisDone && latest && (
+            <>
+              <AnalysisEditor
+                projectId={project.id}
+                analysisId={latest.id}
+                initial={normalize(latest.ai_analysis)}
+                onReanalyze={handleAnalyze}
+              />
+              <div className="mt-8 pt-6" style={{ borderTop: "1px solid var(--hairline)" }}>
+                <div
+                  className="font-mono text-[10px] uppercase tracking-[0.22em] mb-2"
+                  style={{ color: "var(--muted-text)" }}
+                >
+                  {t("projects.flow.step2.connectedSitesTitle")}
+                </div>
+                <p className="text-sm mb-4" style={{ color: "var(--muted-text)" }}>
+                  {t("projects.flow.step2.connectedSitesHint")}
+                </p>
+                <ConnectedSitesSection projectId={project.id} />
+              </div>
+            </>
+          )}
+        </WizardStepPanel>
+
+        <WizardStepPanel
+          step={3}
+          title={t("projects.flow.step3.title")}
+          subtitle={t("projects.flow.step3.subtitle")}
+          complete={step3Complete}
+          locked={!step3Unlocked}
+          lockedMessage={t("projects.flow.locked.needsBrand")}
+          expanded={expandedSteps.has(3)}
+          onToggle={() => toggleStep(3)}
+          isCurrent={currentStep === 3}
+        >
+          <AvailableChannelsSettings
             projectId={project.id}
-            analysisId={latest.id}
-            initial={normalize(latest.ai_analysis)}
-            onReanalyze={handleAnalyze}
+            onChange={(channels) => {
+              setAvailableChannels(channels);
+            }}
           />
-        )}
-      </section>
+        </WizardStepPanel>
 
-      <ConnectedSitesSection projectId={project.id} />
-
-      <CampaignSetup projectId={project.id} />
+        <WizardStepPanel
+          step={4}
+          title={t("projects.flow.step4.title")}
+          subtitle={t("projects.flow.step4.subtitle")}
+          complete={false}
+          locked={!step4Unlocked}
+          lockedMessage={t("projects.flow.locked.needsChannels")}
+          expanded={expandedSteps.has(4)}
+          onToggle={() => toggleStep(4)}
+          isCurrent={currentStep === 4}
+          alwaysActiveWhenUnlocked
+        >
+          <p
+            className="text-sm mb-5 leading-relaxed"
+            style={{ color: "var(--muted-text)" }}
+          >
+            {t("projects.flow.step4.repeatableNote")}
+          </p>
+          <CampaignSetup
+            projectId={project.id}
+            availableChannels={availableChannels}
+          />
+        </WizardStepPanel>
+      </div>
     </AppShell>
   );
 }
@@ -390,9 +559,14 @@ function ProjectSettingsForm({
   );
 }
 
-function CampaignSetup({ projectId }: { projectId: string }) {
+function CampaignSetup({
+  projectId,
+  availableChannels,
+}: {
+  projectId: string;
+  availableChannels: Channel[];
+}) {
   const { t, locale } = useTranslation();
-  const [available, setAvailable] = useState<Channel[]>([]);
   const [picked, setPicked] = useState<AdaptedPlan | null>(null);
   const [entry, setEntry] = useState<"packages" | "strategist">("packages");
   const [approvedPackageId, setApprovedPackageId] = useState<string | null>(null);
@@ -416,112 +590,108 @@ function CampaignSetup({ projectId }: { projectId: string }) {
   }
 
   return (
-    <>
-      <section className="mt-12 mb-8">
-        <SectionLabel>{t("campaign.settingsTitle")}</SectionLabel>
-        <AvailableChannelsSettings projectId={projectId} onChange={setAvailable} />
-      </section>
+    <section>
+      <SectionLabel>{t("campaign.startTitle")}</SectionLabel>
+      <div className="flex gap-2 mb-5">
+        <EntryTab active={entry === "packages"} onClick={() => setEntry("packages")}>
+          {t("campaign.tabPackages")}
+        </EntryTab>
+        <EntryTab active={entry === "strategist"} onClick={() => setEntry("strategist")}>
+          {t("campaign.tabStrategist")}
+        </EntryTab>
+      </div>
 
-      <section className="mb-8">
-        <SectionLabel>{t("campaign.startTitle")}</SectionLabel>
-        <div className="flex gap-2 mb-5">
-          <EntryTab active={entry === "packages"} onClick={() => setEntry("packages")}>
-            {t("campaign.tabPackages")}
-          </EntryTab>
-          <EntryTab active={entry === "strategist"} onClick={() => setEntry("strategist")}>
-            {t("campaign.tabStrategist")}
-          </EntryTab>
-        </div>
-
-        {entry === "packages" && (
-          <>
-            <PackageGallery availableChannels={available} onSelectPlan={(p) => {
+      {entry === "packages" && (
+        <>
+          <PackageGallery
+            availableChannels={availableChannels}
+            onSelectPlan={(p) => {
               setPicked(p);
               setApprovedPackageId(null);
               setPkgError(null);
-            }} />
-            {picked && !approvedPackageId && (
+            }}
+          />
+          {picked && !approvedPackageId && (
+            <div
+              className="mt-5 p-5"
+              style={{
+                border: "1px solid var(--accent-strong)",
+                borderRadius: "4px",
+                backgroundColor: "var(--surface)",
+              }}
+            >
               <div
-                className="mt-5 p-5"
-                style={{
-                  border: "1px solid var(--accent-strong)",
-                  borderRadius: "4px",
-                  backgroundColor: "var(--surface)",
-                }}
+                className="font-mono text-[10px] uppercase tracking-[0.22em] mb-2"
+                style={{ color: "var(--muted-text)" }}
               >
+                {t("campaign.pickedPlanTitle")}
+              </div>
+              <div
+                className="font-display text-[18px] mb-1"
+                style={{ color: "var(--ink-text)", fontWeight: 500 }}
+              >
+                {localizedPackageName(picked.package_id, picked.package_name_ar, t)}
+              </div>
+              <div className="text-sm mb-3" style={{ color: "var(--ink-text)" }}>
+                {t("campaign.pickedPlanSummary", {
+                  posts: picked.total_posts,
+                  channels: picked.channels.length,
+                  frameworks: formatFrameworksDisplay(picked.frameworks, locale),
+                })}
+              </div>
+              {picked.adaptation_note_ar && (
                 <div
-                  className="font-mono text-[10px] uppercase tracking-[0.22em] mb-2"
+                  className="mb-3 text-[12px] leading-relaxed"
                   style={{ color: "var(--muted-text)" }}
                 >
-                  {t("campaign.pickedPlanTitle")}
+                  {picked.adaptation_note_ar}
                 </div>
+              )}
+              {pkgError && (
                 <div
-                  className="font-display text-[18px] mb-1"
-                  style={{ color: "var(--ink-text)", fontWeight: 500 }}
+                  className="mb-3 font-mono text-[10px] uppercase tracking-[0.18em]"
+                  style={{ color: "var(--danger)" }}
                 >
-                  {localizedPackageName(picked.package_id, picked.package_name_ar, t)}
+                  {pkgError}
                 </div>
-                <div className="text-sm mb-3" style={{ color: "var(--ink-text)" }}>
-                  {t("campaign.pickedPlanSummary", {
-                    posts: picked.total_posts,
-                    channels: picked.channels.length,
-                    frameworks: formatFrameworksDisplay(picked.frameworks, locale),
-                  })}
-                </div>
-                {picked.adaptation_note_ar && (
-                  <div
-                    className="mb-3 text-[12px] leading-relaxed"
-                    style={{ color: "var(--muted-text)" }}
-                  >
-                    {picked.adaptation_note_ar}
-                  </div>
-                )}
-                {pkgError && (
-                  <div
-                    className="mb-3 font-mono text-[10px] uppercase tracking-[0.18em]"
-                    style={{ color: "var(--danger)" }}
-                  >
-                    {pkgError}
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={approvePackagePlan}
-                  disabled={approvingPkg}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm disabled:opacity-50"
-                  style={{
-                    backgroundColor: "var(--accent-strong)",
-                    color: "#FFFFFF",
-                    borderRadius: "3px",
-                  }}
-                >
-                  <Sparkle size={14} strokeWidth={1.75} />
-                  {approvingPkg ? t("campaign.approvingPlan") : t("campaign.approvePlan")}
-                </button>
-              </div>
-            )}
-            {approvedPackageId && (
-              <div
-                className="mt-5 p-5"
+              )}
+              <button
+                type="button"
+                onClick={approvePackagePlan}
+                disabled={approvingPkg}
+                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm disabled:opacity-50"
                 style={{
-                  border: "1px solid var(--accent-strong)",
-                  borderRadius: "4px",
-                  backgroundColor: "var(--surface)",
-                  color: "var(--ink-text)",
+                  backgroundColor: "var(--accent-strong)",
+                  color: "#FFFFFF",
+                  borderRadius: "3px",
                 }}
               >
-                <div className="mb-4">{t("campaign.planApproved")}</div>
-                <CampaignGeneratePanel campaignId={approvedPackageId} />
-              </div>
-            )}
-          </>
-        )}
+                <Sparkle size={14} strokeWidth={1.75} />
+                {approvingPkg ? t("campaign.approvingPlan") : t("campaign.approvePlan")}
+              </button>
+            </div>
+          )}
+          {approvedPackageId && (
+            <div
+              className="mt-5 p-5"
+              style={{
+                border: "1px solid var(--accent-strong)",
+                borderRadius: "4px",
+                backgroundColor: "var(--surface)",
+                color: "var(--ink-text)",
+              }}
+            >
+              <div className="mb-4">{t("campaign.planApproved")}</div>
+              <CampaignGeneratePanel campaignId={approvedPackageId} />
+            </div>
+          )}
+        </>
+      )}
 
-        {entry === "strategist" && (
-          <StrategistChat projectId={projectId} availableChannels={available} />
-        )}
-      </section>
-    </>
+      {entry === "strategist" && (
+        <StrategistChat projectId={projectId} availableChannels={availableChannels} />
+      )}
+    </section>
   );
 }
 
@@ -553,6 +723,278 @@ function EntryTab({
 
 
 
+
+// -----------------------------------------------------------------------------
+// Wizard flow
+// -----------------------------------------------------------------------------
+
+const WIZARD_STEPS = [1, 2, 3, 4] as const;
+
+function WizardProgress({
+  currentStep,
+  step1Complete,
+  step2Complete,
+  step3Complete,
+  step4Unlocked,
+}: {
+  currentStep: number;
+  step1Complete: boolean;
+  step2Complete: boolean;
+  step3Complete: boolean;
+  step4Unlocked: boolean;
+}) {
+  const { t } = useTranslation();
+
+  const stepMeta = [
+    { complete: step1Complete, unlocked: true },
+    { complete: step2Complete, unlocked: step1Complete },
+    { complete: step3Complete, unlocked: step1Complete },
+    { complete: false, unlocked: step4Unlocked },
+  ];
+
+  const stepTitles = [
+    t("projects.flow.step1.title"),
+    t("projects.flow.step2.title"),
+    t("projects.flow.step3.title"),
+    t("projects.flow.step4.title"),
+  ];
+
+  return (
+    <section className="mb-10 pb-8" style={{ borderBottom: "1px solid var(--hairline)" }}>
+      <div
+        className="font-mono text-[10px] uppercase tracking-[0.22em] mb-2"
+        style={{ color: "var(--muted-text)" }}
+      >
+        {t("projects.flow.progressEyebrow")}
+      </div>
+      <div className="text-sm mb-6" style={{ color: "var(--ink-text)" }}>
+        {t("projects.flow.stepOf", { current: currentStep, total: 4 })}
+      </div>
+
+      <div className="flex items-center w-full mb-3">
+        {WIZARD_STEPS.map((n, i) => {
+          const meta = stepMeta[i];
+          const isCurrent = currentStep === n;
+          const isLocked = !meta.unlocked;
+          const isComplete = meta.complete && !isLocked && !(n === 4);
+
+          return (
+            <div key={n} className="flex items-center flex-1 min-w-0 last:flex-none">
+              <div
+                className="flex items-center justify-center w-9 h-9 shrink-0 font-mono text-sm"
+                style={{
+                  borderRadius: "50%",
+                  border: `1px solid ${
+                    isLocked
+                      ? "var(--hairline)"
+                      : isCurrent
+                        ? "var(--accent-strong)"
+                        : isComplete
+                          ? "var(--review)"
+                          : "var(--hairline)"
+                  }`,
+                  backgroundColor: isLocked
+                    ? "var(--paper)"
+                    : isCurrent
+                      ? "var(--accent-strong)"
+                      : isComplete
+                        ? "var(--surface)"
+                        : "var(--paper)",
+                  color: isLocked
+                    ? "var(--muted-text)"
+                    : isCurrent
+                      ? "#FFFFFF"
+                      : isComplete
+                        ? "var(--review)"
+                        : "var(--muted-text)",
+                }}
+              >
+                {isComplete && !isCurrent ? (
+                  <CheckCircle size={18} strokeWidth={1.75} />
+                ) : isLocked ? (
+                  <Lock size={14} strokeWidth={1.75} />
+                ) : (
+                  n
+                )}
+              </div>
+              {i < WIZARD_STEPS.length - 1 && (
+                <div
+                  className="flex-1 h-px mx-2"
+                  style={{
+                    backgroundColor: isComplete ? "var(--accent-strong)" : "var(--hairline)",
+                  }}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="grid grid-cols-4 gap-2">
+        {WIZARD_STEPS.map((n, i) => {
+          const meta = stepMeta[i];
+          const isCurrent = currentStep === n;
+          const isLocked = !meta.unlocked;
+          const isComplete = meta.complete && !isLocked && !(n === 4);
+
+          let statusLabel = t("projects.flow.statusLocked");
+          if (!isLocked) {
+            if (isComplete) statusLabel = t("projects.flow.statusComplete");
+            else if (isCurrent) statusLabel = t("projects.flow.statusCurrent");
+            else statusLabel = "";
+          }
+
+          return (
+            <div
+              key={n}
+              className="text-center text-[11px] leading-snug min-w-0"
+              style={{
+                color: isLocked ? "var(--muted-text)" : "var(--ink-text)",
+                opacity: isLocked ? 0.65 : 1,
+              }}
+            >
+              {statusLabel && (
+                <div className="font-mono text-[9px] uppercase tracking-[0.14em] mb-0.5">
+                  {statusLabel}
+                </div>
+              )}
+              <div className="line-clamp-2">{stepTitles[i]}</div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function WizardStepPanel({
+  step,
+  title,
+  subtitle,
+  complete,
+  locked,
+  lockedMessage,
+  expanded,
+  onToggle,
+  isCurrent,
+  alwaysActiveWhenUnlocked = false,
+  children,
+}: {
+  step: number;
+  title: string;
+  subtitle: string;
+  complete: boolean;
+  locked: boolean;
+  lockedMessage?: string;
+  expanded: boolean;
+  onToggle: () => void;
+  isCurrent: boolean;
+  alwaysActiveWhenUnlocked?: boolean;
+  children: React.ReactNode;
+}) {
+  const { t } = useTranslation();
+  const canToggle = !locked;
+  const showComplete = complete && !alwaysActiveWhenUnlocked;
+
+  return (
+    <section
+      className="overflow-hidden"
+      style={{
+        border: `1px solid ${isCurrent && !locked ? "var(--accent-strong)" : "var(--hairline)"}`,
+        borderRadius: "4px",
+        backgroundColor: locked ? "var(--surface)" : "var(--paper)",
+        opacity: locked ? 0.85 : 1,
+      }}
+    >
+      <button
+        type="button"
+        onClick={canToggle ? onToggle : undefined}
+        disabled={!canToggle}
+        className="w-full text-start px-5 py-4 flex items-start gap-4 disabled:cursor-not-allowed"
+      >
+        <div
+          className="flex items-center justify-center w-8 h-8 shrink-0 font-mono text-sm"
+          style={{
+            borderRadius: "50%",
+            border: `1px solid ${
+              locked
+                ? "var(--hairline)"
+                : showComplete
+                  ? "var(--review)"
+                  : isCurrent
+                    ? "var(--accent-strong)"
+                    : "var(--hairline)"
+            }`,
+            backgroundColor: locked
+              ? "transparent"
+              : showComplete
+                ? "var(--surface)"
+                : isCurrent
+                  ? "var(--accent-strong)"
+                  : "transparent",
+            color: locked
+              ? "var(--muted-text)"
+              : showComplete
+                ? "var(--review)"
+                : isCurrent
+                  ? "#FFFFFF"
+                  : "var(--ink-text)",
+          }}
+        >
+          {locked ? (
+            <Lock size={14} strokeWidth={1.75} />
+          ) : showComplete ? (
+            <CheckCircle size={16} strokeWidth={1.75} />
+          ) : (
+            step
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <span
+              className="font-display text-[17px]"
+              style={{ color: locked ? "var(--muted-text)" : "var(--ink-text)", fontWeight: 500 }}
+            >
+              {title}
+            </span>
+            {!locked && (
+              <span
+                className="font-mono text-[9px] uppercase tracking-[0.16em] px-2 py-0.5"
+                style={{
+                  border: "1px solid var(--hairline)",
+                  color: isCurrent ? "var(--accent-strong)" : "var(--muted-text)",
+                  borderRadius: "2px",
+                }}
+              >
+                {showComplete
+                  ? t("projects.flow.statusComplete")
+                  : isCurrent
+                    ? t("projects.flow.statusCurrent")
+                    : t("projects.flow.stepOf", { current: step, total: 4 })}
+              </span>
+            )}
+          </div>
+          <p className="text-sm leading-relaxed" style={{ color: "var(--muted-text)" }}>
+            {locked && lockedMessage ? lockedMessage : subtitle}
+          </p>
+        </div>
+
+        {canToggle && (
+          <span className="shrink-0 mt-1" style={{ color: "var(--muted-text)" }}>
+            {expanded ? (
+              <CaretUp size={16} strokeWidth={1.75} />
+            ) : (
+              <CaretDown size={16} strokeWidth={1.75} />
+            )}
+          </span>
+        )}
+      </button>
+
+      {!locked && expanded && <div className="px-5 pb-6 pt-1">{children}</div>}
+    </section>
+  );
+}
 
 // -----------------------------------------------------------------------------
 // Sub-components

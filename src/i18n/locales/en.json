@@ -69,6 +69,39 @@
       "cancel": "Cancel",
       "urlError": "Add a project name and a valid website (e.g. masaarat.ai).",
       "saved": "Saved."
+    },
+    "flow": {
+      "progressEyebrow": "Setup progress",
+      "stepOf": "Step {current} of {total}",
+      "statusComplete": "Complete",
+      "statusCurrent": "In progress",
+      "statusLocked": "Locked",
+      "step1": {
+        "title": "Analyze website",
+        "subtitle": "One-time foundation — we read your site and extract your business intelligence. You can re-run this anytime.",
+        "oneTimeNote": "This step analyzes your website, not a campaign. Campaign ideas come later.",
+        "completeSummary": "Website analysis is complete. Review and edit your brand profile in the next step."
+      },
+      "step2": {
+        "title": "Brand profile",
+        "subtitle": "Review and refine what we learned about your brand.",
+        "connectedSitesTitle": "Connected sites (optional)",
+        "connectedSitesHint": "If parts of your site need login, connect them here for deeper analysis."
+      },
+      "step3": {
+        "title": "Available channels",
+        "subtitle": "Choose the platforms where you actually publish."
+      },
+      "step4": {
+        "title": "Campaigns",
+        "subtitle": "Start a new campaign anytime — pick a ready-made package or describe your goal to the AI strategist.",
+        "repeatableNote": "This step is not one-time. Create as many campaigns as you need; each one gets its own plan and content."
+      },
+      "locked": {
+        "needsAnalysis": "Run website analysis first to unlock this step.",
+        "needsBrand": "Complete website analysis first to unlock this step.",
+        "needsChannels": "Select and save at least one channel first."
+      }
     }
   },
   "analysis": {

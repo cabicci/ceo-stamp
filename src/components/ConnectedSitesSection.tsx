@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { startConnectSession, captureSession } from "@/lib/connect-site.functions";
 import { scrapeAuthenticated } from "@/lib/scrape-authenticated.functions";
-import { useTranslation } from "@/i18n/I18nProvider";
+import { useTranslation, type TranslateFn } from "@/i18n/I18nProvider";
 
 
 type Row = {
@@ -291,7 +291,7 @@ export function ConnectedSitesSection({ projectId }: { projectId: string }) {
   );
 }
 
-function statusMeta(status: string, t: (key: string) => string): { label: string; color: string } {
+function statusMeta(status: string, t: TranslateFn): { label: string; color: string } {
   switch (status) {
     case "connected":
       return { label: t("connectedSites.status.connected"), color: "var(--approve)" };
@@ -321,7 +321,7 @@ function SiteRow({
   onScrape: () => void;
   scraping: boolean;
   scrapeStage: string;
-  t: (key: string) => string;
+  t: TranslateFn;
 }) {
   const meta = statusMeta(row.status, t);
   const expired =
