@@ -78,17 +78,25 @@ export function ImageSlot({
     }
   }
 
-  function handleAi() {
-    // Placeholder until generator is wired in the next step.
+  async function handleAi() {
+    if (!item.id) {
+      setAiError("لازم تحفظ العنصر الأول قبل توليد الصورة");
+      return;
+    }
+    setAiError(null);
     setBusy("ai");
-    setTimeout(() => {
-      const seed = encodeURIComponent((item.media_brief || item.copy || "post").slice(0, 40));
-      // Deterministic, brand-neutral placeholder from picsum (filler only).
-      const url = `https://picsum.photos/seed/${seed}/1200/800`;
-      update(url, "ai");
+    try {
+      const res = await genImage({ data: { contentItemId: item.id } });
+      update(res.imageUrl, "ai");
+    } catch (e) {
+      console.error(e);
+      const msg = e instanceof Error ? e.message : "فشل توليد الصورة";
+      setAiError(msg.length > 200 ? "فشل توليد الصورة — حاول تاني" : msg);
+    } finally {
       setBusy(null);
-    }, 400);
+    }
   }
+
 
   function applyUrl() {
     if (!urlDraft.trim()) return;
