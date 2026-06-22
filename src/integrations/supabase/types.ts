@@ -77,6 +77,53 @@ export type Database = {
           },
         ]
       }
+      ai_generation_log: {
+        Row: {
+          cost_estimate: number | null
+          created_at: string
+          id: string
+          input_tokens: number | null
+          model: string
+          output_tokens: number | null
+          owner_id: string | null
+          project_id: string | null
+          provider: string
+          task: string
+        }
+        Insert: {
+          cost_estimate?: number | null
+          created_at?: string
+          id?: string
+          input_tokens?: number | null
+          model: string
+          output_tokens?: number | null
+          owner_id?: string | null
+          project_id?: string | null
+          provider: string
+          task: string
+        }
+        Update: {
+          cost_estimate?: number | null
+          created_at?: string
+          id?: string
+          input_tokens?: number | null
+          model?: string
+          output_tokens?: number | null
+          owner_id?: string | null
+          project_id?: string | null
+          provider?: string
+          task?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_generation_log_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brand_profiles: {
         Row: {
           available_channels: Json
@@ -123,39 +170,55 @@ export type Database = {
       }
       campaigns: {
         Row: {
+          archived: boolean
           campaign_plan: Json | null
           channels: Json
+          cloned_from_id: string | null
           created_at: string
           end_date: string | null
           id: string
+          is_template: boolean
           objective: string
           project_id: string
           start_date: string | null
           status: string
         }
         Insert: {
+          archived?: boolean
           campaign_plan?: Json | null
           channels?: Json
+          cloned_from_id?: string | null
           created_at?: string
           end_date?: string | null
           id?: string
+          is_template?: boolean
           objective: string
           project_id: string
           start_date?: string | null
           status?: string
         }
         Update: {
+          archived?: boolean
           campaign_plan?: Json | null
           channels?: Json
+          cloned_from_id?: string | null
           created_at?: string
           end_date?: string | null
           id?: string
+          is_template?: boolean
           objective?: string
           project_id?: string
           start_date?: string | null
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "campaigns_cloned_from_id_fkey"
+            columns: ["cloned_from_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "campaigns_project_id_fkey"
             columns: ["project_id"]
@@ -219,6 +282,7 @@ export type Database = {
           content_type: string | null
           copy: string | null
           created_at: string
+          external_post_id: string | null
           framework_applied: string | null
           id: string
           image_source: string | null
@@ -226,6 +290,8 @@ export type Database = {
           locale: string
           media_brief: string | null
           platform: string
+          publish_error: string | null
+          published_at: string | null
           rationale: string | null
           scheduled_date: string | null
           status: string
@@ -236,6 +302,7 @@ export type Database = {
           content_type?: string | null
           copy?: string | null
           created_at?: string
+          external_post_id?: string | null
           framework_applied?: string | null
           id?: string
           image_source?: string | null
@@ -243,6 +310,8 @@ export type Database = {
           locale?: string
           media_brief?: string | null
           platform: string
+          publish_error?: string | null
+          published_at?: string | null
           rationale?: string | null
           scheduled_date?: string | null
           status?: string
@@ -253,6 +322,7 @@ export type Database = {
           content_type?: string | null
           copy?: string | null
           created_at?: string
+          external_post_id?: string | null
           framework_applied?: string | null
           id?: string
           image_source?: string | null
@@ -260,6 +330,8 @@ export type Database = {
           locale?: string
           media_brief?: string | null
           platform?: string
+          publish_error?: string | null
+          published_at?: string | null
           rationale?: string | null
           scheduled_date?: string | null
           status?: string
@@ -277,6 +349,74 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_metrics: {
+        Row: {
+          captured_at: string
+          clicks: number | null
+          comments: number | null
+          content_item_id: string
+          conversions: number | null
+          created_at: string
+          id: string
+          impressions: number | null
+          likes: number | null
+          period_end: string | null
+          period_start: string | null
+          raw: Json | null
+          reach: number | null
+          saves: number | null
+          shares: number | null
+          source: string
+          spend: number | null
+        }
+        Insert: {
+          captured_at?: string
+          clicks?: number | null
+          comments?: number | null
+          content_item_id: string
+          conversions?: number | null
+          created_at?: string
+          id?: string
+          impressions?: number | null
+          likes?: number | null
+          period_end?: string | null
+          period_start?: string | null
+          raw?: Json | null
+          reach?: number | null
+          saves?: number | null
+          shares?: number | null
+          source?: string
+          spend?: number | null
+        }
+        Update: {
+          captured_at?: string
+          clicks?: number | null
+          comments?: number | null
+          content_item_id?: string
+          conversions?: number | null
+          created_at?: string
+          id?: string
+          impressions?: number | null
+          likes?: number | null
+          period_end?: string | null
+          period_start?: string | null
+          raw?: Json | null
+          reach?: number | null
+          saves?: number | null
+          shares?: number | null
+          source?: string
+          spend?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_metrics_content_item_id_fkey"
+            columns: ["content_item_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
             referencedColumns: ["id"]
           },
         ]
@@ -320,6 +460,160 @@ export type Database = {
           name?: string
           owner_id?: string
           website_url?: string
+        }
+        Relationships: []
+      }
+      publish_jobs: {
+        Row: {
+          attempts: number
+          content_item_id: string
+          created_at: string
+          id: string
+          last_error: string | null
+          scheduled_for: string
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          content_item_id: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          scheduled_for: string
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          content_item_id?: string
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          scheduled_for?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publish_jobs_content_item_id_fkey"
+            columns: ["content_item_id"]
+            isOneToOne: false
+            referencedRelation: "content_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_connections: {
+        Row: {
+          access_token_encrypted: string | null
+          account_name: string | null
+          account_ref: string | null
+          connection_type: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          platform: string
+          project_id: string
+          refresh_token_encrypted: string | null
+          scopes: Json | null
+          status: string
+        }
+        Insert: {
+          access_token_encrypted?: string | null
+          account_name?: string | null
+          account_ref?: string | null
+          connection_type?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          platform: string
+          project_id: string
+          refresh_token_encrypted?: string | null
+          scopes?: Json | null
+          status?: string
+        }
+        Update: {
+          access_token_encrypted?: string | null
+          account_name?: string | null
+          account_ref?: string | null
+          connection_type?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          platform?: string
+          project_id?: string
+          refresh_token_encrypted?: string | null
+          scopes?: Json | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_connections_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          id: string
+          owner_id: string
+          plan: string
+          provider: string | null
+          provider_ref: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          owner_id: string
+          plan?: string
+          provider?: string | null
+          provider_ref?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          owner_id?: string
+          plan?: string
+          provider?: string | null
+          provider_ref?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      usage_counters: {
+        Row: {
+          ai_tokens_used: number
+          campaigns_generated: number
+          created_at: string
+          id: string
+          images_generated: number
+          owner_id: string
+          period_month: string
+        }
+        Insert: {
+          ai_tokens_used?: number
+          campaigns_generated?: number
+          created_at?: string
+          id?: string
+          images_generated?: number
+          owner_id: string
+          period_month: string
+        }
+        Update: {
+          ai_tokens_used?: number
+          campaigns_generated?: number
+          created_at?: string
+          id?: string
+          images_generated?: number
+          owner_id?: string
+          period_month?: string
         }
         Relationships: []
       }
@@ -395,6 +689,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      owns_project: { Args: { _project_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"
