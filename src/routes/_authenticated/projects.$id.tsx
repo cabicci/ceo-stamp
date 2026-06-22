@@ -10,6 +10,8 @@ import { ConnectedSitesSection } from "@/components/ConnectedSitesSection";
 import { AvailableChannelsSettings } from "@/components/AvailableChannelsSettings";
 import { PackageGallery } from "@/components/PackageGallery";
 import type { AdaptedPlan, Channel } from "@/lib/campaign-packages";
+import { StrategistChat } from "@/components/StrategistChat";
+import { approveCampaignPlan } from "@/lib/strategist-chat.functions";
 
 
 export const Route = createFileRoute("/_authenticated/projects/$id")({
