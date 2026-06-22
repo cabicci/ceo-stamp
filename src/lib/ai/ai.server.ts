@@ -24,7 +24,7 @@ export interface Provider {
 // ---------------------------------------------------------------------------
 // Task routing — EDIT THIS MAP to swap providers/models per task.
 // ---------------------------------------------------------------------------
-export type TaskName = "website_analysis" | "content_generation";
+export type TaskName = "website_analysis" | "content_generation" | "campaign_strategy";
 
 interface TaskRoute {
   provider: ProviderName;
@@ -34,6 +34,7 @@ interface TaskRoute {
 const TASK_ROUTING: Record<TaskName, TaskRoute> = {
   website_analysis: { provider: "anthropic", model: "claude-sonnet-4-6" },
   content_generation: { provider: "anthropic", model: "claude-sonnet-4-6" },
+  campaign_strategy: { provider: "anthropic", model: "claude-sonnet-4-6" },
 };
 
 // ---------------------------------------------------------------------------
@@ -255,3 +256,73 @@ export async function generateImage({
   };
 }
 
+
+// ---------------------------------------------------------------------------
+// Multi-turn chat — used by the campaign strategist.
+// Currently only routes that resolve to anthropic are supported.
+// ---------------------------------------------------------------------------
+
+export type ChatRole = "user" | "assistant";
+export interface ChatTurn {
+  role: ChatRole;
+  content: string;
+}
+
+export interface CallAIChatArgs {
+  task: TaskName;
+  systemPrompt: string;
+  messages: ChatTurn[];
+  jsonMode?: boolean;
+}
+
+export async function callAIChat(args: CallAIChatArgs & { jsonMode: true }): Promise<unknown>;
+export async function callAIChat(args: CallAIChatArgs & { jsonMode?: false }): Promise<string>;
+export async function callAIChat(args: CallAIChatArgs): Promise<unknown> {
+  const route = TASK_ROUTING[args.task];
+  if (!route) throw new Error(`No route for "${args.task}"`);
+  if (route.provider !== "anthropic") {
+    throw new Error(`callAIChat: provider "${route.provider}" not supported yet`);
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: route.model,
+      max_tokens: 4096,
+      system: args.systemPrompt,
+      messages: args.messages.map((m) => ({ role: m.role, content: m.content })),
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Anthropic ${res.status}: ${body}`);
+  }
+  const json = (await res.json()) as {
+    content: Array<{ type: string; text?: string }>;
+  };
+  const text = json.content
+    ?.filter((b) => b.type === "text")
+    .map((b) => b.text ?? "")
+    .join("");
+  if (!text) throw new Error("Anthropic returned no text content");
+
+  if (!args.jsonMode) return text;
+  const cleaned = stripJsonFences(text);
+  try {
+    return JSON.parse(cleaned);
+  } catch (err) {
+    throw new Error(
+      `callAIChat jsonMode: failed to parse JSON. Parse error: ${(err as Error).message}. ` +
+        `Raw (first 500 chars): ${cleaned.slice(0, 500)}`,
+    );
+  }
+}

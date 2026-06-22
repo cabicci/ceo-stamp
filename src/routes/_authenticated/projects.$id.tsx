@@ -10,6 +10,8 @@ import { ConnectedSitesSection } from "@/components/ConnectedSitesSection";
 import { AvailableChannelsSettings } from "@/components/AvailableChannelsSettings";
 import { PackageGallery } from "@/components/PackageGallery";
 import type { AdaptedPlan, Channel } from "@/lib/campaign-packages";
+import { StrategistChat } from "@/components/StrategistChat";
+import { approveCampaignPlan } from "@/lib/strategist-chat.functions";
 
 
 export const Route = createFileRoute("/_authenticated/projects/$id")({
@@ -247,6 +249,26 @@ function ProjectDetail() {
 function CampaignSetup({ projectId }: { projectId: string }) {
   const [available, setAvailable] = useState<Channel[]>([]);
   const [picked, setPicked] = useState<AdaptedPlan | null>(null);
+  const [entry, setEntry] = useState<"packages" | "strategist">("packages");
+  const [approvedPackageId, setApprovedPackageId] = useState<string | null>(null);
+  const [approvingPkg, setApprovingPkg] = useState(false);
+  const [pkgError, setPkgError] = useState<string | null>(null);
+
+  const approveFn = useServerFn(approveCampaignPlan);
+
+  async function approvePackagePlan() {
+    if (!picked) return;
+    setApprovingPkg(true);
+    setPkgError(null);
+    try {
+      const r = await approveFn({ data: { projectId, plan: picked } });
+      setApprovedPackageId(r.campaign_id);
+    } catch (e) {
+      setPkgError(e instanceof Error ? e.message : "فشل اعتماد الخطة");
+    } finally {
+      setApprovingPkg(false);
+    }
+  }
 
   return (
     <>
@@ -256,47 +278,131 @@ function CampaignSetup({ projectId }: { projectId: string }) {
       </section>
 
       <section className="mb-8">
-        <SectionLabel>اختر باكدچ</SectionLabel>
-        <PackageGallery availableChannels={available} onSelectPlan={setPicked} />
-        {picked && (
-          <div
-            className="mt-5 p-5"
-            style={{
-              border: "1px solid var(--accent-strong)",
-              borderRadius: "4px",
-              backgroundColor: "var(--surface)",
-            }}
-          >
-            <div
-              className="font-mono text-[10px] uppercase tracking-[0.22em] mb-2"
-              style={{ color: "var(--muted-text)" }}
-            >
-              الخطة المختارة
-            </div>
-            <div
-              className="font-display text-[18px] mb-1"
-              style={{ color: "var(--ink-text)", fontWeight: 500 }}
-            >
-              {picked.package_name_ar}
-            </div>
-            <div className="text-sm" style={{ color: "var(--ink-text)" }}>
-              {picked.total_posts} بوست على {picked.channels.length} قناة. الإطار:{" "}
-              {picked.frameworks.join("، ")}.
-            </div>
-            {picked.adaptation_note_ar && (
+        <SectionLabel>ابدأ الحملة</SectionLabel>
+        <div className="flex gap-2 mb-5">
+          <EntryTab active={entry === "packages"} onClick={() => setEntry("packages")}>
+            اختر باكدچ
+          </EntryTab>
+          <EntryTab active={entry === "strategist"} onClick={() => setEntry("strategist")}>
+            اتكلم مع الاستراتيجي
+          </EntryTab>
+        </div>
+
+        {entry === "packages" && (
+          <>
+            <PackageGallery availableChannels={available} onSelectPlan={(p) => {
+              setPicked(p);
+              setApprovedPackageId(null);
+              setPkgError(null);
+            }} />
+            {picked && !approvedPackageId && (
               <div
-                className="mt-3 text-[12px] leading-relaxed"
-                style={{ color: "var(--muted-text)" }}
+                className="mt-5 p-5"
+                style={{
+                  border: "1px solid var(--accent-strong)",
+                  borderRadius: "4px",
+                  backgroundColor: "var(--surface)",
+                }}
               >
-                {picked.adaptation_note_ar}
+                <div
+                  className="font-mono text-[10px] uppercase tracking-[0.22em] mb-2"
+                  style={{ color: "var(--muted-text)" }}
+                >
+                  الخطة المختارة
+                </div>
+                <div
+                  className="font-display text-[18px] mb-1"
+                  style={{ color: "var(--ink-text)", fontWeight: 500 }}
+                >
+                  {picked.package_name_ar}
+                </div>
+                <div className="text-sm mb-3" style={{ color: "var(--ink-text)" }}>
+                  {picked.total_posts} بوست على {picked.channels.length} قناة. الإطار:{" "}
+                  {picked.frameworks.join("، ")}.
+                </div>
+                {picked.adaptation_note_ar && (
+                  <div
+                    className="mb-3 text-[12px] leading-relaxed"
+                    style={{ color: "var(--muted-text)" }}
+                  >
+                    {picked.adaptation_note_ar}
+                  </div>
+                )}
+                {pkgError && (
+                  <div
+                    className="mb-3 font-mono text-[10px] uppercase tracking-[0.18em]"
+                    style={{ color: "var(--danger)" }}
+                  >
+                    {pkgError}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={approvePackagePlan}
+                  disabled={approvingPkg}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm disabled:opacity-50"
+                  style={{
+                    backgroundColor: "var(--accent-strong)",
+                    color: "#FFFFFF",
+                    borderRadius: "3px",
+                  }}
+                >
+                  <Sparkle size={14} strokeWidth={1.75} />
+                  {approvingPkg ? "بيتم الاعتماد…" : "اعتمد الخطة"}
+                </button>
               </div>
             )}
-          </div>
+            {approvedPackageId && (
+              <div
+                className="mt-5 p-4"
+                style={{
+                  border: "1px solid var(--accent-strong)",
+                  borderRadius: "4px",
+                  backgroundColor: "var(--surface)",
+                  color: "var(--ink-text)",
+                }}
+              >
+                الخطة اتعتمدت — جاهزة للتوليد.
+              </div>
+            )}
+          </>
+        )}
+
+        {entry === "strategist" && (
+          <StrategistChat projectId={projectId} availableChannels={available} />
         )}
       </section>
     </>
   );
 }
+
+function EntryTab({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="px-4 py-2 text-sm transition-colors"
+      style={{
+        border: `1px solid ${active ? "var(--accent-strong)" : "var(--hairline)"}`,
+        backgroundColor: active ? "var(--accent-strong)" : "var(--paper)",
+        color: active ? "#FFFFFF" : "var(--ink-text)",
+        borderRadius: "3px",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+
 
 
 // -----------------------------------------------------------------------------
