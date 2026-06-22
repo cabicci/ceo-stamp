@@ -156,12 +156,47 @@ const PROVIDERS: Record<ProviderName, Provider> = {
 // Public API
 // ---------------------------------------------------------------------------
 
+export interface AILogContext {
+  ownerId?: string | null;
+  projectId?: string | null;
+}
+
 export interface CallAIArgs {
   task: TaskName;
   systemPrompt: string;
   userContent: string;
   /** When true, strip markdown fences and return parsed JSON. */
   jsonMode?: boolean;
+  /** Optional context for the ai_generation_log audit row. */
+  logContext?: AILogContext;
+}
+
+async function writeAILog(args: {
+  task: string;
+  provider: string;
+  model: string;
+  inputChars: number;
+  outputChars: number;
+  logContext?: AILogContext;
+}) {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Rough token estimate (~4 chars/token). Swap for provider-reported usage when available.
+    const input_tokens = Math.ceil(args.inputChars / 4);
+    const output_tokens = Math.ceil(args.outputChars / 4);
+    await supabaseAdmin.from("ai_generation_log").insert({
+      owner_id: args.logContext?.ownerId ?? null,
+      project_id: args.logContext?.projectId ?? null,
+      task: args.task,
+      provider: args.provider,
+      model: args.model,
+      input_tokens,
+      output_tokens,
+      cost_estimate: null,
+    });
+  } catch (err) {
+    console.warn("[ai_generation_log] write failed:", (err as Error).message);
+  }
 }
 
 function stripJsonFences(raw: string): string {
