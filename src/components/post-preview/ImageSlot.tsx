@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Sparkles, Upload, Link2, ImageIcon, Loader2 } from "lucide-react";
+import { Sparkle, Upload, LinkSimple, Image as ImageIcon, CircleNotch } from "@phosphor-icons/react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { generatePostImage } from "@/lib/generate-post-image.functions";
@@ -138,7 +138,7 @@ export function ImageSlot({
             dir="rtl"
             lang="ar"
           >
-            <Loader2 className="h-6 w-6 animate-spin" />
+            <CircleNotch className="h-6 w-6 animate-spin" />
             <p className="text-xs">بيتم توليد الصورة…</p>
           </div>
         )}
@@ -185,7 +185,7 @@ export function ImageSlot({
                 color: item.image_source === "ai" ? "var(--ink-text)" : "inherit",
               }}
             >
-              {busy === "ai" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+              {busy === "ai" ? <CircleNotch className="h-3 w-3 animate-spin" /> : <Sparkle className="h-3 w-3" />}
               توليد صورة
             </button>
             <button
@@ -198,7 +198,7 @@ export function ImageSlot({
                 color: item.image_source === "upload" ? "var(--ink-text)" : "inherit",
               }}
             >
-              {busy === "upload" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+              {busy === "upload" ? <CircleNotch className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
               رفع
             </button>
             <button
@@ -210,7 +210,7 @@ export function ImageSlot({
                 color: item.image_source === "url" ? "var(--ink-text)" : "inherit",
               }}
             >
-              <Link2 className="h-3 w-3" />
+              <LinkSimple className="h-3 w-3" />
               لصق رابط
             </button>
             {hasImage && (
