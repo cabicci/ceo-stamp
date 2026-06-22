@@ -215,3 +215,40 @@ export function adaptPackageToAvailable(
     },
   };
 }
+
+/**
+ * Hard ceiling: only channels in available_channels survive.
+ * Recomputes posts_per_channel and total_posts for the filtered set.
+ */
+export function constrainPlanToAvailableChannels(
+  plan: AdaptedPlan,
+  available: Channel[],
+): AdaptedPlan {
+  const allowed = new Set(available.filter((c) => ALL_CHANNELS.includes(c)));
+  const channels = plan.channels.filter((c) => allowed.has(c));
+  if (channels.length === 0) {
+    throw new Error("مفيش قنوات من الخطة متاحة عند المشروع.");
+  }
+
+  const posts_per_channel: Record<string, number> = {};
+  let total_posts = 0;
+  for (const c of channels) {
+    const n = Math.max(1, Number(plan.posts_per_channel[c] ?? 1));
+    posts_per_channel[c] = n;
+    total_posts += n;
+  }
+
+  const dropped =
+    channels.length < plan.channels.length
+      ? "اتشالت قنوات مش متاحة عند المشروع من الخطة وقت التوليد."
+      : null;
+  const adaptation_note_ar = [plan.adaptation_note_ar, dropped].filter(Boolean).join(" ") || null;
+
+  return {
+    ...plan,
+    channels,
+    posts_per_channel,
+    total_posts,
+    adaptation_note_ar,
+  };
+}

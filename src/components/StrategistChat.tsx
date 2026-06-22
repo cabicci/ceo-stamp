@@ -4,6 +4,7 @@ import { PaperPlaneTilt, ChatCircleText, CheckCircle, CircleNotch, Sparkle } fro
 import { strategistChat, approveCampaignPlan } from "@/lib/strategist-chat.functions";
 import { CHANNEL_LABEL_AR, type AdaptedPlan, type Channel } from "@/lib/campaign-packages";
 import { getFrameworkDisplayName } from "@/lib/marketing-frameworks";
+import { CampaignGeneratePanel } from "@/components/CampaignGeneratePanel";
 
 type Turn = { role: "user" | "assistant"; content: string };
 
@@ -272,31 +273,34 @@ export function StrategistChat({ projectId, availableChannels, onApproved }: Pro
 
       {approvedId && (
         <div
-          className="mt-4 p-4 flex items-center justify-between"
+          className="mt-4 p-4"
           style={{
             border: "1px solid var(--accent-strong)",
             borderRadius: "4px",
             backgroundColor: "var(--surface)",
           }}
         >
-          <div className="flex items-center gap-2">
-            <CheckCircle
-              size={18}
-              weight="fill"
-              style={{ color: "var(--accent-strong)" }}
-            />
-            <span style={{ color: "var(--ink-text)" }}>
-              الخطة اتعتمدت — جاهزة للتوليد.
-            </span>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle
+                size={18}
+                weight="fill"
+                style={{ color: "var(--accent-strong)" }}
+              />
+              <span style={{ color: "var(--ink-text)" }}>
+                الخطة اتعتمدت — جاهزة للتوليد.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={reset}
+              className="text-sm"
+              style={{ color: "var(--muted-text)" }}
+            >
+              ابدأ خطة جديدة
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={reset}
-            className="text-sm"
-            style={{ color: "var(--muted-text)" }}
-          >
-            ابدأ خطة جديدة
-          </button>
+          <CampaignGeneratePanel campaignId={approvedId} />
         </div>
       )}
     </div>

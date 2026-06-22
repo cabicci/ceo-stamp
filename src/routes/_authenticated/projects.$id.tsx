@@ -13,6 +13,7 @@ import type { AdaptedPlan, Channel } from "@/lib/campaign-packages";
 import { formatFrameworksDisplay } from "@/lib/marketing-frameworks";
 import { StrategistChat } from "@/components/StrategistChat";
 import { approveCampaignPlan } from "@/lib/strategist-chat.functions";
+import { CampaignGeneratePanel } from "@/components/CampaignGeneratePanel";
 
 
 export const Route = createFileRoute("/_authenticated/projects/$id")({
@@ -355,7 +356,7 @@ function CampaignSetup({ projectId }: { projectId: string }) {
             )}
             {approvedPackageId && (
               <div
-                className="mt-5 p-4"
+                className="mt-5 p-5"
                 style={{
                   border: "1px solid var(--accent-strong)",
                   borderRadius: "4px",
@@ -363,7 +364,8 @@ function CampaignSetup({ projectId }: { projectId: string }) {
                   color: "var(--ink-text)",
                 }}
               >
-                الخطة اتعتمدت — جاهزة للتوليد.
+                <div className="mb-4">الخطة اتعتمدت — جاهزة للتوليد.</div>
+                <CampaignGeneratePanel campaignId={approvedPackageId} />
               </div>
             )}
           </>

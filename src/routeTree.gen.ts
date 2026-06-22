@@ -15,6 +15,7 @@ import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedPostPreviewsRouteImport } from './routes/_authenticated/post-previews'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedProjectsIdRouteImport } from './routes/_authenticated/projects.$id'
+import { Route as AuthenticatedCampaignsCampaignIdRouteImport } from './routes/_authenticated/campaigns.$campaignId'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -46,6 +47,12 @@ const AuthenticatedProjectsIdRoute = AuthenticatedProjectsIdRouteImport.update({
   path: '/projects/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCampaignsCampaignIdRoute =
+  AuthenticatedCampaignsCampaignIdRouteImport.update({
+    id: '/campaigns/$campaignId',
+    path: '/campaigns/$campaignId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -53,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/post-previews': typeof AuthenticatedPostPreviewsRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
+  '/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -60,6 +68,7 @@ export interface FileRoutesByTo {
   '/post-previews': typeof AuthenticatedPostPreviewsRoute
   '/': typeof AuthenticatedIndexRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
+  '/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -69,12 +78,13 @@ export interface FileRoutesById {
   '/_authenticated/post-previews': typeof AuthenticatedPostPreviewsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/projects/$id': typeof AuthenticatedProjectsIdRoute
+  '/_authenticated/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/admin' | '/post-previews' | '/projects/$id'
+  fullPaths: '/' | '/auth' | '/admin' | '/post-previews' | '/projects/$id' | '/campaigns/$campaignId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/auth' | '/admin' | '/post-previews' | '/' | '/projects/$id'
+  to: '/auth' | '/admin' | '/post-previews' | '/' | '/projects/$id' | '/campaigns/$campaignId'
   id:
     | '__root__'
     | '/_authenticated'
@@ -83,6 +93,7 @@ export interface FileRouteTypes {
     | '/_authenticated/post-previews'
     | '/_authenticated/'
     | '/_authenticated/projects/$id'
+    | '/_authenticated/campaigns/$campaignId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -134,6 +145,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProjectsIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/campaigns/$campaignId': {
+      id: '/_authenticated/campaigns/$campaignId'
+      path: '/campaigns/$campaignId'
+      fullPath: '/campaigns/$campaignId'
+      preLoaderRoute: typeof AuthenticatedCampaignsCampaignIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -142,6 +160,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPostPreviewsRoute: typeof AuthenticatedPostPreviewsRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedProjectsIdRoute: typeof AuthenticatedProjectsIdRoute
+  AuthenticatedCampaignsCampaignIdRoute: typeof AuthenticatedCampaignsCampaignIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -149,6 +168,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPostPreviewsRoute: AuthenticatedPostPreviewsRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedProjectsIdRoute: AuthenticatedProjectsIdRoute,
+  AuthenticatedCampaignsCampaignIdRoute: AuthenticatedCampaignsCampaignIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
