@@ -220,6 +220,15 @@ export async function callAI(args: CallAIArgs): Promise<unknown> {
     userContent: args.userContent,
   });
 
+  await writeAILog({
+    task: args.task,
+    provider: route.provider,
+    model: route.model,
+    inputChars: args.systemPrompt.length + args.userContent.length,
+    outputChars: raw.length,
+    logContext: args.logContext,
+  });
+
   if (!args.jsonMode) return raw;
 
   const cleaned = stripJsonFences(raw);
