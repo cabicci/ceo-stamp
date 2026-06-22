@@ -196,3 +196,62 @@ export async function callAI(args: CallAIArgs): Promise<unknown> {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Image generation (Gemini / Imagen) — server-side only.
+// ---------------------------------------------------------------------------
+
+export type ImageAspectRatio = "1:1" | "9:16" | "16:9" | "4:3" | "3:4";
+
+export interface GenerateImageArgs {
+  prompt: string;
+  aspectRatio?: ImageAspectRatio;
+  /** Imagen model id; defaults to a current Imagen 4 fast variant. */
+  model?: string;
+}
+
+export interface GeneratedImage {
+  /** Raw base64-encoded PNG bytes (no data: prefix). */
+  base64: string;
+  mimeType: string;
+}
+
+export async function generateImage({
+  prompt,
+  aspectRatio = "1:1",
+  model = "imagen-4.0-generate-001",
+}: GenerateImageArgs): Promise<GeneratedImage> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+    model,
+  )}:predict?key=${apiKey}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      instances: [{ prompt }],
+      parameters: { sampleCount: 1, aspectRatio },
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Imagen ${res.status}: ${body}`);
+  }
+
+  const json = (await res.json()) as {
+    predictions?: Array<{ bytesBase64Encoded?: string; mimeType?: string }>;
+  };
+  const pred = json.predictions?.[0];
+  if (!pred?.bytesBase64Encoded) {
+    throw new Error("Imagen returned no image data");
+  }
+  return {
+    base64: pred.bytesBase64Encoded,
+    mimeType: pred.mimeType ?? "image/png",
+  };
+}
+
