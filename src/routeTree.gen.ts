@@ -59,16 +59,16 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/post-previews': typeof AuthenticatedPostPreviewsRoute
-  '/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
+  '/projects/$id': typeof AuthenticatedProjectsIdRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/post-previews': typeof AuthenticatedPostPreviewsRoute
   '/': typeof AuthenticatedIndexRoute
-  '/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
+  '/projects/$id': typeof AuthenticatedProjectsIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -77,14 +77,26 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/post-previews': typeof AuthenticatedPostPreviewsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
-  '/_authenticated/projects/$id': typeof AuthenticatedProjectsIdRoute
   '/_authenticated/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
+  '/_authenticated/projects/$id': typeof AuthenticatedProjectsIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/admin' | '/post-previews' | '/projects/$id' | '/campaigns/$campaignId'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/admin'
+    | '/post-previews'
+    | '/campaigns/$campaignId'
+    | '/projects/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/auth' | '/admin' | '/post-previews' | '/' | '/projects/$id' | '/campaigns/$campaignId'
+  to:
+    | '/auth'
+    | '/admin'
+    | '/post-previews'
+    | '/'
+    | '/campaigns/$campaignId'
+    | '/projects/$id'
   id:
     | '__root__'
     | '/_authenticated'
@@ -92,8 +104,8 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/post-previews'
     | '/_authenticated/'
-    | '/_authenticated/projects/$id'
     | '/_authenticated/campaigns/$campaignId'
+    | '/_authenticated/projects/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -159,16 +171,16 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedPostPreviewsRoute: typeof AuthenticatedPostPreviewsRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
-  AuthenticatedProjectsIdRoute: typeof AuthenticatedProjectsIdRoute
   AuthenticatedCampaignsCampaignIdRoute: typeof AuthenticatedCampaignsCampaignIdRoute
+  AuthenticatedProjectsIdRoute: typeof AuthenticatedProjectsIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedPostPreviewsRoute: AuthenticatedPostPreviewsRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
-  AuthenticatedProjectsIdRoute: AuthenticatedProjectsIdRoute,
   AuthenticatedCampaignsCampaignIdRoute: AuthenticatedCampaignsCampaignIdRoute,
+  AuthenticatedProjectsIdRoute: AuthenticatedProjectsIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
