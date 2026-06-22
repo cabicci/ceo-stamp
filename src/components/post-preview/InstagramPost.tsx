@@ -50,11 +50,9 @@ export function InstagramPost({ item, brand, projectId, editable, onImageChange 
         </div>
       </div>
       <div className="px-3 pb-3 pt-1 text-[14px]" style={{ color: "#262626" }}>
-        <Caption text={body} className="inline">
-        </Caption>
-        <div className="mt-1">
-          <span className="font-semibold" dir="ltr">{handle(brand)}</span>{" "}
-          <Caption text={body} className="inline" />
+        <div className="flex gap-1.5">
+          <span className="font-semibold shrink-0" dir="ltr">{handle(brand)}</span>
+          <Caption text={body} className="min-w-0 flex-1" />
         </div>
         {tags.length > 0 && <Hashtags tags={tags} color="#00376b" className="mt-1" />}
         <div className="mt-2 text-[12px]" style={{ color: "#8e8e8e" }} dir="rtl">
