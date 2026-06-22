@@ -215,6 +215,8 @@ export type Database = {
           created_at: string
           framework_applied: string | null
           id: string
+          image_source: string | null
+          image_url: string | null
           locale: string
           media_brief: string | null
           platform: string
@@ -230,6 +232,8 @@ export type Database = {
           created_at?: string
           framework_applied?: string | null
           id?: string
+          image_source?: string | null
+          image_url?: string | null
           locale?: string
           media_brief?: string | null
           platform: string
@@ -245,6 +249,8 @@ export type Database = {
           created_at?: string
           framework_applied?: string | null
           id?: string
+          image_source?: string | null
+          image_url?: string | null
           locale?: string
           media_brief?: string | null
           platform?: string
