@@ -291,7 +291,9 @@ export function ConnectedSitesSection({ projectId }: { projectId: string }) {
   );
 }
 
-function statusMeta(status: string, t: (key: string) => string): { label: string; color: string } {
+type Translate = (key: string, vars?: Record<string, string | number>) => string;
+
+function statusMeta(status: string, t: Translate): { label: string; color: string } {
   switch (status) {
     case "connected":
       return { label: t("connectedSites.status.connected"), color: "var(--approve)" };
@@ -321,7 +323,7 @@ function SiteRow({
   onScrape: () => void;
   scraping: boolean;
   scrapeStage: string;
-  t: (key: string) => string;
+  t: Translate;
 }) {
   const meta = statusMeta(row.status, t);
   const expired =
