@@ -360,6 +360,16 @@ export async function callAIChat(args: CallAIChatArgs): Promise<unknown> {
     .join("");
   if (!text) throw new Error("Anthropic returned no text content");
 
+  await writeAILog({
+    task: args.task,
+    provider: route.provider,
+    model: route.model,
+    inputChars:
+      args.systemPrompt.length + args.messages.reduce((n, m) => n + m.content.length, 0),
+    outputChars: text.length,
+    logContext: args.logContext,
+  });
+
   if (!args.jsonMode) return text;
   const cleaned = stripJsonFences(text);
   try {
