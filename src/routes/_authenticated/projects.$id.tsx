@@ -7,6 +7,9 @@ import { useTranslation } from "@/i18n/I18nProvider";
 import { useServerFn } from "@tanstack/react-start";
 import { analyzeWebsite, saveAnalysisEdits } from "@/lib/analyze-website.functions";
 import { ConnectedSitesSection } from "@/components/ConnectedSitesSection";
+import { AvailableChannelsSettings } from "@/components/AvailableChannelsSettings";
+import { PackageGallery } from "@/components/PackageGallery";
+import type { AdaptedPlan, Channel } from "@/lib/campaign-packages";
 
 
 export const Route = createFileRoute("/_authenticated/projects/$id")({
@@ -235,7 +238,63 @@ function ProjectDetail() {
       </section>
 
       <ConnectedSitesSection projectId={project.id} />
+
+      <CampaignSetup projectId={project.id} />
     </AppShell>
+  );
+}
+
+function CampaignSetup({ projectId }: { projectId: string }) {
+  const [available, setAvailable] = useState<Channel[]>([]);
+  const [picked, setPicked] = useState<AdaptedPlan | null>(null);
+
+  return (
+    <>
+      <section className="mt-12 mb-8">
+        <SectionLabel>إعدادات الحملة</SectionLabel>
+        <AvailableChannelsSettings projectId={projectId} onChange={setAvailable} />
+      </section>
+
+      <section className="mb-8">
+        <SectionLabel>اختر باكدچ</SectionLabel>
+        <PackageGallery availableChannels={available} onSelectPlan={setPicked} />
+        {picked && (
+          <div
+            className="mt-5 p-5"
+            style={{
+              border: "1px solid var(--accent-strong)",
+              borderRadius: "4px",
+              backgroundColor: "var(--surface)",
+            }}
+          >
+            <div
+              className="font-mono text-[10px] uppercase tracking-[0.22em] mb-2"
+              style={{ color: "var(--muted-text)" }}
+            >
+              الخطة المختارة
+            </div>
+            <div
+              className="font-display text-[18px] mb-1"
+              style={{ color: "var(--ink-text)", fontWeight: 500 }}
+            >
+              {picked.package_name_ar}
+            </div>
+            <div className="text-sm" style={{ color: "var(--ink-text)" }}>
+              {picked.total_posts} بوست على {picked.channels.length} قناة. الإطار:{" "}
+              {picked.frameworks.join("، ")}.
+            </div>
+            {picked.adaptation_note_ar && (
+              <div
+                className="mt-3 text-[12px] leading-relaxed"
+                style={{ color: "var(--muted-text)" }}
+              >
+                {picked.adaptation_note_ar}
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+    </>
   );
 }
 

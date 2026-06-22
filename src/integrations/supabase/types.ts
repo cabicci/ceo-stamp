@@ -79,6 +79,7 @@ export type Database = {
       }
       brand_profiles: {
         Row: {
+          available_channels: Json
           brand_colors: Json | null
           content_pillars: Json | null
           id: string
@@ -89,6 +90,7 @@ export type Database = {
           usps: Json | null
         }
         Insert: {
+          available_channels?: Json
           brand_colors?: Json | null
           content_pillars?: Json | null
           id?: string
@@ -99,6 +101,7 @@ export type Database = {
           usps?: Json | null
         }
         Update: {
+          available_channels?: Json
           brand_colors?: Json | null
           content_pillars?: Json | null
           id?: string
