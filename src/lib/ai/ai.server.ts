@@ -24,7 +24,7 @@ export interface Provider {
 // ---------------------------------------------------------------------------
 // Task routing — EDIT THIS MAP to swap providers/models per task.
 // ---------------------------------------------------------------------------
-export type TaskName = "website_analysis" | "content_generation";
+export type TaskName = "website_analysis" | "content_generation" | "campaign_strategy";
 
 interface TaskRoute {
   provider: ProviderName;
@@ -34,6 +34,7 @@ interface TaskRoute {
 const TASK_ROUTING: Record<TaskName, TaskRoute> = {
   website_analysis: { provider: "anthropic", model: "claude-sonnet-4-6" },
   content_generation: { provider: "anthropic", model: "claude-sonnet-4-6" },
+  campaign_strategy: { provider: "anthropic", model: "claude-sonnet-4-6" },
 };
 
 // ---------------------------------------------------------------------------
