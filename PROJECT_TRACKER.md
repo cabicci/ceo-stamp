@@ -125,6 +125,8 @@ RLS pattern: **owner read/write** on project-scoped data; **`is_admin()` read-on
 - **Full i18n pass** — ~160 UI strings moved to locale files (commit `a17b7bc`).
 - **Content language + image text-language** — `content_language` and `image_text_language` stored on `campaign_plan` (jsonb). User picks both in `CampaignGeneratePanel` before generate: content **ar** / **en** / **both**; image text **none** / **ar** / **en** (independent). **Both:** Arabic originals first (`locale='ar'`, `adapted_from_id=null`), then culturally-adapted English versions (`locale='en'`, `adapted_from_id` → Arabic row) — not literal translation. Campaign view (`/campaigns/$campaignId`) groups pairs with an **AR/EN per-item toggle**. `media_brief` carries image-text direction; `generate-post-image` reads `image_text_language` from the plan.
 - **Admin Project Tracker view** — `/admin` renders `PROJECT_TRACKER.md` via a build-time `?raw` import (single source of truth, no duplicate content); collapsible panel with markdown display + copy button (admin-only).
+- **Mobile-responsive navigation** — `AppShell` sidebar becomes an off-canvas drawer on small screens: hamburger top bar, backdrop overlay, close on nav tap or route change; desktop sidebar unchanged. Main content uses responsive horizontal/vertical padding.
+- **Lovable preview `/index` redirect** — `src/routes/[index].tsx` redirects `/index` → `/` so Lovable's preview URL no longer 404s.
 - **Project detail wizard** — `/projects/$id` restructured into a guided sequential flow: **Step 1** Analyze Website (one-time foundation) → **Step 2** Brand Profile (review/edit + optional connected sites) → **Step 3** Available Channels → **Step 4** Campaigns (repeatable — package gallery + AI strategist). Later steps are gated/locked with Arabic hints until the prior step completes; completed steps stay collapsible. Progress indicator (1→4) via `projects.flow.*` i18n keys.
 - **`t()` interpolation typing** — `TranslateFn` exported from `I18nProvider`; optional `vars` object for `{placeholder}` substitution. Fixes pre-existing type error in `ConnectedSitesSection.tsx` (`lastConnected`, etc.).
 
@@ -170,4 +172,6 @@ Nav links for `/analysis`, `/campaigns`, `/review` exist in sidebar but **routes
 | 2026-06-22 | Added content-language choice (ar/en/both) + image-text-language choice to campaign generation. |
 | 2026-06-22 | Added Project Tracker viewer + copy button to /admin (raw import, single source of truth). |
 | 2026-06-22 | Expanded tracker with Working Rules, Owner/Workflow context, Product Vision, and Key Decisions rationale for cross-session continuity. |
+| 2026-06-22 | Mobile-responsive AppShell: off-canvas sidebar drawer, hamburger bar, and responsive content padding for small screens. |
+| 2026-06-22 | Added `/index` → `/` redirect route so Lovable preview URLs stop returning 404. |
 | 2026-06-22 | Restructured project page into a gated 4-step wizard; fixed `t()` interpolation typing. |
