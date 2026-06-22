@@ -7,6 +7,9 @@ import { useTranslation } from "@/i18n/I18nProvider";
 import { useServerFn } from "@tanstack/react-start";
 import { analyzeWebsite, saveAnalysisEdits } from "@/lib/analyze-website.functions";
 import { ConnectedSitesSection } from "@/components/ConnectedSitesSection";
+import { AvailableChannelsSettings } from "@/components/AvailableChannelsSettings";
+import { PackageGallery } from "@/components/PackageGallery";
+import type { AdaptedPlan, Channel } from "@/lib/campaign-packages";
 
 
 export const Route = createFileRoute("/_authenticated/projects/$id")({
