@@ -44,7 +44,8 @@
       "save": "Save",
       "saving": "Saving…",
       "cancel": "Cancel",
-      "urlError": "Add a project name and a valid website URL."
+      "urlError": "Add a project name and a valid website (e.g. masaarat.ai).",
+      "saved": "Saved."
     }
   },
   "admin": {

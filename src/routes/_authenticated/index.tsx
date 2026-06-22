@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { Plus, X, ArrowSquareOut } from "@phosphor-icons/react";
-import { z } from "zod";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/i18n/I18nProvider";
+import { projectSchema } from "@/lib/project-schema";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -22,15 +22,6 @@ type Project = {
   website_url: string;
   created_at: string;
 };
-
-const projectSchema = z.object({
-  name: z.string().trim().min(1).max(120),
-  website_url: z
-    .string()
-    .trim()
-    .url()
-    .max(2048),
-});
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -312,12 +303,12 @@ function ProjectForm({
             {t("projects.form.url")}
           </span>
           <input
-            type="url"
+            type="text"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             required
             dir="ltr"
-            placeholder="https://example.com"
+            placeholder="masaarat.ai"
             className="w-full px-3 py-2.5 text-sm bg-transparent outline-none"
             style={{
               color: "var(--ink-text)",

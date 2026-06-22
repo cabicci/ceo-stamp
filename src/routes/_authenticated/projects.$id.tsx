@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { ArrowLeft, ArrowSquareOut, Plus, Trash, Sparkle, ArrowCounterClockwise, FloppyDisk } from "@phosphor-icons/react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,7 @@ import { formatFrameworksDisplay } from "@/lib/marketing-frameworks";
 import { StrategistChat } from "@/components/StrategistChat";
 import { approveCampaignPlan } from "@/lib/strategist-chat.functions";
 import { CampaignGeneratePanel } from "@/components/CampaignGeneratePanel";
+import { projectSchema } from "@/lib/project-schema";
 
 
 export const Route = createFileRoute("/_authenticated/projects/$id")({
@@ -196,23 +197,7 @@ function ProjectDetail() {
         >
           {t("projects.detailEyebrow")}
         </div>
-        <h1
-          className="font-display text-[40px] leading-[1.05]"
-          style={{ color: "var(--ink-text)", fontWeight: 500 }}
-        >
-          {project.name}
-        </h1>
-        <a
-          href={project.website_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-3 inline-flex items-center gap-2 font-mono text-sm break-all"
-          style={{ color: "var(--review)" }}
-          dir="ltr"
-        >
-          {project.website_url}
-          <ArrowSquareOut size={12} strokeWidth={1.5} />
-        </a>
+        <ProjectSettingsForm project={project} onSaved={loadProject} />
       </header>
 
       <section className="mb-8">
@@ -245,6 +230,163 @@ function ProjectDetail() {
 
       <CampaignSetup projectId={project.id} />
     </AppShell>
+  );
+}
+
+function ProjectSettingsForm({
+  project,
+  onSaved,
+}: {
+  project: Project;
+  onSaved: () => Promise<void>;
+}) {
+  const { t } = useTranslation();
+  const [name, setName] = useState(project.name);
+  const [url, setUrl] = useState(project.website_url);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    setName(project.name);
+    setUrl(project.website_url);
+  }, [project.id, project.name, project.website_url]);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSaved(false);
+
+    const parsed = projectSchema.safeParse({ name, website_url: url });
+    if (!parsed.success) {
+      setError(t("projects.form.urlError"));
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { error: updateErr } = await supabase
+        .from("projects")
+        .update({
+          name: parsed.data.name,
+          website_url: parsed.data.website_url,
+        })
+        .eq("id", project.id);
+      if (updateErr) throw updateErr;
+      await onSaved();
+      setSaved(true);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const displayUrl = project.website_url;
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <label className="block mb-4">
+        <span
+          className="block font-mono text-[10px] uppercase tracking-[0.18em] mb-2"
+          style={{ color: "var(--muted-text)" }}
+        >
+          {t("projects.form.name")}
+        </span>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            setSaved(false);
+          }}
+          required
+          maxLength={120}
+          className="w-full max-w-xl px-3 py-2.5 text-sm bg-transparent outline-none font-display text-[28px]"
+          style={{
+            color: "var(--ink-text)",
+            border: "1px solid var(--hairline)",
+            borderRadius: "3px",
+            fontWeight: 500,
+          }}
+        />
+      </label>
+
+      <label className="block mb-3">
+        <span
+          className="block font-mono text-[10px] uppercase tracking-[0.18em] mb-2"
+          style={{ color: "var(--muted-text)" }}
+        >
+          {t("projects.form.url")}
+        </span>
+        <input
+          type="text"
+          value={url}
+          onChange={(e) => {
+            setUrl(e.target.value);
+            setSaved(false);
+          }}
+          required
+          dir="ltr"
+          placeholder="masaarat.ai"
+          className="w-full max-w-xl px-3 py-2.5 text-sm bg-transparent outline-none"
+          style={{
+            color: "var(--ink-text)",
+            border: "1px solid var(--hairline)",
+            borderRadius: "3px",
+            fontFamily: "var(--font-mono)",
+            textAlign: "left",
+          }}
+        />
+      </label>
+
+      {displayUrl && (
+        <a
+          href={displayUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mb-4 inline-flex items-center gap-2 font-mono text-sm break-all"
+          style={{ color: "var(--review)" }}
+          dir="ltr"
+        >
+          {displayUrl}
+          <ArrowSquareOut size={12} strokeWidth={1.5} />
+        </a>
+      )}
+
+      {error ? (
+        <div
+          className="mb-3 text-sm py-2 px-3"
+          style={{
+            color: "var(--danger)",
+            border: "1px solid var(--danger)",
+            borderRadius: "3px",
+          }}
+        >
+          {error}
+        </div>
+      ) : null}
+
+      {saved ? (
+        <div className="mb-3 text-sm" style={{ color: "var(--review)" }}>
+          {t("projects.form.saved")}
+        </div>
+      ) : null}
+
+      <button
+        type="submit"
+        disabled={saving}
+        className="inline-flex items-center gap-2 px-5 py-2.5 text-sm disabled:opacity-50"
+        style={{
+          backgroundColor: "var(--ink)",
+          color: "var(--paper)",
+          borderRadius: "3px",
+        }}
+      >
+        <FloppyDisk size={14} strokeWidth={1.75} />
+        {saving ? t("projects.form.saving") : t("projects.form.save")}
+      </button>
+    </form>
   );
 }
 
