@@ -4,6 +4,38 @@
 
 ---
 
+## Working Rules (for any AI/agent continuing this project)
+
+- Never hardcode UI strings — every user-facing string goes through i18n `t("...")` with keys in both `ar.json` and `en.json` from the start. English must be idiomatic/contextual, **not** a literal translation.
+- Arabic-first, RTL by default; AR/EN toggle must work on every screen. Platform brand names (Instagram, etc.) stay native.
+- Ask before any big architectural decision or new dependency — don't assume. Present trade-offs briefly.
+- API keys and secrets are strictly server-side (`.server.ts`). Never expose provider keys to the client bundle.
+- Never store user passwords. Authenticated scraping stores only an encrypted Browserbase `contextId`.
+- Dev is **Windows PowerShell**: run `git add` / `commit` / `push` as **separate commands** — never chain with `&&`.
+- After every meaningful change: update this tracker (Done/Pending/Changelog) and commit + push.
+- Generated marketing content is **Egyptian Arabic by default**; `framework_applied` + a specific rationale is mandatory on every generated item (Arabic rationale for `locale='ar'`; English rationale when generating English).
+- Keep one source of truth — don't duplicate config or logic (e.g. `marketing-frameworks.ts`, `campaign-packages.ts`, `AdaptedPlan` pipeline).
+
+---
+
+## Owner & Workflow Context
+
+- Owner is non-technical ("zero coding") — explain in simple terms, give copy-paste commands, label each command clearly as **[Cursor agent]** or **[Lovable agent]**, and never assume prior technical knowledge.
+- The owner works across multiple projects/tools at once (Lovable + Cursor on two projects). Be explicit about which project/tool each instruction targets.
+- Two editors edit the same repo: **Lovable** and **Cursor**, both sync via GitHub `main`. Always **pull before working** and **push after**, to avoid divergence.
+- Preferred communication: **Egyptian Arabic**, concise, one decision at a time.
+
+---
+
+## Product Vision (the bigger picture)
+
+- **Marketing CEO** is module 1 of a planned **"AI CEO"** platform.
+- It should feel like a **senior strategist**, not a generic content generator — every output is grounded in named marketing science and explained.
+- Campaign creation has **two entry points** (predefined packages + conversational AI strategist) that converge on one **approved-plan → generation** pipeline.
+- **Human-in-the-loop:** AI drafts, the human reviews and approves (reflected in the green "approved" stamp design motif).
+
+---
+
 ## 1. Overview
 
 **Marketing CEO** is an Arabic-first (RTL) SaaS that analyzes a client's website, builds a brand profile, and generates scientifically grounded marketing campaigns.
@@ -39,6 +71,17 @@
 - **Marketing science layer** — `marketing-frameworks.ts` is the single source of truth (17 frameworks: Cialdini×6, Schwartz×5, Byron Sharp×3, StoryBrand, AIDA, PAS). Selective prompt injection into generation/strategist; **no RAG by design**.
 - **Every generated item** carries `framework_applied` + Arabic `rationale` (enforced in generation system prompt).
 - **i18n from the start** — all UI chrome via `t("...")` in `I18nProvider`; keys in `src/i18n/locales/ar.json` + `en.json`. Platform brand names stay native (Instagram, etc.). AI-generated content may still be Arabic regardless of UI locale.
+
+---
+
+## Key Decisions & Rationale (why, not just what)
+
+- **No RAG for the marketing science layer** — the framework set is small (~17 entries); selective prompt injection from `marketing-frameworks.ts` is cheaper and simpler. Revisit only if a large example/case-study library is added later.
+- **Passwords never stored** — chosen over a credential vault so the password stays the client's responsibility (lower security liability for a small SaaS). Browserbase session + encrypted `contextId` only.
+- **`available_channels` per project is the hard ceiling** — clients don't all have every platform; packages and strategist adapt down to what's available via `constrainPlanToAvailableChannels()`.
+- **Billing is intentionally LAST** — finish the core loop (analyze → plan → generate → review → export) before charging.
+- **`PROJECT_TRACKER.md` is the cross-session memory file** — agents update it; `/admin` displays it via `?raw` import (display only, not a second source of truth).
+- **Content language "both" uses `adapted_from_id`** — English versions are culturally adapted rewrites, not literal translations, linked to Arabic originals.
 
 ---
 
@@ -124,3 +167,4 @@ Nav links for `/analysis`, `/campaigns`, `/review` exist in sidebar but **routes
 | 2026-06-22 | Full i18n pass: ~160 hardcoded UI strings → `t()` + `ar.json`/`en.json`. |
 | 2026-06-22 | Added content-language choice (ar/en/both) + image-text-language choice to campaign generation. |
 | 2026-06-22 | Added Project Tracker viewer + copy button to /admin (raw import, single source of truth). |
+| 2026-06-22 | Expanded tracker with Working Rules, Owner/Workflow context, Product Vision, and Key Decisions rationale for cross-session continuity. |
