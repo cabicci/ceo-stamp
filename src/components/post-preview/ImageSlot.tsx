@@ -131,7 +131,37 @@ export function ImageSlot({
             </p>
           </div>
         )}
+        {busy === "ai" && (
+          <div
+            className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2"
+            style={{ backgroundColor: "rgba(0,0,0,0.55)", color: "#fff" }}
+            dir="rtl"
+            lang="ar"
+          >
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <p className="text-xs">بيتم توليد الصورة…</p>
+          </div>
+        )}
       </div>
+      {aiError && (
+        <div
+          className="mt-1 flex items-center justify-between gap-2 rounded px-2 py-1 text-xs"
+          style={{ backgroundColor: "#fde2e2", color: "#7a1f1f" }}
+          dir="rtl"
+          lang="ar"
+        >
+          <span>{aiError}</span>
+          <button
+            type="button"
+            onClick={handleAi}
+            className="rounded px-2 py-0.5"
+            style={{ backgroundColor: "#7a1f1f", color: "#fff" }}
+          >
+            إعادة المحاولة
+          </button>
+        </div>
+      )}
+
 
       {editable && (
         <div className={variant === "overlay" ? "absolute inset-x-0 bottom-0 z-10 p-2" : "mt-2"}>
