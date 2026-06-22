@@ -123,6 +123,7 @@ export type Database = {
       }
       campaigns: {
         Row: {
+          campaign_plan: Json | null
           channels: Json
           created_at: string
           end_date: string | null
@@ -133,6 +134,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          campaign_plan?: Json | null
           channels?: Json
           created_at?: string
           end_date?: string | null
@@ -143,6 +145,7 @@ export type Database = {
           status?: string
         }
         Update: {
+          campaign_plan?: Json | null
           channels?: Json
           created_at?: string
           end_date?: string | null
