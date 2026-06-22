@@ -1,7 +1,10 @@
 import { useRef, useState } from "react";
 import { Sparkles, Upload, Link2, ImageIcon, Loader2 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { generatePostImage } from "@/lib/generate-post-image.functions";
 import type { ContentItemPreview, ImageSource } from "./types";
+
 
 type Props = {
   item: ContentItemPreview;
