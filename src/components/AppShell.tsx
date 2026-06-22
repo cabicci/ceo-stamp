@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { FolderOpen, LineChart, Megaphone, CheckSquare, LogOut, Shield } from "lucide-react";
+import { Folder, ChartLine, Megaphone, SealCheck, SignOut, ShieldCheck } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 import { useTranslation } from "@/i18n/I18nProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,10 +7,10 @@ import { LanguageToggle } from "@/components/LanguageToggle";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 const navItems = [
-  { key: "projects", to: "/", icon: FolderOpen },
-  { key: "analysis", to: "/analysis", icon: LineChart },
+  { key: "projects", to: "/", icon: Folder },
+  { key: "analysis", to: "/analysis", icon: ChartLine },
   { key: "campaigns", to: "/campaigns", icon: Megaphone },
-  { key: "review", to: "/review", icon: CheckSquare },
+  { key: "review", to: "/review", icon: SealCheck },
 ] as const;
 
 function Sidebar() {
@@ -89,7 +89,7 @@ function Sidebar() {
                   fontWeight: pathname === "/admin" ? 600 : 400,
                 }}
               >
-                <Shield size={16} strokeWidth={1.5} />
+                <ShieldCheck size={16} strokeWidth={1.5} />
                 <span>{t("nav.admin")}</span>
               </Link>
             </li>
@@ -129,7 +129,7 @@ function SignOutButton() {
       className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors hover:opacity-80"
       style={{ color: "var(--muted-text)" }}
     >
-      <LogOut size={12} strokeWidth={1.5} />
+      <SignOut size={12} strokeWidth={1.5} />
       {t("auth.signOut")}
     </button>
   );

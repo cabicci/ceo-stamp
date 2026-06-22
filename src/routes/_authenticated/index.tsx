@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import { Plus, X, ExternalLink } from "lucide-react";
+import { Plus, X, ArrowSquareOut } from "@phosphor-icons/react";
 import { z } from "zod";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
@@ -151,7 +151,7 @@ function ProjectsPage() {
                   >
                     {p.name}
                   </h2>
-                  <ExternalLink
+                  <ArrowSquareOut
                     size={14}
                     strokeWidth={1.5}
                     style={{ color: "var(--brass)", flexShrink: 0, marginTop: 4 }}

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ExternalLink, Plus, Trash2, Sparkles, RotateCcw, Save } from "lucide-react";
+import { ArrowLeft, ArrowSquareOut, Plus, Trash, Sparkle, ArrowCounterClockwise, FloppyDisk } from "@phosphor-icons/react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/i18n/I18nProvider";
@@ -204,7 +204,7 @@ function ProjectDetail() {
           dir="ltr"
         >
           {project.website_url}
-          <ExternalLink size={12} strokeWidth={1.5} />
+          <ArrowSquareOut size={12} strokeWidth={1.5} />
         </a>
       </header>
 
@@ -288,7 +288,7 @@ function IdleCard({ onAnalyze, disabled }: { onAnalyze: () => void; disabled: bo
           borderRadius: "3px",
         }}
       >
-        <Sparkles size={14} strokeWidth={1.75} />
+        <Sparkle size={14} strokeWidth={1.75} />
         حلّل الموقع
       </button>
     </Card>
@@ -350,7 +350,7 @@ function ErrorCard({ message, onRetry }: { message: string; onRetry: () => void 
           borderRadius: "3px",
         }}
       >
-        <RotateCcw size={14} strokeWidth={1.75} />
+        <ArrowCounterClockwise size={14} strokeWidth={1.75} />
         حاول تاني
       </button>
     </div>
@@ -486,7 +486,7 @@ function AnalysisEditor({
             borderRadius: "3px",
           }}
         >
-          <Save size={14} strokeWidth={1.75} />
+          <FloppyDisk size={14} strokeWidth={1.75} />
           {saving ? "جارٍ الحفظ…" : "حفظ التعديلات"}
         </button>
         <button
@@ -499,7 +499,7 @@ function AnalysisEditor({
             borderRadius: "3px",
           }}
         >
-          <RotateCcw size={14} strokeWidth={1.75} />
+          <ArrowCounterClockwise size={14} strokeWidth={1.75} />
           إعادة تحليل
         </button>
         {savedAt && (
@@ -592,7 +592,7 @@ function StringList({
             className="p-2"
             style={{ color: "var(--muted-text)" }}
           >
-            <Trash2 size={14} strokeWidth={1.5} />
+            <Trash size={14} strokeWidth={1.5} />
           </button>
         </div>
       ))}
@@ -649,7 +649,7 @@ function PersonasEditor({
               className="p-2 mt-5"
               style={{ color: "var(--muted-text)" }}
             >
-              <Trash2 size={14} strokeWidth={1.5} />
+              <Trash size={14} strokeWidth={1.5} />
             </button>
           </div>
           <div className="mb-3">

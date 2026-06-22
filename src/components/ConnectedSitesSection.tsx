@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, Link2, RotateCcw, ShieldCheck, X, Sparkles } from "lucide-react";
+import { Plus, Trash, LinkSimple, ArrowCounterClockwise, ShieldCheck, X, Sparkle } from "@phosphor-icons/react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { startConnectSession, captureSession } from "@/lib/connect-site.functions";
@@ -391,7 +391,7 @@ function SiteRow({
                 borderRadius: "3px",
               }}
             >
-              <RotateCcw size={14} strokeWidth={1.75} />
+              <ArrowCounterClockwise size={14} strokeWidth={1.75} />
               اربط تاني
             </button>
           ) : isConnected ? (
@@ -407,7 +407,7 @@ function SiteRow({
                   borderRadius: "3px",
                 }}
               >
-                <Sparkles size={14} strokeWidth={1.75} />
+                <Sparkle size={14} strokeWidth={1.75} />
                 {scraping ? scrapeStage || "جارٍ التحليل…" : "حلّل الصفحات المحمية"}
               </button>
               <button
@@ -421,7 +421,7 @@ function SiteRow({
                   borderRadius: "3px",
                 }}
               >
-                <RotateCcw size={14} strokeWidth={1.75} />
+                <ArrowCounterClockwise size={14} strokeWidth={1.75} />
                 تحديث الجلسة
               </button>
             </>
@@ -437,7 +437,7 @@ function SiteRow({
                 borderRadius: "3px",
               }}
             >
-              <Link2 size={14} strokeWidth={1.75} />
+              <LinkSimple size={14} strokeWidth={1.75} />
               اربط موقعك
             </button>
           )}
@@ -448,7 +448,7 @@ function SiteRow({
             className="p-2"
             style={{ color: "var(--muted-text)" }}
           >
-            <Trash2 size={14} strokeWidth={1.5} />
+            <Trash size={14} strokeWidth={1.5} />
           </button>
         </div>
       </div>
