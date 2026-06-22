@@ -5,6 +5,7 @@ import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { PostPreview, type BrandIdentity, type ContentItemPreview, type Platform } from "@/components/post-preview";
 import { CHANNEL_LABEL, localizedPackageName, localizedPackageDescription, type Channel } from "@/lib/campaign-packages";
+import type { ContentLanguage } from "@/lib/campaign-generation.types";
 import { formatFrameworksDisplay } from "@/lib/marketing-frameworks";
 import { useTranslation } from "@/i18n/I18nProvider";
 
@@ -21,6 +22,8 @@ type CampaignPlan = {
   frameworks?: string[];
   funnel_focus?: string;
   total_posts?: number;
+  content_language?: ContentLanguage;
+  image_text_language?: string;
 };
 
 type ContentRow = {
@@ -32,6 +35,8 @@ type ContentRow = {
   framework_applied: string | null;
   rationale: string | null;
   scheduled_date: string | null;
+  locale: string;
+  adapted_from_id: string | null;
 };
 
 type AdRow = {
@@ -43,7 +48,12 @@ type AdRow = {
   cta: string | null;
   framework_applied: string | null;
   rationale: string | null;
+  locale: string;
+  adapted_from_id: string | null;
 };
+
+type PostGroup = { original: ContentRow; adaptation: ContentRow | null };
+type AdGroup = { original: AdRow; adaptation: AdRow | null };
 
 function toPreviewPlatform(platform: string): Platform {
   if (platform === "x") return "twitter";
@@ -64,6 +74,213 @@ function resolvePackageDescription(
 ): string | null {
   if (!plan?.package_id) return plan?.description_ar ?? null;
   return localizedPackageDescription(plan.package_id, plan.description_ar ?? "", t) || null;
+}
+
+function buildPostGroups(items: ContentRow[]): PostGroup[] {
+  const originals = items.filter((i) => !i.adapted_from_id);
+  const adaptationsByParent = new Map<string, ContentRow>();
+  for (const i of items) {
+    if (i.adapted_from_id) adaptationsByParent.set(i.adapted_from_id, i);
+  }
+  return originals.map((original) => ({
+    original,
+    adaptation: adaptationsByParent.get(original.id) ?? null,
+  }));
+}
+
+function buildAdGroups(ads: AdRow[]): AdGroup[] {
+  const originals = ads.filter((a) => !a.adapted_from_id);
+  const adaptationsByParent = new Map<string, AdRow>();
+  for (const a of ads) {
+    if (a.adapted_from_id) adaptationsByParent.set(a.adapted_from_id, a);
+  }
+  return originals.map((original) => ({
+    original,
+    adaptation: adaptationsByParent.get(original.id) ?? null,
+  }));
+}
+
+function LocaleToggle({
+  view,
+  onChange,
+  hasArabic,
+  hasEnglish,
+}: {
+  view: "ar" | "en";
+  onChange: (v: "ar" | "en") => void;
+  hasArabic: boolean;
+  hasEnglish: boolean;
+}) {
+  const { t } = useTranslation();
+  if (!hasArabic || !hasEnglish) return null;
+  return (
+    <div className="inline-flex gap-1 mb-2">
+      {(["ar", "en"] as const).map((loc) => {
+        const active = view === loc;
+        const label = loc === "ar" ? t("campaignPage.localeAr") : t("campaignPage.localeEn");
+        const disabled = loc === "ar" ? !hasArabic : !hasEnglish;
+        return (
+          <button
+            key={loc}
+            type="button"
+            disabled={disabled}
+            onClick={() => onChange(loc)}
+            className="px-2 py-0.5 text-[10px] font-mono uppercase tracking-[0.16em] disabled:opacity-40"
+            style={{
+              border: `1px solid ${active ? "var(--accent-strong)" : "var(--hairline)"}`,
+              backgroundColor: active ? "var(--accent)" : "transparent",
+              color: "var(--ink-text)",
+              borderRadius: "2px",
+            }}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function PostGroupCard({
+  group,
+  brand,
+  projectId,
+}: {
+  group: PostGroup;
+  brand: BrandIdentity;
+  projectId: string | null;
+}) {
+  const { t } = useTranslation();
+  const hasPair = !!group.adaptation;
+  const defaultView: "ar" | "en" =
+    group.original.locale === "en" && !hasPair ? "en" : "ar";
+  const [view, setView] = useState<"ar" | "en">(defaultView);
+
+  const active = view === "en" && group.adaptation ? group.adaptation : group.original;
+  if (!active.copy) return null;
+
+  const item: ContentItemPreview = {
+    id: active.id,
+    platform: toPreviewPlatform(active.platform),
+    copy: active.copy,
+    media_brief: active.media_brief,
+    content_type: active.content_type,
+  };
+
+  return (
+    <div>
+      {hasPair && (
+        <LocaleToggle
+          view={view}
+          onChange={setView}
+          hasArabic
+          hasEnglish={!!group.adaptation}
+        />
+      )}
+      <div
+        className="font-mono text-[9px] uppercase tracking-[0.18em] mb-2 flex flex-wrap gap-2"
+        style={{ color: "var(--muted-text)" }}
+      >
+        <span>{CHANNEL_LABEL[active.platform as Channel] ?? active.platform}</span>
+        {hasPair && (
+          <span>· {t("campaignPage.pairedPost")}</span>
+        )}
+        {active.scheduled_date && <span>· {active.scheduled_date}</span>}
+        {active.framework_applied && <span>· {active.framework_applied}</span>}
+        <span>
+          · {active.locale === "ar" ? t("campaignPage.localeAr") : t("campaignPage.localeEn")}
+        </span>
+      </div>
+      <PostPreview item={item} brand={brand} projectId={projectId ?? undefined} />
+      {active.rationale && (
+        <p
+          className="mt-2 text-[12px] leading-relaxed p-2"
+          style={{
+            color: "var(--muted-text)",
+            backgroundColor: "var(--surface)",
+            borderRadius: "3px",
+          }}
+        >
+          {active.rationale}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function AdGroupCard({ group }: { group: AdGroup }) {
+  const { t } = useTranslation();
+  const hasPair = !!group.adaptation;
+  const defaultView: "ar" | "en" =
+    group.original.locale === "en" && !hasPair ? "en" : "ar";
+  const [view, setView] = useState<"ar" | "en">(defaultView);
+
+  const active = view === "en" && group.adaptation ? group.adaptation : group.original;
+
+  return (
+    <div
+      className="p-4"
+      style={{
+        border: "1px solid var(--hairline)",
+        borderRadius: "4px",
+        backgroundColor: "var(--paper)",
+      }}
+    >
+      {hasPair && (
+        <LocaleToggle
+          view={view}
+          onChange={setView}
+          hasArabic
+          hasEnglish={!!group.adaptation}
+        />
+      )}
+      <div
+        className="font-mono text-[9px] uppercase tracking-[0.18em] mb-2"
+        style={{ color: "var(--muted-text)" }}
+      >
+        {CHANNEL_LABEL[active.platform as Channel] ?? active.platform}
+        {active.variant_label
+          ? ` · ${t("campaignPage.variant", { label: active.variant_label })}`
+          : ""}
+        {hasPair ? ` · ${t("campaignPage.pairedAd")}` : ""}
+        {active.framework_applied ? ` · ${active.framework_applied}` : ""}
+        <span>
+          {" "}
+          · {active.locale === "ar" ? t("campaignPage.localeAr") : t("campaignPage.localeEn")}
+        </span>
+      </div>
+      {active.headline && (
+        <div
+          className="font-display text-[16px] mb-1"
+          style={{ color: "var(--ink-text)", fontWeight: 500 }}
+        >
+          {active.headline}
+        </div>
+      )}
+      {active.body && (
+        <p className="text-sm mb-2" style={{ color: "var(--ink-text)" }}>
+          {active.body}
+        </p>
+      )}
+      {active.cta && (
+        <div
+          className="inline-block text-sm px-3 py-1"
+          style={{
+            backgroundColor: "var(--accent-strong)",
+            color: "#FFFFFF",
+            borderRadius: "3px",
+          }}
+        >
+          {active.cta}
+        </div>
+      )}
+      {active.rationale && (
+        <p className="mt-2 text-[12px]" style={{ color: "var(--muted-text)" }}>
+          {active.rationale}
+        </p>
+      )}
+    </div>
+  );
 }
 
 function CampaignPage() {
@@ -119,7 +336,7 @@ function CampaignPage() {
         const { data: items, error: iErr } = await supabase
           .from("content_items")
           .select(
-            "id, platform, content_type, copy, media_brief, framework_applied, rationale, scheduled_date",
+            "id, platform, content_type, copy, media_brief, framework_applied, rationale, scheduled_date, locale, adapted_from_id",
           )
           .eq("campaign_id", campaignId)
           .order("scheduled_date", { ascending: true });
@@ -129,7 +346,7 @@ function CampaignPage() {
         const { data: ads, error: aErr } = await supabase
           .from("ad_copies")
           .select(
-            "id, platform, variant_label, headline, body, cta, framework_applied, rationale",
+            "id, platform, variant_label, headline, body, cta, framework_applied, rationale, locale, adapted_from_id",
           )
           .eq("campaign_id", campaignId)
           .order("platform", { ascending: true });
@@ -152,23 +369,12 @@ function CampaignPage() {
 
   const planDescription = useMemo(() => resolvePackageDescription(t, plan), [t, plan]);
   const displayName = useMemo(() => resolvePackageName(t, plan), [t, plan]);
-
-  const previews = useMemo(() => {
-    if (!brand) return [];
-    return contentItems
-      .filter((ci) => ci.copy)
-      .map((ci) => ({
-        id: ci.id,
-        item: {
-          id: ci.id,
-          platform: toPreviewPlatform(ci.platform),
-          copy: ci.copy ?? "",
-          media_brief: ci.media_brief,
-          content_type: ci.content_type,
-        } satisfies ContentItemPreview,
-        meta: ci,
-      }));
-  }, [contentItems, brand]);
+  const postGroups = useMemo(() => buildPostGroups(contentItems), [contentItems]);
+  const adGroups = useMemo(() => buildAdGroups(adCopies), [adCopies]);
+  const visiblePostGroups = useMemo(
+    () => postGroups.filter((g) => g.original.copy || g.adaptation?.copy),
+    [postGroups],
+  );
 
   return (
     <AppShell>
@@ -231,110 +437,39 @@ function CampaignPage() {
 
             <section className="mb-12">
               <SectionLabel>
-                {t("campaignPage.posts", { count: contentItems.length })}
+                {t("campaignPage.posts", { count: visiblePostGroups.length })}
               </SectionLabel>
-              {previews.length === 0 ? (
+              {visiblePostGroups.length === 0 ? (
                 <p className="text-sm" style={{ color: "var(--muted-text)" }}>
                   {t("campaignPage.noPosts")}
                 </p>
               ) : (
                 <div className="grid gap-8 lg:grid-cols-2">
-                  {previews.map(({ id, item, meta }) => (
-                    <div key={id}>
-                      <div
-                        className="font-mono text-[9px] uppercase tracking-[0.18em] mb-2 flex flex-wrap gap-2"
-                        style={{ color: "var(--muted-text)" }}
-                      >
-                        <span>
-                          {CHANNEL_LABEL[meta.platform as Channel] ?? meta.platform}
-                        </span>
-                        {meta.scheduled_date && <span>· {meta.scheduled_date}</span>}
-                        {meta.framework_applied && (
-                          <span>· {meta.framework_applied}</span>
-                        )}
-                      </div>
-                      {brand && (
-                        <PostPreview item={item} brand={brand} projectId={projectId ?? undefined} />
-                      )}
-                      {meta.rationale && (
-                        <p
-                          className="mt-2 text-[12px] leading-relaxed p-2"
-                          style={{
-                            color: "var(--muted-text)",
-                            backgroundColor: "var(--surface)",
-                            borderRadius: "3px",
-                          }}
-                        >
-                          {meta.rationale}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                  {brand &&
+                    visiblePostGroups.map((group) => (
+                      <PostGroupCard
+                        key={group.original.id}
+                        group={group}
+                        brand={brand}
+                        projectId={projectId}
+                      />
+                    ))}
                 </div>
               )}
             </section>
 
             <section>
               <SectionLabel>
-                {t("campaignPage.ads", { count: adCopies.length })}
+                {t("campaignPage.ads", { count: adGroups.length })}
               </SectionLabel>
-              {adCopies.length === 0 ? (
+              {adGroups.length === 0 ? (
                 <p className="text-sm" style={{ color: "var(--muted-text)" }}>
                   {t("campaignPage.noAds")}
                 </p>
               ) : (
                 <div className="space-y-4">
-                  {adCopies.map((ad) => (
-                    <div
-                      key={ad.id}
-                      className="p-4"
-                      style={{
-                        border: "1px solid var(--hairline)",
-                        borderRadius: "4px",
-                        backgroundColor: "var(--paper)",
-                      }}
-                    >
-                      <div
-                        className="font-mono text-[9px] uppercase tracking-[0.18em] mb-2"
-                        style={{ color: "var(--muted-text)" }}
-                      >
-                        {CHANNEL_LABEL[ad.platform as Channel] ?? ad.platform}
-                        {ad.variant_label
-                          ? ` · ${t("campaignPage.variant", { label: ad.variant_label })}`
-                          : ""}
-                        {ad.framework_applied ? ` · ${ad.framework_applied}` : ""}
-                      </div>
-                      {ad.headline && (
-                        <div
-                          className="font-display text-[16px] mb-1"
-                          style={{ color: "var(--ink-text)", fontWeight: 500 }}
-                        >
-                          {ad.headline}
-                        </div>
-                      )}
-                      {ad.body && (
-                        <p className="text-sm mb-2" style={{ color: "var(--ink-text)" }}>
-                          {ad.body}
-                        </p>
-                      )}
-                      {ad.cta && (
-                        <div
-                          className="inline-block text-sm px-3 py-1"
-                          style={{
-                            backgroundColor: "var(--accent-strong)",
-                            color: "#FFFFFF",
-                            borderRadius: "3px",
-                          }}
-                        >
-                          {ad.cta}
-                        </div>
-                      )}
-                      {ad.rationale && (
-                        <p className="mt-2 text-[12px]" style={{ color: "var(--muted-text)" }}>
-                          {ad.rationale}
-                        </p>
-                      )}
-                    </div>
+                  {adGroups.map((group) => (
+                    <AdGroupCard key={group.original.id} group={group} />
                   ))}
                 </div>
               )}

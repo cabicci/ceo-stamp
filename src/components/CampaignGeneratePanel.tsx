@@ -3,6 +3,12 @@ import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { CircleNotch, Play, ArrowCounterClockwise } from "@phosphor-icons/react";
 import { generateCampaign } from "@/lib/generate-campaign.functions";
+import {
+  CONTENT_LANGUAGES,
+  IMAGE_TEXT_LANGUAGES,
+  type ContentLanguage,
+  type ImageTextLanguage,
+} from "@/lib/campaign-generation.types";
 import { useTranslation } from "@/i18n/I18nProvider";
 
 function formatDateInput(d: Date): string {
@@ -24,11 +30,74 @@ type Props = {
   className?: string;
 };
 
+const CONTENT_LANGUAGE_KEYS: Record<ContentLanguage, string> = {
+  ar: "campaign.generate.contentLanguageAr",
+  en: "campaign.generate.contentLanguageEn",
+  both: "campaign.generate.contentLanguageBoth",
+};
+
+const IMAGE_TEXT_KEYS: Record<ImageTextLanguage, string> = {
+  none: "campaign.generate.imageTextNone",
+  ar: "campaign.generate.imageTextAr",
+  en: "campaign.generate.imageTextEn",
+};
+
+function ChoiceGroup<T extends string>({
+  label,
+  value,
+  options,
+  optionLabel,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  value: T;
+  options: readonly T[];
+  optionLabel: (opt: T) => string;
+  onChange: (v: T) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <fieldset className="mb-4" disabled={disabled}>
+      <legend
+        className="font-mono text-[10px] uppercase tracking-[0.22em] mb-2 block"
+        style={{ color: "var(--muted-text)" }}
+      >
+        {label}
+      </legend>
+      <div className="flex flex-wrap gap-2">
+        {options.map((opt) => {
+          const selected = value === opt;
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => onChange(opt)}
+              className="px-3 py-2 text-sm transition-colors"
+              style={{
+                border: `1px solid ${selected ? "var(--accent-strong)" : "var(--hairline)"}`,
+                backgroundColor: selected ? "var(--accent)" : "var(--paper)",
+                color: "var(--ink-text)",
+                borderRadius: "3px",
+                fontWeight: selected ? 600 : 400,
+              }}
+            >
+              {optionLabel(opt)}
+            </button>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
+
 export function CampaignGeneratePanel({ campaignId, className }: Props) {
   const { t } = useTranslation();
   const defaults = defaultDateRange();
   const [startDate, setStartDate] = useState(defaults.start);
   const [endDate, setEndDate] = useState(defaults.end);
+  const [contentLanguage, setContentLanguage] = useState<ContentLanguage>("ar");
+  const [imageTextLanguage, setImageTextLanguage] = useState<ImageTextLanguage>("none");
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +113,7 @@ export function CampaignGeneratePanel({ campaignId, className }: Props) {
     setError(null);
     try {
       await generateFn({
-        data: { campaignId, startDate, endDate },
+        data: { campaignId, startDate, endDate, contentLanguage, imageTextLanguage },
       });
       navigate({ to: "/campaigns/$campaignId", params: { campaignId } });
     } catch (e) {
@@ -100,6 +169,24 @@ export function CampaignGeneratePanel({ campaignId, className }: Props) {
           />
         </label>
       </div>
+
+      <ChoiceGroup
+        label={t("campaign.generate.contentLanguageTitle")}
+        value={contentLanguage}
+        options={CONTENT_LANGUAGES}
+        optionLabel={(opt) => t(CONTENT_LANGUAGE_KEYS[opt])}
+        onChange={setContentLanguage}
+        disabled={generating}
+      />
+
+      <ChoiceGroup
+        label={t("campaign.generate.imageTextLanguageTitle")}
+        value={imageTextLanguage}
+        options={IMAGE_TEXT_LANGUAGES}
+        optionLabel={(opt) => t(IMAGE_TEXT_KEYS[opt])}
+        onChange={setImageTextLanguage}
+        disabled={generating}
+      />
 
       {error && (
         <div

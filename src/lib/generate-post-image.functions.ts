@@ -9,6 +9,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { generateImage, type ImageAspectRatio } from "./ai/ai.server";
+import type { ImageTextLanguage } from "./campaign-generation.types";
 
 const Input = z.object({
   contentItemId: z.string().uuid(),
@@ -32,6 +33,17 @@ function asStringArray(v: unknown): string[] {
   return v.filter((x): x is string => typeof x === "string");
 }
 
+function imageTextPromptLine(imageText: ImageTextLanguage | undefined): string {
+  switch (imageText) {
+    case "ar":
+      return "If any text appears on the image, it must be in Arabic.";
+    case "en":
+      return "If any text appears on the image, it must be in English.";
+    default:
+      return "No embedded text, words, typography, logos, or watermarks on the image.";
+  }
+}
+
 export const generatePostImage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => Input.parse(d))
@@ -44,7 +56,7 @@ export const generatePostImage = createServerFn({ method: "POST" })
     const { data: item, error: itemErr } = await sb
       .from("content_items")
       .select(
-        "id, platform, copy, media_brief, campaigns!inner(project_id, projects!inner(id, name, owner_id))",
+        "id, platform, copy, media_brief, campaigns!inner(project_id, campaign_plan, projects!inner(id, name, owner_id))",
       )
       .eq("id", data.contentItemId)
       .maybeSingle();
@@ -61,6 +73,12 @@ export const generatePostImage = createServerFn({ method: "POST" })
       .eq("project_id", projectId)
       .maybeSingle();
 
+    const campaignPlan = item.campaigns?.campaign_plan as
+      | { image_text_language?: ImageTextLanguage }
+      | null
+      | undefined;
+    const imageTextPref = campaignPlan?.image_text_language;
+
     // 2) Build the image prompt.
     const platform = (item.platform as Platform) ?? "instagram";
     const aspectRatio = PLATFORM_RATIO[platform] ?? "1:1";
@@ -69,6 +87,7 @@ export const generatePostImage = createServerFn({ method: "POST" })
     const tone = brand?.tone_of_voice ? `Tone: ${brand.tone_of_voice}.` : "";
     const palette = colors.length ? `Brand color palette: ${colors.join(", ")}.` : "";
     const extra = data.extraStyle ? ` Additional direction: ${data.extraStyle}.` : "";
+    const textRule = imageTextPromptLine(imageTextPref);
 
     const prompt = [
       `High-quality social media image for ${platform}.`,
@@ -76,7 +95,7 @@ export const generatePostImage = createServerFn({ method: "POST" })
       tone,
       palette,
       `Scene / subject: ${brief}`,
-      `Style: clean, modern, photographic where appropriate, on-brand, no embedded text or logos, no watermarks.`,
+      `Style: clean, modern, photographic where appropriate, on-brand. ${textRule}`,
       extra,
     ]
       .filter(Boolean)

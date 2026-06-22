@@ -160,6 +160,14 @@
     "planApproved": "الخطة اتعتمدت — جاهزة للتوليد.",
     "generate": {
       "periodTitle": "فترة الحملة",
+      "contentLanguageTitle": "لغة المحتوى",
+      "contentLanguageAr": "العربي",
+      "contentLanguageEn": "English",
+      "contentLanguageBoth": "الاتنين",
+      "imageTextLanguageTitle": "نص داخل الصورة (توليد AI)",
+      "imageTextNone": "بدون نص في الصورة",
+      "imageTextAr": "نص بالعربي",
+      "imageTextEn": "نص بالإنجليزي",
       "endBeforeStart": "تاريخ النهاية لازم يكون بعد تاريخ البداية.",
       "generateFailed": "فشل توليد المحتوى",
       "generating": "بيتم توليد المحتوى…",
@@ -229,7 +237,13 @@
     "noPosts": "مفيش بوستات لسه.",
     "ads": "الإعلانات ({count})",
     "noAds": "مفيش إعلانات لسه.",
-    "variant": "variant {label}"
+    "variant": "variant {label}",
+    "localeAr": "عربي",
+    "localeEn": "English",
+    "viewOriginal": "الأصل",
+    "viewAdaptation": "التكييف",
+    "pairedPost": "بوست مزدوج",
+    "pairedAd": "إعلان مزدوج"
   },
   "postPreview": {
     "imagePlaceholder": "مكان الصورة — لسه ما تم اختيار صورة",

@@ -80,6 +80,7 @@ RLS pattern: **owner read/write** on project-scoped data; **`is_admin()` read-on
 - **Post previews** — realistic mocks for **5 platforms** (Facebook, Instagram, TikTok, LinkedIn, X/Twitter); **3 image sources** (AI generate / upload / paste URL) via `ImageSlot`.
 - **URL auto-normalize** — `normalizeWebsiteUrl()` + `projectSchema`; project edit form on detail page.
 - **Full i18n pass** — ~160 UI strings moved to locale files (commit `a17b7bc`).
+- **Content language + image text-language** — `content_language` and `image_text_language` stored on `campaign_plan` (jsonb). User picks both in `CampaignGeneratePanel` before generate: content **ar** / **en** / **both**; image text **none** / **ar** / **en** (independent). **Both:** Arabic originals first (`locale='ar'`, `adapted_from_id=null`), then culturally-adapted English versions (`locale='en'`, `adapted_from_id` → Arabic row) — not literal translation. Campaign view (`/campaigns/$campaignId`) groups pairs with an **AR/EN per-item toggle**. `media_brief` carries image-text direction; `generate-post-image` reads `image_text_language` from the plan.
 
 ### Routes (implemented)
 
@@ -104,8 +105,6 @@ Nav links for `/analysis`, `/campaigns`, `/review` exist in sidebar but **routes
 
 | Item | Notes |
 |------|-------|
-| Content language choice in generation | Arabic / English / both — English should be **adapted**, not literally translated |
-| Image text-language handling | Copy vs. on-image text locale rules |
 | AI image generation (production-ready) | Server fn + UI exist; needs end-to-end test, error handling, usage limits |
 | Review / approve workflow for generated content | Nav stub only; `content_items.status` exists |
 | Campaign strategy visualization page | Plan → calendar / funnel view |
@@ -122,3 +121,4 @@ Nav links for `/analysis`, `/campaigns`, `/review` exist in sidebar but **routes
 |------|--------|
 | 2026-06-22 | Created `PROJECT_TRACKER.md` as cross-session memory file. |
 | 2026-06-22 | Full i18n pass: ~160 hardcoded UI strings → `t()` + `ar.json`/`en.json`. |
+| 2026-06-22 | Added content-language choice (ar/en/both) + image-text-language choice to campaign generation. |

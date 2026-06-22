@@ -160,6 +160,14 @@
     "planApproved": "Plan approved — ready to generate.",
     "generate": {
       "periodTitle": "Campaign period",
+      "contentLanguageTitle": "Content language",
+      "contentLanguageAr": "Arabic",
+      "contentLanguageEn": "English",
+      "contentLanguageBoth": "Both",
+      "imageTextLanguageTitle": "Text on AI-generated images",
+      "imageTextNone": "No text on image",
+      "imageTextAr": "Arabic text",
+      "imageTextEn": "English text",
       "endBeforeStart": "End date must be after start date.",
       "generateFailed": "Content generation failed",
       "generating": "Generating content…",
@@ -229,7 +237,13 @@
     "noPosts": "No posts yet.",
     "ads": "Ads ({count})",
     "noAds": "No ads yet.",
-    "variant": "variant {label}"
+    "variant": "variant {label}",
+    "localeAr": "Arabic",
+    "localeEn": "English",
+    "viewOriginal": "Original",
+    "viewAdaptation": "Adaptation",
+    "pairedPost": "Bilingual post",
+    "pairedAd": "Bilingual ad"
   },
   "postPreview": {
     "imagePlaceholder": "Image slot — no image selected yet",
