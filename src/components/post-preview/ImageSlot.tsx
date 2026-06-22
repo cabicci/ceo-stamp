@@ -41,9 +41,12 @@ export function ImageSlot({
   variant = "card",
 }: Props) {
   const [busy, setBusy] = useState<"upload" | "ai" | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
   const [urlDraft, setUrlDraft] = useState(item.image_source === "url" ? item.image_url ?? "" : "");
   const [showUrl, setShowUrl] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const genImage = useServerFn(generatePostImage);
+
 
   const update = (image_url: string | null, image_source: ImageSource | null) => {
     onChange?.({ image_url, image_source });
