@@ -301,6 +301,12 @@
       "website": "Website",
       "created": "Created",
       "empty": "No projects yet."
+    },
+    "tracker": {
+      "title": "Project Tracker",
+      "subtitle": "Live view of PROJECT_TRACKER.md from the repo",
+      "copy": "Copy",
+      "copied": "Copied"
     }
   }
 }

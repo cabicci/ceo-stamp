@@ -301,6 +301,12 @@
       "website": "الموقع",
       "created": "أُنشئ في",
       "empty": "لسه مفيش مشاريع."
+    },
+    "tracker": {
+      "title": "متتبّع المشروع",
+      "subtitle": "عرض مباشر لملف PROJECT_TRACKER.md من المستودع",
+      "copy": "نسخ",
+      "copied": "اتنسخ"
     }
   }
 }

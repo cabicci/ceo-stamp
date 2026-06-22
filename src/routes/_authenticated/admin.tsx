@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
+import { ProjectTrackerPanel } from "@/components/admin/ProjectTrackerPanel";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/i18n/I18nProvider";
 
@@ -167,6 +168,8 @@ function AdminPage() {
               <StatCard label={t("admin.totals.campaigns")} value={totals.campaigns} />
               <StatCard label={t("admin.totals.content")} value={totals.content} />
             </section>
+
+            <ProjectTrackerPanel />
 
             <section>
               <SectionTitle>{t("admin.users.title")}</SectionTitle>
