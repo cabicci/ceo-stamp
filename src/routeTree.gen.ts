@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as Char91indexChar93RouteImport } from './routes/[index]'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
@@ -17,6 +18,11 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedProjectsIdRouteImport } from './routes/_authenticated/projects.$id'
 import { Route as AuthenticatedCampaignsCampaignIdRouteImport } from './routes/_authenticated/campaigns.$campaignId'
 
+const Char91indexChar93Route = Char91indexChar93RouteImport.update({
+  id: '/index',
+  path: '/index',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -57,6 +63,7 @@ const AuthenticatedCampaignsCampaignIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
+  '/index': typeof Char91indexChar93Route
   '/admin': typeof AuthenticatedAdminRoute
   '/post-previews': typeof AuthenticatedPostPreviewsRoute
   '/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
@@ -64,6 +71,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
+  '/index': typeof Char91indexChar93Route
   '/admin': typeof AuthenticatedAdminRoute
   '/post-previews': typeof AuthenticatedPostPreviewsRoute
   '/': typeof AuthenticatedIndexRoute
@@ -74,6 +82,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/index': typeof Char91indexChar93Route
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/post-previews': typeof AuthenticatedPostPreviewsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -85,6 +94,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/index'
     | '/admin'
     | '/post-previews'
     | '/campaigns/$campaignId'
@@ -92,6 +102,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
+    | '/index'
     | '/admin'
     | '/post-previews'
     | '/'
@@ -101,6 +112,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authenticated'
     | '/auth'
+    | '/index'
     | '/_authenticated/admin'
     | '/_authenticated/post-previews'
     | '/_authenticated/'
@@ -111,10 +123,18 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  Char91indexChar93Route: typeof Char91indexChar93Route
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/index': {
+      id: '/index'
+      path: '/index'
+      fullPath: '/index'
+      preLoaderRoute: typeof Char91indexChar93RouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -189,6 +209,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  Char91indexChar93Route: Char91indexChar93Route,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
