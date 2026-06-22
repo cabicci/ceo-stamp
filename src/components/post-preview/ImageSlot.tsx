@@ -1,7 +1,10 @@
 import { useRef, useState } from "react";
 import { Sparkles, Upload, Link2, ImageIcon, Loader2 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { generatePostImage } from "@/lib/generate-post-image.functions";
 import type { ContentItemPreview, ImageSource } from "./types";
+
 
 type Props = {
   item: ContentItemPreview;
@@ -38,9 +41,12 @@ export function ImageSlot({
   variant = "card",
 }: Props) {
   const [busy, setBusy] = useState<"upload" | "ai" | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
   const [urlDraft, setUrlDraft] = useState(item.image_source === "url" ? item.image_url ?? "" : "");
   const [showUrl, setShowUrl] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const genImage = useServerFn(generatePostImage);
+
 
   const update = (image_url: string | null, image_source: ImageSource | null) => {
     onChange?.({ image_url, image_source });
@@ -72,17 +78,25 @@ export function ImageSlot({
     }
   }
 
-  function handleAi() {
-    // Placeholder until generator is wired in the next step.
+  async function handleAi() {
+    if (!item.id) {
+      setAiError("لازم تحفظ العنصر الأول قبل توليد الصورة");
+      return;
+    }
+    setAiError(null);
     setBusy("ai");
-    setTimeout(() => {
-      const seed = encodeURIComponent((item.media_brief || item.copy || "post").slice(0, 40));
-      // Deterministic, brand-neutral placeholder from picsum (filler only).
-      const url = `https://picsum.photos/seed/${seed}/1200/800`;
-      update(url, "ai");
+    try {
+      const res = await genImage({ data: { contentItemId: item.id } });
+      update(res.imageUrl, "ai");
+    } catch (e) {
+      console.error(e);
+      const msg = e instanceof Error ? e.message : "فشل توليد الصورة";
+      setAiError(msg.length > 200 ? "فشل توليد الصورة — حاول تاني" : msg);
+    } finally {
       setBusy(null);
-    }, 400);
+    }
   }
+
 
   function applyUrl() {
     if (!urlDraft.trim()) return;
@@ -117,7 +131,37 @@ export function ImageSlot({
             </p>
           </div>
         )}
+        {busy === "ai" && (
+          <div
+            className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2"
+            style={{ backgroundColor: "rgba(0,0,0,0.55)", color: "#fff" }}
+            dir="rtl"
+            lang="ar"
+          >
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <p className="text-xs">بيتم توليد الصورة…</p>
+          </div>
+        )}
       </div>
+      {aiError && (
+        <div
+          className="mt-1 flex items-center justify-between gap-2 rounded px-2 py-1 text-xs"
+          style={{ backgroundColor: "#fde2e2", color: "#7a1f1f" }}
+          dir="rtl"
+          lang="ar"
+        >
+          <span>{aiError}</span>
+          <button
+            type="button"
+            onClick={handleAi}
+            className="rounded px-2 py-0.5"
+            style={{ backgroundColor: "#7a1f1f", color: "#fff" }}
+          >
+            إعادة المحاولة
+          </button>
+        </div>
+      )}
+
 
       {editable && (
         <div className={variant === "overlay" ? "absolute inset-x-0 bottom-0 z-10 p-2" : "mt-2"}>
