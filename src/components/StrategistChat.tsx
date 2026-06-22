@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { PaperPlaneTilt, ChatCircleText, CheckCircle, CircleNotch, Sparkle } from "@phosphor-icons/react";
 import { strategistChat, approveCampaignPlan } from "@/lib/strategist-chat.functions";
 import { CHANNEL_LABEL_AR, type AdaptedPlan, type Channel } from "@/lib/campaign-packages";
+import { getFrameworkDisplayName } from "@/lib/marketing-frameworks";
 
 type Turn = { role: "user" | "assistant"; content: string };
 
@@ -222,7 +223,7 @@ export function StrategistChat({ projectId, availableChannels, onApproved }: Pro
                   borderRadius: "2px",
                 }}
               >
-                {f}
+                {getFrameworkDisplayName(f)}
               </span>
             ))}
           </div>

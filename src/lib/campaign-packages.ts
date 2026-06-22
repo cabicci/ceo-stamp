@@ -23,6 +23,7 @@ export type CampaignPackage = {
   // project's available_channels. "client_choice" = no preference; use
   // whatever the client has.
   ideal_channels: Channel[] | "client_choice";
+  /** Framework ids from marketing-frameworks.ts */
   frameworks: string[];
   funnel_focus: string; // Arabic, e.g. "Most Aware" / "TOFU" etc.
   objective: Objective;
@@ -38,7 +39,7 @@ export const CAMPAIGN_PACKAGES: CampaignPackage[] = [
       "حملة ضغط شراء قصيرة. بتشتغل على العملاء اللي عارفين البراند بالفعل وقربين من القرار.",
     default_post_count: 8,
     ideal_channels: ["instagram", "facebook"],
-    frameworks: ["Cialdini — Scarcity", "Cialdini — Urgency"],
+    frameworks: ["cialdini_scarcity", "cialdini_commitment_consistency"],
     funnel_focus: "Most Aware (BOFU)",
     objective: "sales",
     max_per_channel: 6,
@@ -50,7 +51,14 @@ export const CAMPAIGN_PACKAGES: CampaignPackage[] = [
       "تعريف السوق بحاجة جديدة وبناء قصة واضحة حواليها، من أول الوعي لحد القرار.",
     default_post_count: 12,
     ideal_channels: ["instagram", "facebook", "tiktok", "linkedin", "x"],
-    frameworks: ["Eugene Schwartz — Awareness Stages", "StoryBrand"],
+    frameworks: [
+      "schwartz_unaware",
+      "schwartz_problem_aware",
+      "schwartz_solution_aware",
+      "schwartz_product_aware",
+      "schwartz_most_aware",
+      "storybrand",
+    ],
     funnel_focus: "Full Funnel",
     objective: "awareness",
     max_per_channel: 5,
@@ -62,7 +70,7 @@ export const CAMPAIGN_PACKAGES: CampaignPackage[] = [
       "بناء حضور ذهني (mental availability) وأصول مميزة يفتكرها الجمهور بسرعة.",
     default_post_count: 10,
     ideal_channels: ["instagram", "tiktok", "facebook"],
-    frameworks: ["Byron Sharp — Mental Availability", "Distinctive Brand Assets"],
+    frameworks: ["sharp_mental_availability", "sharp_distinctive_assets", "sharp_reach_over_persuasion"],
     funnel_focus: "TOFU",
     objective: "awareness",
     max_per_channel: 5,
@@ -74,7 +82,7 @@ export const CAMPAIGN_PACKAGES: CampaignPackage[] = [
       "حملة هدفها لفت الانتباه لمشكلة محددة ودفع المهتم يسيب بياناته.",
     default_post_count: 8,
     ideal_channels: ["facebook", "linkedin"],
-    frameworks: ["AIDA", "PAS"],
+    frameworks: ["aida", "pas"],
     funnel_focus: "MOFU",
     objective: "leads",
     max_per_channel: 5,
@@ -86,7 +94,7 @@ export const CAMPAIGN_PACKAGES: CampaignPackage[] = [
       "محتوى تعليمي بيخلي البراند هو المرشد (Guide) في مجاله، وبيبني ثقة طويلة المدى.",
     default_post_count: 6,
     ideal_channels: ["linkedin", "instagram"],
-    frameworks: ["StoryBrand — Brand as Guide", "Educational Content"],
+    frameworks: ["storybrand", "cialdini_authority"],
     funnel_focus: "TOFU → MOFU",
     objective: "awareness",
     max_per_channel: 4,
@@ -98,7 +106,7 @@ export const CAMPAIGN_PACKAGES: CampaignPackage[] = [
       "بوست مفرد بهدف محدد. الإطار التسويقي بيتحدد حسب الهدف وقت التوليد.",
     default_post_count: 1,
     ideal_channels: "client_choice",
-    frameworks: ["يتحدد حسب الهدف"],
+    frameworks: [],
     funnel_focus: "حسب الهدف",
     objective: "awareness",
     max_per_channel: 1,
@@ -114,6 +122,7 @@ export type AdaptedPlan = {
   package_name_ar: string;
   description_ar: string;
   objective: Objective;
+  /** Framework ids from marketing-frameworks.ts */
   frameworks: string[];
   funnel_focus: string;
   // Final channels actually used (subset of available_channels).

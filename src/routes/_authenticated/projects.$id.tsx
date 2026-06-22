@@ -10,6 +10,7 @@ import { ConnectedSitesSection } from "@/components/ConnectedSitesSection";
 import { AvailableChannelsSettings } from "@/components/AvailableChannelsSettings";
 import { PackageGallery } from "@/components/PackageGallery";
 import type { AdaptedPlan, Channel } from "@/lib/campaign-packages";
+import { formatFrameworksDisplay } from "@/lib/marketing-frameworks";
 import { StrategistChat } from "@/components/StrategistChat";
 import { approveCampaignPlan } from "@/lib/strategist-chat.functions";
 
@@ -318,7 +319,7 @@ function CampaignSetup({ projectId }: { projectId: string }) {
                 </div>
                 <div className="text-sm mb-3" style={{ color: "var(--ink-text)" }}>
                   {picked.total_posts} بوست على {picked.channels.length} قناة. الإطار:{" "}
-                  {picked.frameworks.join("، ")}.
+                  {formatFrameworksDisplay(picked.frameworks)}.
                 </div>
                 {picked.adaptation_note_ar && (
                   <div

@@ -16,6 +16,7 @@ import {
   type CampaignPackage,
   type Channel,
 } from "@/lib/campaign-packages";
+import { FRAMEWORK_DYNAMIC_LABEL_AR, getFrameworkDisplayName } from "@/lib/marketing-frameworks";
 
 const ICONS: Record<string, React.ComponentType<{ size?: number; strokeWidth?: number }>> = {
   limited_offer: Lightning,
@@ -176,7 +177,7 @@ function PackageCard({
       </div>
 
       <div className="flex flex-wrap gap-1.5 mb-3">
-        {pkg.frameworks.map((f) => (
+        {(pkg.frameworks.length > 0 ? pkg.frameworks : [FRAMEWORK_DYNAMIC_LABEL_AR]).map((f) => (
           <span
             key={f}
             className="font-mono text-[9px] uppercase tracking-[0.18em] px-2 py-1"
@@ -186,7 +187,7 @@ function PackageCard({
               borderRadius: "2px",
             }}
           >
-            {f}
+            {pkg.frameworks.length > 0 ? getFrameworkDisplayName(f) : f}
           </span>
         ))}
       </div>
