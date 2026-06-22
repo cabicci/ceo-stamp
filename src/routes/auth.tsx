@@ -5,6 +5,7 @@ import { useTranslation } from "@/i18n/I18nProvider";
 import { FloatingLanguageToggle } from "@/components/LanguageToggle";
 
 export const Route = createFileRoute("/auth")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Marketing CEO — Sign In" },
