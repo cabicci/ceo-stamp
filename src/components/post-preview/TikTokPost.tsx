@@ -1,6 +1,7 @@
 import { Heart, MessageCircle, Share2, Music2, Plus } from "lucide-react";
 import { Avatar, Caption, Hashtags } from "./parts";
 import { ImageSlot } from "./ImageSlot";
+import { useTranslation } from "@/i18n/I18nProvider";
 import type { BrandIdentity, ContentItemPreview, ImageSource } from "./types";
 import { extractHashtags, stripHashtags } from "./types";
 
@@ -16,6 +17,7 @@ const handle = (brand: BrandIdentity) =>
   brand.handle?.replace(/^@/, "") || brand.name.toLowerCase().replace(/\s+/g, "");
 
 export function TikTokPost({ item, brand, projectId, editable, onImageChange }: Props) {
+  const { t } = useTranslation();
   const tags = extractHashtags(item.copy);
   const body = stripHashtags(item.copy);
   return (
@@ -45,7 +47,7 @@ export function TikTokPost({ item, brand, projectId, editable, onImageChange }: 
         </div>
         <Stat icon={<Heart className="h-7 w-7" fill="white" />} label="124K" />
         <Stat icon={<MessageCircle className="h-7 w-7" fill="white" />} label="1.2K" />
-        <Stat icon={<Share2 className="h-7 w-7" fill="white" />} label="مشاركة" />
+        <Stat icon={<Share2 className="h-7 w-7" fill="white" />} label={t("postPreview.share")} />
         <div
           className="grid h-9 w-9 animate-spin place-items-center rounded-full"
           style={{ animationDuration: "6s", background: "linear-gradient(45deg,#25f4ee,#fe2c55)" }}

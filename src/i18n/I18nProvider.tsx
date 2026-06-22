@@ -18,18 +18,28 @@ const DEFAULT_LOCALE: Locale = "ar";
 
 type Dict = Record<string, unknown>;
 
-function resolvePath(dict: Dict, path: string): string {
+function resolvePath(
+  dict: Dict,
+  path: string,
+  vars?: Record<string, string | number>,
+): string {
   const value = path
     .split(".")
     .reduce<unknown>((acc, key) => (acc && typeof acc === "object" ? (acc as Dict)[key] : undefined), dict);
-  return typeof value === "string" ? value : path;
+  let resolved = typeof value === "string" ? value : path;
+  if (vars) {
+    for (const [k, v] of Object.entries(vars)) {
+      resolved = resolved.replace(new RegExp(`\\{${k}\\}`, "g"), String(v));
+    }
+  }
+  return resolved;
 }
 
 type I18nContextValue = {
   locale: Locale;
   dir: Direction;
   setLocale: (l: Locale) => void;
-  t: (key: string) => string;
+  t: (key: string, vars?: Record<string, string | number>) => string;
 };
 
 const I18nContext = createContext<I18nContextValue | null>(null);
@@ -71,7 +81,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
           // ignore
         }
       },
-      t: (key: string) => resolvePath(dict, key),
+      t: (key: string, vars?: Record<string, string | number>) => resolvePath(dict, key, vars),
     };
   }, [locale, dir]);
 

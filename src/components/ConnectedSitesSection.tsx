@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { startConnectSession, captureSession } from "@/lib/connect-site.functions";
 import { scrapeAuthenticated } from "@/lib/scrape-authenticated.functions";
+import { useTranslation } from "@/i18n/I18nProvider";
 
 
 type Row = {
@@ -18,6 +19,7 @@ type Row = {
 };
 
 export function ConnectedSitesSection({ projectId }: { projectId: string }) {
+  const { t } = useTranslation();
   const [rows, setRows] = useState<Row[]>([]);
   const [adding, setAdding] = useState(false);
   const [label, setLabel] = useState("");
@@ -78,7 +80,7 @@ export function ConnectedSitesSection({ projectId }: { projectId: string }) {
       });
       await load();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "فشل بدء الجلسة");
+      alert(e instanceof Error ? e.message : t("connectedSites.sessionStartFailed"));
       await load();
     }
   }
@@ -92,7 +94,7 @@ export function ConnectedSitesSection({ projectId }: { projectId: string }) {
       setActive(null);
       await load();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "فشل حفظ الجلسة");
+      alert(e instanceof Error ? e.message : t("connectedSites.sessionSaveFailed"));
       await load();
     }
   }
@@ -110,10 +112,10 @@ export function ConnectedSitesSection({ projectId }: { projectId: string }) {
 
   async function handleScrape(row: Row) {
     setScrapingFor(row.id);
-    setScrapeStage("بيتم فتح الجلسة…");
+    setScrapeStage(t("connectedSites.scrapeOpening"));
     // Lightweight stage advancer (visual only).
-    const t1 = window.setTimeout(() => setScrapeStage("بيتم قراءة الصفحات المحمية…"), 1500);
-    const t2 = window.setTimeout(() => setScrapeStage("بيتم التحليل…"), 8000);
+    const t1 = window.setTimeout(() => setScrapeStage(t("connectedSites.scrapeReading")), 1500);
+    const t2 = window.setTimeout(() => setScrapeStage(t("connectedSites.scrapeAnalyzing")), 8000);
     try {
       const res = await scrapeFn({ data: { connectedSiteId: row.id } });
       if (!res.ok) {
@@ -128,7 +130,7 @@ export function ConnectedSitesSection({ projectId }: { projectId: string }) {
       }
       await load();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "فشل تحليل الصفحات المحمية");
+      alert(e instanceof Error ? e.message : t("connectedSites.scrapeFailed"));
       await load();
     } finally {
       window.clearTimeout(t1);
@@ -146,7 +148,7 @@ export function ConnectedSitesSection({ projectId }: { projectId: string }) {
           className="font-mono text-[10px] uppercase tracking-[0.22em]"
           style={{ color: "var(--muted-text)" }}
         >
-          المواقع المربوطة
+          {t("connectedSites.title")}
         </div>
         {!adding && (
           <button
@@ -160,7 +162,7 @@ export function ConnectedSitesSection({ projectId }: { projectId: string }) {
             }}
           >
             <Plus size={12} strokeWidth={1.75} />
-            ربط موقع
+            {t("connectedSites.linkSite")}
           </button>
         )}
       </div>
@@ -180,7 +182,7 @@ export function ConnectedSitesSection({ projectId }: { projectId: string }) {
                 className="font-mono text-[10px] uppercase tracking-[0.2em] mb-2"
                 style={{ color: "var(--muted-text)" }}
               >
-                الاسم (مثال: لوحة الطالب)
+                {t("connectedSites.nameLabel")}
               </div>
               <input
                 value={label}
@@ -198,7 +200,7 @@ export function ConnectedSitesSection({ projectId }: { projectId: string }) {
                 className="font-mono text-[10px] uppercase tracking-[0.2em] mb-2"
                 style={{ color: "var(--muted-text)" }}
               >
-                رابط تسجيل الدخول
+                {t("connectedSites.loginUrlLabel")}
               </div>
               <input
                 dir="ltr"
@@ -224,7 +226,7 @@ export function ConnectedSitesSection({ projectId }: { projectId: string }) {
                   borderRadius: "3px",
                 }}
               >
-                إضافة
+                {t("common.add")}
               </button>
               <button
                 type="button"
@@ -240,7 +242,7 @@ export function ConnectedSitesSection({ projectId }: { projectId: string }) {
                   borderRadius: "3px",
                 }}
               >
-                إلغاء
+                {t("common.cancel")}
               </button>
             </div>
           </div>
@@ -257,8 +259,7 @@ export function ConnectedSitesSection({ projectId }: { projectId: string }) {
             color: "var(--ink-text)",
           }}
         >
-          لو موقعك بيحتاج تسجيل دخول، اربطه هنا عشان نقدر نقرأ صفحاتك المحمية.
-          إحنا مش بنشوف ولا بنخزّن كلمة السر — بنحفظ الجلسة بس.
+          {t("connectedSites.emptyHint")}
         </div>
       )}
 
@@ -272,6 +273,7 @@ export function ConnectedSitesSection({ projectId }: { projectId: string }) {
             onScrape={() => handleScrape(r)}
             scraping={scrapingFor === r.id}
             scrapeStage={scrapingFor === r.id ? scrapeStage : ""}
+            t={t}
           />
         ))}
 
@@ -289,18 +291,18 @@ export function ConnectedSitesSection({ projectId }: { projectId: string }) {
   );
 }
 
-function statusMeta(status: string): { label: string; color: string } {
+function statusMeta(status: string, t: (key: string) => string): { label: string; color: string } {
   switch (status) {
     case "connected":
-      return { label: "متصل", color: "var(--approve)" };
+      return { label: t("connectedSites.status.connected"), color: "var(--approve)" };
     case "connecting":
-      return { label: "بيتم الربط…", color: "var(--review)" };
+      return { label: t("connectedSites.status.connecting"), color: "var(--review)" };
     case "expired":
-      return { label: "الجلسة انتهت", color: "var(--review)" };
+      return { label: t("connectedSites.status.expired"), color: "var(--review)" };
     case "error":
-      return { label: "خطأ", color: "var(--danger)" };
+      return { label: t("connectedSites.status.error"), color: "var(--danger)" };
     default:
-      return { label: "غير متصل", color: "var(--muted-text)" };
+      return { label: t("connectedSites.status.disconnected"), color: "var(--muted-text)" };
   }
 }
 
@@ -311,6 +313,7 @@ function SiteRow({
   onScrape,
   scraping,
   scrapeStage,
+  t,
 }: {
   row: Row;
   onConnect: () => void;
@@ -318,8 +321,9 @@ function SiteRow({
   onScrape: () => void;
   scraping: boolean;
   scrapeStage: string;
+  t: (key: string) => string;
 }) {
-  const meta = statusMeta(row.status);
+  const meta = statusMeta(row.status, t);
   const expired =
     row.status === "expired" ||
     (row.expires_at && new Date(row.expires_at).getTime() < Date.now());
@@ -375,7 +379,9 @@ function SiteRow({
               className="mt-2 font-mono text-[10px] uppercase tracking-[0.18em]"
               style={{ color: "var(--muted-text)" }}
             >
-              آخر اتصال · {new Date(row.last_connected_at).toLocaleString("en-GB")}
+              {t("connectedSites.lastConnected", {
+                time: new Date(row.last_connected_at).toLocaleString("en-GB"),
+              })}
             </div>
           )}
         </div>
@@ -392,7 +398,7 @@ function SiteRow({
               }}
             >
               <ArrowCounterClockwise size={14} strokeWidth={1.75} />
-              اربط تاني
+              {t("connectedSites.reconnect")}
             </button>
           ) : isConnected ? (
             <>
@@ -408,7 +414,7 @@ function SiteRow({
                 }}
               >
                 <Sparkle size={14} strokeWidth={1.75} />
-                {scraping ? scrapeStage || "جارٍ التحليل…" : "حلّل الصفحات المحمية"}
+                {scraping ? scrapeStage || t("connectedSites.scrapeRunning") : t("connectedSites.scrapeProtected")}
               </button>
               <button
                 type="button"
@@ -422,7 +428,7 @@ function SiteRow({
                 }}
               >
                 <ArrowCounterClockwise size={14} strokeWidth={1.75} />
-                تحديث الجلسة
+                {t("connectedSites.refreshSession")}
               </button>
             </>
 
@@ -438,13 +444,13 @@ function SiteRow({
               }}
             >
               <LinkSimple size={14} strokeWidth={1.75} />
-              اربط موقعك
+              {t("connectedSites.linkYourSite")}
             </button>
           )}
           <button
             type="button"
             onClick={onDelete}
-            aria-label="حذف"
+            aria-label={t("common.delete")}
             className="p-2"
             style={{ color: "var(--muted-text)" }}
           >
@@ -467,6 +473,7 @@ function ConnectModal({
   onDone: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
   const [submitting, setSubmitting] = useState(false);
 
   return (
@@ -491,23 +498,19 @@ function ConnectModal({
               className="font-mono text-[10px] uppercase tracking-[0.22em] mb-1"
               style={{ color: "var(--muted-text)" }}
             >
-              ربط الموقع
+              {t("connectedSites.modal.title")}
             </div>
             <h2
               className="font-display text-xl mb-2"
               style={{ color: "var(--ink-text)", fontWeight: 500 }}
             >
-              سجّل دخولك على موقعك
+              {t("connectedSites.modal.subtitle")}
             </h2>
             <p
               className="text-sm leading-relaxed"
               style={{ color: "var(--ink-text)", maxWidth: 720 }}
             >
-              النافذة دي متصفح حقيقي على موقعك.{" "}
-              <strong>اكتب الإيميل والباسوورد فيها زي ما بتعمل عادي.</strong>{" "}
-              إحنا مش بنشوف ولا بنخزّن كلمة السر — بنحفظ الجلسة بس عشان نقدر
-              نقرأ صفحاتك المحمية. لما تخلّص لوج إن، دوس{" "}
-              <strong>"تم تسجيل الدخول"</strong>.
+              {t("connectedSites.modal.instructions")}
             </p>
             <div
               className="mt-2 font-mono text-xs break-all"
@@ -520,7 +523,7 @@ function ConnectModal({
           <button
             type="button"
             onClick={onCancel}
-            aria-label="إلغاء"
+            aria-label={t("common.cancel")}
             className="p-2"
             style={{ color: "var(--muted-text)" }}
           >
@@ -551,7 +554,7 @@ function ConnectModal({
             style={{ color: "var(--muted-text)" }}
           >
             <ShieldCheck size={14} strokeWidth={1.5} style={{ color: "var(--approve)" }} />
-            الباسوورد بيدخل لموقعك مباشرة — مش بيمر علينا.
+            {t("connectedSites.modal.passwordNote")}
           </div>
           <div className="flex items-center gap-2">
             <a
@@ -565,7 +568,7 @@ function ConnectModal({
                 borderRadius: "3px",
               }}
             >
-              فتح في تبويب جديد
+              {t("connectedSites.modal.openNewTab")}
             </a>
             <button
               type="button"
@@ -577,7 +580,7 @@ function ConnectModal({
                 borderRadius: "3px",
               }}
             >
-              إلغاء
+              {t("common.cancel")}
             </button>
             <button
               type="button"
@@ -598,7 +601,7 @@ function ConnectModal({
               }}
             >
               <ShieldCheck size={14} strokeWidth={1.75} />
-              {submitting ? "جارٍ الحفظ…" : "تم تسجيل الدخول"}
+              {submitting ? t("connectedSites.modal.signingIn") : t("connectedSites.modal.signedIn")}
             </button>
           </div>
         </div>

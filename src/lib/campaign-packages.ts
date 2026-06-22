@@ -1,5 +1,5 @@
-// Shared config — safe to import from both client and server.
-// The 5 supported social channels across the app.
+import type { Locale } from "@/i18n/I18nProvider";
+
 export type Channel = "instagram" | "facebook" | "tiktok" | "linkedin" | "x";
 
 export const ALL_CHANNELS: Channel[] = ["instagram", "facebook", "tiktok", "linkedin", "x"];
@@ -10,6 +10,15 @@ export const CHANNEL_LABEL_AR: Record<Channel, string> = {
   tiktok: "تيك توك",
   linkedin: "لينكدإن",
   x: "إكس (تويتر)",
+};
+
+/** Native platform names — same in AR and EN UI. */
+export const CHANNEL_LABEL: Record<Channel, string> = {
+  instagram: "Instagram",
+  facebook: "Facebook",
+  tiktok: "TikTok",
+  linkedin: "LinkedIn",
+  x: "X",
 };
 
 export type Objective = "awareness" | "leads" | "sales";
@@ -138,21 +147,50 @@ export type AdaptResult =
   | { ok: true; plan: AdaptedPlan }
   | { ok: false; reason_ar: string };
 
+function channelListLabel(channels: Channel[], locale: Locale): string {
+  const sep = locale === "en" ? ", " : "، ";
+  const labels = channels.map((c) => (locale === "en" ? CHANNEL_LABEL[c] : CHANNEL_LABEL_AR[c]));
+  return labels.join(sep);
+}
+
+export function localizedPackageName(
+  packageId: string,
+  fallbackAr: string,
+  t: (key: string) => string,
+): string {
+  const key = `campaign.packages.${packageId}.name`;
+  const translated = t(key);
+  return translated !== key ? translated : fallbackAr;
+}
+
+export function localizedPackageDescription(
+  packageId: string,
+  fallbackAr: string,
+  t: (key: string) => string,
+): string {
+  const key = `campaign.packages.${packageId}.description`;
+  const translated = t(key);
+  return translated !== key ? translated : fallbackAr;
+}
+
 /**
  * Intersect a package's ideal channels with what the client actually has,
  * then distribute the post count. If none of the ideal channels are
- * available, fall back to all available channels and surface an Arabic note.
+ * available, fall back to all available channels and surface a note.
  */
 export function adaptPackageToAvailable(
   pkg: CampaignPackage,
   available: Channel[],
+  locale: Locale = "ar",
 ): AdaptResult {
   const avail = available.filter((c) => ALL_CHANNELS.includes(c));
   if (avail.length === 0) {
     return {
       ok: false,
       reason_ar:
-        "لازم تحدد القنوات المتاحة عندك الأول من إعدادات المشروع قبل اختيار الباكدچ.",
+        locale === "en"
+          ? "Set your available channels in project settings before choosing a package."
+          : "لازم تحدد القنوات المتاحة عندك الأول من إعدادات المشروع قبل اختيار الباكدچ.",
     };
   }
 
@@ -168,19 +206,21 @@ export function adaptPackageToAvailable(
       chosen = intersect;
       const dropped = pkg.ideal_channels.filter((c) => !avail.includes(c));
       if (dropped.length > 0) {
-        note = `الباكدچ ده مظبوط لـ ${pkg.ideal_channels
-          .map((c) => CHANNEL_LABEL_AR[c])
-          .join("، ")}. اشتغلنا على ${chosen
-          .map((c) => CHANNEL_LABEL_AR[c])
-          .join("، ")} لأن باقي القنوات مش متاحة عندك.`;
+        const ideal = channelListLabel(pkg.ideal_channels, locale);
+        const picked = channelListLabel(chosen, locale);
+        note =
+          locale === "en"
+            ? `This package is designed for ${ideal}. We adapted it to ${picked} because the other channels aren't available.`
+            : `الباكدچ ده مظبوط لـ ${ideal}. اشتغلنا على ${picked} لأن باقي القنوات مش متاحة عندك.`;
       }
     } else {
       chosen = avail.slice();
-      note = `مفيش أي قناة من قنوات الباكدچ المثالية (${pkg.ideal_channels
-        .map((c) => CHANNEL_LABEL_AR[c])
-        .join("، ")}) متاحة عندك، فاشتغلنا على ${chosen
-        .map((c) => CHANNEL_LABEL_AR[c])
-        .join("، ")}.`;
+      const ideal = channelListLabel(pkg.ideal_channels, locale);
+      const picked = channelListLabel(chosen, locale);
+      note =
+        locale === "en"
+          ? `None of the package's ideal channels (${ideal}) are available, so we used ${picked}.`
+          : `مفيش أي قناة من قنوات الباكدچ المثالية (${ideal}) متاحة عندك، فاشتغلنا على ${picked}.`;
     }
   }
 
@@ -192,7 +232,10 @@ export function adaptPackageToAvailable(
 
   // If we had to reduce the total because of caps, mention it.
   if (total < pkg.default_post_count && pkg.default_post_count > 1) {
-    const reduceNote = `قللنا عدد البوستات الإجمالي إلى ${total} علشان نحافظ على توازن التوزيع على القنوات المتاحة (بدل ${pkg.default_post_count}).`;
+    const reduceNote =
+      locale === "en"
+        ? `We reduced the total post count to ${total} to keep a balanced split across your available channels (instead of ${pkg.default_post_count}).`
+        : `قللنا عدد البوستات الإجمالي إلى ${total} علشان نحافظ على توازن التوزيع على القنوات المتاحة (بدل ${pkg.default_post_count}).`;
     note = note ? `${note} ${reduceNote}` : reduceNote;
   }
 

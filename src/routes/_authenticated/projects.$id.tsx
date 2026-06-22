@@ -9,7 +9,7 @@ import { analyzeWebsite, saveAnalysisEdits } from "@/lib/analyze-website.functio
 import { ConnectedSitesSection } from "@/components/ConnectedSitesSection";
 import { AvailableChannelsSettings } from "@/components/AvailableChannelsSettings";
 import { PackageGallery } from "@/components/PackageGallery";
-import type { AdaptedPlan, Channel } from "@/lib/campaign-packages";
+import { localizedPackageName, type AdaptedPlan, type Channel } from "@/lib/campaign-packages";
 import { formatFrameworksDisplay } from "@/lib/marketing-frameworks";
 import { StrategistChat } from "@/components/StrategistChat";
 import { approveCampaignPlan } from "@/lib/strategist-chat.functions";
@@ -201,7 +201,7 @@ function ProjectDetail() {
       </header>
 
       <section className="mb-8">
-        <SectionLabel>ذكاء الموقع</SectionLabel>
+        <SectionLabel>{t("analysis.title")}</SectionLabel>
 
         {status === "idle" && (
           <IdleCard onAnalyze={handleAnalyze} disabled={isWorking} />
@@ -211,7 +211,7 @@ function ProjectDetail() {
 
         {status === "error" && !isWorking && (
           <ErrorCard
-            message={latest?.error_message ?? "حصل خطأ غير معروف."}
+            message={latest?.error_message ?? t("analysis.unknownError")}
             onRetry={handleAnalyze}
           />
         )}
@@ -391,6 +391,7 @@ function ProjectSettingsForm({
 }
 
 function CampaignSetup({ projectId }: { projectId: string }) {
+  const { t, locale } = useTranslation();
   const [available, setAvailable] = useState<Channel[]>([]);
   const [picked, setPicked] = useState<AdaptedPlan | null>(null);
   const [entry, setEntry] = useState<"packages" | "strategist">("packages");
@@ -408,7 +409,7 @@ function CampaignSetup({ projectId }: { projectId: string }) {
       const r = await approveFn({ data: { projectId, plan: picked } });
       setApprovedPackageId(r.campaign_id);
     } catch (e) {
-      setPkgError(e instanceof Error ? e.message : "فشل اعتماد الخطة");
+      setPkgError(e instanceof Error ? e.message : t("campaign.approveFailed"));
     } finally {
       setApprovingPkg(false);
     }
@@ -417,18 +418,18 @@ function CampaignSetup({ projectId }: { projectId: string }) {
   return (
     <>
       <section className="mt-12 mb-8">
-        <SectionLabel>إعدادات الحملة</SectionLabel>
+        <SectionLabel>{t("campaign.settingsTitle")}</SectionLabel>
         <AvailableChannelsSettings projectId={projectId} onChange={setAvailable} />
       </section>
 
       <section className="mb-8">
-        <SectionLabel>ابدأ الحملة</SectionLabel>
+        <SectionLabel>{t("campaign.startTitle")}</SectionLabel>
         <div className="flex gap-2 mb-5">
           <EntryTab active={entry === "packages"} onClick={() => setEntry("packages")}>
-            اختر باكدچ
+            {t("campaign.tabPackages")}
           </EntryTab>
           <EntryTab active={entry === "strategist"} onClick={() => setEntry("strategist")}>
-            اتكلم مع الاستراتيجي
+            {t("campaign.tabStrategist")}
           </EntryTab>
         </div>
 
@@ -452,17 +453,20 @@ function CampaignSetup({ projectId }: { projectId: string }) {
                   className="font-mono text-[10px] uppercase tracking-[0.22em] mb-2"
                   style={{ color: "var(--muted-text)" }}
                 >
-                  الخطة المختارة
+                  {t("campaign.pickedPlanTitle")}
                 </div>
                 <div
                   className="font-display text-[18px] mb-1"
                   style={{ color: "var(--ink-text)", fontWeight: 500 }}
                 >
-                  {picked.package_name_ar}
+                  {localizedPackageName(picked.package_id, picked.package_name_ar, t)}
                 </div>
                 <div className="text-sm mb-3" style={{ color: "var(--ink-text)" }}>
-                  {picked.total_posts} بوست على {picked.channels.length} قناة. الإطار:{" "}
-                  {formatFrameworksDisplay(picked.frameworks)}.
+                  {t("campaign.pickedPlanSummary", {
+                    posts: picked.total_posts,
+                    channels: picked.channels.length,
+                    frameworks: formatFrameworksDisplay(picked.frameworks, locale),
+                  })}
                 </div>
                 {picked.adaptation_note_ar && (
                   <div
@@ -492,7 +496,7 @@ function CampaignSetup({ projectId }: { projectId: string }) {
                   }}
                 >
                   <Sparkle size={14} strokeWidth={1.75} />
-                  {approvingPkg ? "بيتم الاعتماد…" : "اعتمد الخطة"}
+                  {approvingPkg ? t("campaign.approvingPlan") : t("campaign.approvePlan")}
                 </button>
               </div>
             )}
@@ -506,7 +510,7 @@ function CampaignSetup({ projectId }: { projectId: string }) {
                   color: "var(--ink-text)",
                 }}
               >
-                <div className="mb-4">الخطة اتعتمدت — جاهزة للتوليد.</div>
+                <div className="mb-4">{t("campaign.planApproved")}</div>
                 <CampaignGeneratePanel campaignId={approvedPackageId} />
               </div>
             )}
@@ -581,11 +585,11 @@ function Card({ children, accent = false }: { children: React.ReactNode; accent?
 }
 
 function IdleCard({ onAnalyze, disabled }: { onAnalyze: () => void; disabled: boolean }) {
+  const { t } = useTranslation();
   return (
     <Card accent>
       <p className="text-base mb-5" style={{ color: "var(--ink-text)" }}>
-        لسه ما تم تحليل الموقع. شغّل التحليل عشان الـ AI يقرأ الصفحات ويستخرج
-        نموذج العمل والجمهور ونبرة الصوت ونقاط القوة.
+        {t("analysis.idleBody")}
       </p>
       <button
         type="button"
@@ -599,19 +603,20 @@ function IdleCard({ onAnalyze, disabled }: { onAnalyze: () => void; disabled: bo
         }}
       >
         <Sparkle size={14} strokeWidth={1.75} />
-        حلّل الموقع
+        {t("analysis.analyzeButton")}
       </button>
     </Card>
   );
 }
 
 function RunningCard({ status }: { status: string }) {
+  const { t } = useTranslation();
   const label =
     status === "analyzing"
-      ? "بيتم تحليل المحتوى…"
+      ? t("analysis.runningAnalyzing")
       : status === "scraping"
-        ? "بيتم سحب صفحات الموقع…"
-        : "جارٍ بدء التحليل…";
+        ? t("analysis.runningScraping")
+        : t("analysis.runningStarting");
   return (
     <Card accent>
       <div className="flex items-center gap-3">
@@ -625,13 +630,14 @@ function RunningCard({ status }: { status: string }) {
         className="mt-2 font-mono text-[10px] uppercase tracking-[0.18em]"
         style={{ color: "var(--muted-text)" }}
       >
-        ممكن ياخد دقيقة. سيب الصفحة مفتوحة.
+        {t("analysis.runningHint")}
       </div>
     </Card>
   );
 }
 
 function ErrorCard({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const { t } = useTranslation();
   return (
     <div
       className="p-6"
@@ -645,7 +651,7 @@ function ErrorCard({ message, onRetry }: { message: string; onRetry: () => void 
         className="font-mono text-[10px] uppercase tracking-[0.22em] mb-2"
         style={{ color: "var(--danger)" }}
       >
-        فشل التحليل
+        {t("analysis.failedTitle")}
       </div>
       <p className="text-sm leading-relaxed mb-5" style={{ color: "var(--ink-text)" }}>
         {message}
@@ -661,7 +667,7 @@ function ErrorCard({ message, onRetry }: { message: string; onRetry: () => void 
         }}
       >
         <ArrowCounterClockwise size={14} strokeWidth={1.75} />
-        حاول تاني
+        {t("common.retry")}
       </button>
     </div>
   );
@@ -682,6 +688,7 @@ function AnalysisEditor({
   initial: Analysis;
   onReanalyze: () => void;
 }) {
+  const { t } = useTranslation();
   const [a, setA] = useState<Analysis>(initial);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -703,7 +710,7 @@ function AnalysisEditor({
       await saveFn({ data: { projectId, analysisId, analysis: a } });
       setSavedAt(new Date().toLocaleTimeString("en-GB"));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "خطأ في الحفظ");
+      setError(e instanceof Error ? e.message : t("common.saveError"));
     } finally {
       setSaving(false);
     }
@@ -712,7 +719,7 @@ function AnalysisEditor({
   return (
     <div className="space-y-5">
       <Card>
-        <FieldLabel>نموذج العمل</FieldLabel>
+        <FieldLabel>{t("analysis.fields.businessModel")}</FieldLabel>
         <Textarea
           value={a.business_model}
           onChange={(v) => setA({ ...a, business_model: v })}
@@ -720,7 +727,7 @@ function AnalysisEditor({
       </Card>
 
       <Card>
-        <FieldLabel>الجمهور المستهدف</FieldLabel>
+        <FieldLabel>{t("analysis.fields.targetAudience")}</FieldLabel>
         <Textarea
           value={a.target_audience}
           onChange={(v) => setA({ ...a, target_audience: v })}
@@ -728,7 +735,7 @@ function AnalysisEditor({
       </Card>
 
       <Card>
-        <FieldLabel>نبرة الصوت</FieldLabel>
+        <FieldLabel>{t("analysis.fields.toneOfVoice")}</FieldLabel>
         <Textarea
           value={a.tone_of_voice}
           onChange={(v) => setA({ ...a, tone_of_voice: v })}
@@ -736,21 +743,21 @@ function AnalysisEditor({
       </Card>
 
       <Card>
-        <FieldLabel>نقاط القوة</FieldLabel>
-        <StringList items={a.usps} onChange={(usps) => setA({ ...a, usps })} placeholder="نقطة قوة" />
+        <FieldLabel>{t("analysis.fields.usps")}</FieldLabel>
+        <StringList items={a.usps} onChange={(usps) => setA({ ...a, usps })} placeholder={t("analysis.placeholders.usp")} />
       </Card>
 
       <Card>
-        <FieldLabel>نقاط الألم</FieldLabel>
+        <FieldLabel>{t("analysis.fields.painPoints")}</FieldLabel>
         <StringList
           items={a.pain_points}
           onChange={(pain_points) => setA({ ...a, pain_points })}
-          placeholder="نقطة ألم"
+          placeholder={t("analysis.placeholders.painPoint")}
         />
       </Card>
 
       <Card>
-        <FieldLabel>الشخصيات</FieldLabel>
+        <FieldLabel>{t("analysis.fields.personas")}</FieldLabel>
         <PersonasEditor
           personas={a.personas}
           onChange={(personas) => setA({ ...a, personas })}
@@ -758,20 +765,20 @@ function AnalysisEditor({
       </Card>
 
       <Card>
-        <FieldLabel>فجوات المحتوى</FieldLabel>
+        <FieldLabel>{t("analysis.fields.contentGaps")}</FieldLabel>
         <StringList
           items={a.content_gaps}
           onChange={(content_gaps) => setA({ ...a, content_gaps })}
-          placeholder="فجوة محتوى"
+          placeholder={t("analysis.placeholders.contentGap")}
         />
       </Card>
 
       <Card>
-        <FieldLabel>أعمدة المحتوى</FieldLabel>
+        <FieldLabel>{t("analysis.fields.contentPillars")}</FieldLabel>
         <StringList
           items={a.content_pillars}
           onChange={(content_pillars) => setA({ ...a, content_pillars })}
-          placeholder="عمود محتوى"
+          placeholder={t("analysis.placeholders.pillar")}
         />
       </Card>
 
@@ -797,7 +804,7 @@ function AnalysisEditor({
           }}
         >
           <FloppyDisk size={14} strokeWidth={1.75} />
-          {saving ? "جارٍ الحفظ…" : "حفظ التعديلات"}
+          {saving ? t("common.saving") : t("analysis.saveEdits")}
         </button>
         <button
           type="button"
@@ -810,14 +817,14 @@ function AnalysisEditor({
           }}
         >
           <ArrowCounterClockwise size={14} strokeWidth={1.75} />
-          إعادة تحليل
+          {t("analysis.reanalyze")}
         </button>
         {savedAt && (
           <span
             className="font-mono text-[10px] uppercase tracking-[0.18em]"
             style={{ color: "var(--muted-text)" }}
           >
-            اتحفظ · {savedAt}
+            {t("common.savedAt", { time: savedAt })}
           </span>
         )}
       </div>
@@ -886,6 +893,7 @@ function StringList({
   onChange: (next: string[]) => void;
   placeholder?: string;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-2">
       {items.map((it, i) => (
@@ -898,7 +906,7 @@ function StringList({
           <button
             type="button"
             onClick={() => onChange(items.filter((_, idx) => idx !== i))}
-            aria-label="حذف"
+            aria-label={t("common.delete")}
             className="p-2"
             style={{ color: "var(--muted-text)" }}
           >
@@ -917,7 +925,7 @@ function StringList({
         }}
       >
         <Plus size={12} strokeWidth={1.75} />
-        إضافة
+        {t("common.add")}
       </button>
     </div>
   );
@@ -930,6 +938,7 @@ function PersonasEditor({
   personas: Persona[];
   onChange: (next: Persona[]) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4">
       {personas.map((p, i) => (
@@ -944,7 +953,7 @@ function PersonasEditor({
         >
           <div className="flex items-center justify-between gap-3 mb-3">
             <div className="flex-1">
-              <FieldLabel>اسم الشخصية</FieldLabel>
+              <FieldLabel>{t("analysis.placeholders.personaName")}</FieldLabel>
               <TextInput
                 value={p.name}
                 onChange={(v) =>
@@ -955,7 +964,7 @@ function PersonasEditor({
             <button
               type="button"
               onClick={() => onChange(personas.filter((_, idx) => idx !== i))}
-              aria-label="حذف الشخصية"
+              aria-label={t("common.deletePersona")}
               className="p-2 mt-5"
               style={{ color: "var(--muted-text)" }}
             >
@@ -963,23 +972,23 @@ function PersonasEditor({
             </button>
           </div>
           <div className="mb-3">
-            <FieldLabel>نقاط الألم</FieldLabel>
+            <FieldLabel>{t("analysis.fields.painPoints")}</FieldLabel>
             <StringList
               items={p.pain_points}
               onChange={(pain_points) =>
                 onChange(personas.map((x, idx) => (idx === i ? { ...x, pain_points } : x)))
               }
-              placeholder="نقطة ألم"
+              placeholder={t("analysis.placeholders.painPoint")}
             />
           </div>
           <div>
-            <FieldLabel>الاعتراضات</FieldLabel>
+            <FieldLabel>{t("analysis.fields.objections")}</FieldLabel>
             <StringList
               items={p.objections}
               onChange={(objections) =>
                 onChange(personas.map((x, idx) => (idx === i ? { ...x, objections } : x)))
               }
-              placeholder="اعتراض"
+              placeholder={t("analysis.placeholders.objection")}
             />
           </div>
         </div>
@@ -995,7 +1004,7 @@ function PersonasEditor({
         }}
       >
         <Plus size={12} strokeWidth={1.75} />
-        إضافة شخصية
+        {t("analysis.addPersona")}
       </button>
     </div>
   );

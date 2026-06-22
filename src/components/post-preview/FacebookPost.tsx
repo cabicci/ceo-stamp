@@ -1,6 +1,7 @@
 import { ThumbsUp, MessageCircle, Share2, MoreHorizontal, Globe2 } from "lucide-react";
 import { Avatar, Caption, Hashtags, timeAgo } from "./parts";
 import { ImageSlot } from "./ImageSlot";
+import { useTranslation } from "@/i18n/I18nProvider";
 import type { BrandIdentity, ContentItemPreview, ImageSource } from "./types";
 import { extractHashtags, stripHashtags } from "./types";
 
@@ -13,6 +14,7 @@ type Props = {
 };
 
 export function FacebookPost({ item, brand, projectId, editable, onImageChange }: Props) {
+  const { t } = useTranslation();
   const tags = extractHashtags(item.copy);
   const body = stripHashtags(item.copy);
   return (
@@ -27,9 +29,9 @@ export function FacebookPost({ item, brand, projectId, editable, onImageChange }
             {brand.name}
           </div>
           <div className="flex items-center gap-1 text-[12px]" style={{ color: "#65676b" }}>
-            <span>Sponsored · مُموَّل</span>
+            <span>{t("postPreview.sponsored")}</span>
             <span>·</span>
-            <span>{timeAgo()}</span>
+            <span>{timeAgo(t("postPreview.timeAgo"))}</span>
             <span>·</span>
             <Globe2 className="h-3 w-3" />
           </div>
@@ -53,7 +55,7 @@ export function FacebookPost({ item, brand, projectId, editable, onImageChange }
           </span>
           <span>1.2K</span>
         </div>
-        <div>84 تعليق · 12 مشاركة</div>
+        <div>{t("postPreview.facebookEngagement")}</div>
       </div>
       <div className="grid grid-cols-3 border-t" style={{ borderColor: "#ced0d4" }}>
         {[

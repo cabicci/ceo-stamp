@@ -4,8 +4,9 @@ import { ArrowLeft } from "@phosphor-icons/react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { PostPreview, type BrandIdentity, type ContentItemPreview, type Platform } from "@/components/post-preview";
-import { CHANNEL_LABEL_AR, type Channel } from "@/lib/campaign-packages";
+import { CHANNEL_LABEL, localizedPackageName, localizedPackageDescription, type Channel } from "@/lib/campaign-packages";
 import { formatFrameworksDisplay } from "@/lib/marketing-frameworks";
+import { useTranslation } from "@/i18n/I18nProvider";
 
 export const Route = createFileRoute("/_authenticated/campaigns/$campaignId")({
   head: () => ({ meta: [{ title: "Marketing CEO — Campaign" }] }),
@@ -49,11 +50,27 @@ function toPreviewPlatform(platform: string): Platform {
   return platform as Platform;
 }
 
+function resolvePackageName(
+  t: (key: string) => string,
+  plan: CampaignPlan | null,
+): string {
+  if (!plan?.package_id) return plan?.package_name_ar ?? t("campaignPage.defaultName");
+  return localizedPackageName(plan.package_id, plan.package_name_ar ?? t("campaignPage.defaultName"), t);
+}
+
+function resolvePackageDescription(
+  t: (key: string) => string,
+  plan: CampaignPlan | null,
+): string | null {
+  if (!plan?.package_id) return plan?.description_ar ?? null;
+  return localizedPackageDescription(plan.package_id, plan.description_ar ?? "", t) || null;
+}
+
 function CampaignPage() {
   const { campaignId } = Route.useParams();
+  const { t, locale } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [campaignName, setCampaignName] = useState("");
   const [projectId, setProjectId] = useState<string | null>(null);
   const [plan, setPlan] = useState<CampaignPlan | null>(null);
   const [contentItems, setContentItems] = useState<ContentRow[]>([]);
@@ -73,11 +90,10 @@ function CampaignPage() {
           .eq("id", campaignId)
           .maybeSingle();
         if (cErr) throw cErr;
-        if (!campaign) throw new Error("الحملة مش موجودة.");
+        if (!campaign) throw new Error(t("campaignPage.notFound"));
 
         const rawPlan = campaign.campaign_plan as CampaignPlan | null;
         setPlan(rawPlan);
-        setCampaignName(rawPlan?.package_name_ar ?? "حملة");
         setProjectId(campaign.project_id);
 
         const { data: project } = await supabase
@@ -93,7 +109,7 @@ function CampaignPage() {
           .maybeSingle();
 
         setBrand({
-          name: project?.name ?? "البراند",
+          name: project?.name ?? t("campaignPage.defaultBrand"),
           website: project?.website_url ?? undefined,
           brand_colors: Array.isArray(profile?.brand_colors)
             ? (profile.brand_colors as string[])
@@ -121,7 +137,7 @@ function CampaignPage() {
         setAdCopies(ads ?? []);
       } catch (e) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : "فشل تحميل الحملة");
+          setError(e instanceof Error ? e.message : t("campaignPage.loadFailed"));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -132,7 +148,10 @@ function CampaignPage() {
     return () => {
       cancelled = true;
     };
-  }, [campaignId]);
+  }, [campaignId, t]);
+
+  const planDescription = useMemo(() => resolvePackageDescription(t, plan), [t, plan]);
+  const displayName = useMemo(() => resolvePackageName(t, plan), [t, plan]);
 
   const previews = useMemo(() => {
     if (!brand) return [];
@@ -162,13 +181,13 @@ function CampaignPage() {
             style={{ color: "var(--muted-text)" }}
           >
             <ArrowLeft size={14} strokeWidth={1.75} />
-            رجوع للمشروع
+            {t("campaignPage.backToProject")}
           </Link>
         )}
 
         {loading && (
           <div className="text-sm" style={{ color: "var(--muted-text)" }}>
-            بيتحمّل…
+            {t("common.loading")}
           </div>
         )}
 
@@ -188,33 +207,35 @@ function CampaignPage() {
                 className="font-mono text-[10px] uppercase tracking-[0.22em] mb-2"
                 style={{ color: "var(--muted-text)" }}
               >
-                المحتوى المولّد
+                {t("campaignPage.generatedContent")}
               </div>
               <h1
                 className="font-display text-[28px] mb-2"
                 style={{ color: "var(--ink-text)", fontWeight: 500 }}
               >
-                {campaignName}
+                {displayName}
               </h1>
-              {plan?.description_ar && (
+              {planDescription && (
                 <p className="text-sm mb-2" style={{ color: "var(--ink-text)" }}>
-                  {plan.description_ar}
+                  {planDescription}
                 </p>
               )}
               {plan?.frameworks && plan.frameworks.length > 0 && (
                 <p className="text-sm" style={{ color: "var(--muted-text)" }}>
-                  الأطر: {formatFrameworksDisplay(plan.frameworks)}
+                  {t("campaignPage.frameworks", {
+                    frameworks: formatFrameworksDisplay(plan.frameworks, locale),
+                  })}
                 </p>
               )}
             </div>
 
             <section className="mb-12">
               <SectionLabel>
-                البوستات ({contentItems.length})
+                {t("campaignPage.posts", { count: contentItems.length })}
               </SectionLabel>
               {previews.length === 0 ? (
                 <p className="text-sm" style={{ color: "var(--muted-text)" }}>
-                  مفيش بوستات لسه.
+                  {t("campaignPage.noPosts")}
                 </p>
               ) : (
                 <div className="grid gap-8 lg:grid-cols-2">
@@ -225,7 +246,7 @@ function CampaignPage() {
                         style={{ color: "var(--muted-text)" }}
                       >
                         <span>
-                          {CHANNEL_LABEL_AR[meta.platform as Channel] ?? meta.platform}
+                          {CHANNEL_LABEL[meta.platform as Channel] ?? meta.platform}
                         </span>
                         {meta.scheduled_date && <span>· {meta.scheduled_date}</span>}
                         {meta.framework_applied && (
@@ -254,10 +275,12 @@ function CampaignPage() {
             </section>
 
             <section>
-              <SectionLabel>الإعلانات ({adCopies.length})</SectionLabel>
+              <SectionLabel>
+                {t("campaignPage.ads", { count: adCopies.length })}
+              </SectionLabel>
               {adCopies.length === 0 ? (
                 <p className="text-sm" style={{ color: "var(--muted-text)" }}>
-                  مفيش إعلانات لسه.
+                  {t("campaignPage.noAds")}
                 </p>
               ) : (
                 <div className="space-y-4">
@@ -275,8 +298,10 @@ function CampaignPage() {
                         className="font-mono text-[9px] uppercase tracking-[0.18em] mb-2"
                         style={{ color: "var(--muted-text)" }}
                       >
-                        {CHANNEL_LABEL_AR[ad.platform as Channel] ?? ad.platform}
-                        {ad.variant_label ? ` · variant ${ad.variant_label}` : ""}
+                        {CHANNEL_LABEL[ad.platform as Channel] ?? ad.platform}
+                        {ad.variant_label
+                          ? ` · ${t("campaignPage.variant", { label: ad.variant_label })}`
+                          : ""}
                         {ad.framework_applied ? ` · ${ad.framework_applied}` : ""}
                       </div>
                       {ad.headline && (

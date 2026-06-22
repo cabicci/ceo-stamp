@@ -3,6 +3,8 @@
  * definitions, and prompt-ready rendering. Server-safe; import from client for labels only.
  */
 
+import type { Locale } from "@/i18n/I18nProvider";
+
 export type MarketingFramework = {
   id: string;
   name_ar: string;
@@ -454,15 +456,20 @@ ${donts}`;
 ${blocks.join("\n\n")}`;
 }
 
-/** Arabic display name for UI badges; falls back to id. */
-export function getFrameworkDisplayName(id: string): string {
-  return MARKETING_FRAMEWORKS[id]?.name_ar ?? id;
+/** Display name for UI badges; falls back to id. */
+export function getFrameworkDisplayName(id: string, locale: Locale = "ar"): string {
+  const f = MARKETING_FRAMEWORKS[id];
+  if (!f) return id;
+  return locale === "en" ? f.name_en : f.name_ar;
 }
 
-/** Comma-separated Arabic labels for UI; empty packages show dynamic label. */
-export function formatFrameworksDisplay(frameworkIds: string[]): string {
-  if (frameworkIds.length === 0) return FRAMEWORK_DYNAMIC_LABEL_AR;
-  return frameworkIds.map(getFrameworkDisplayName).join("، ");
+/** Comma-separated labels for UI; empty packages show dynamic label. */
+export function formatFrameworksDisplay(frameworkIds: string[], locale: Locale = "ar"): string {
+  if (frameworkIds.length === 0) {
+    return locale === "en" ? "Set by objective" : FRAMEWORK_DYNAMIC_LABEL_AR;
+  }
+  const sep = locale === "en" ? ", " : "، ";
+  return frameworkIds.map((id) => getFrameworkDisplayName(id, locale)).join(sep);
 }
 
 /** Labels for framework_applied field in generated content. */

@@ -1,6 +1,7 @@
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from "lucide-react";
 import { Avatar, Caption, Hashtags, timeAgo } from "./parts";
 import { ImageSlot } from "./ImageSlot";
+import { useTranslation } from "@/i18n/I18nProvider";
 import type { BrandIdentity, ContentItemPreview, ImageSource } from "./types";
 import { extractHashtags, stripHashtags } from "./types";
 
@@ -16,6 +17,7 @@ const handle = (brand: BrandIdentity) =>
   brand.handle?.replace(/^@/, "") || brand.name.toLowerCase().replace(/\s+/g, "_");
 
 export function InstagramPost({ item, brand, projectId, editable, onImageChange }: Props) {
+  const { t } = useTranslation();
   const tags = extractHashtags(item.copy);
   const body = stripHashtags(item.copy);
   return (
@@ -31,7 +33,9 @@ export function InstagramPost({ item, brand, projectId, editable, onImageChange 
         </div>
         <div className="min-w-0 flex-1 text-[14px] font-semibold" style={{ color: "#262626" }}>
           {handle(brand)}
-          <span className="ms-1 text-[12px] font-normal" style={{ color: "#8e8e8e" }}>· مُموَّل</span>
+          <span className="ms-1 text-[12px] font-normal" style={{ color: "#8e8e8e" }}>
+            · {t("postPreview.sponsored")}
+          </span>
         </div>
         <MoreHorizontal className="h-5 w-5" style={{ color: "#262626" }} />
       </header>
@@ -46,7 +50,7 @@ export function InstagramPost({ item, brand, projectId, editable, onImageChange 
           <Bookmark className="ms-auto h-6 w-6" style={{ color: "#262626" }} />
         </div>
         <div className="mt-2 text-[14px] font-semibold" style={{ color: "#262626" }}>
-          2,843 إعجاب
+          {t("postPreview.likes")}
         </div>
       </div>
       <div className="px-3 pb-3 pt-1 text-[14px]" style={{ color: "#262626" }}>
@@ -55,11 +59,11 @@ export function InstagramPost({ item, brand, projectId, editable, onImageChange 
           <Caption text={body} className="min-w-0 flex-1" />
         </div>
         {tags.length > 0 && <Hashtags tags={tags} color="#00376b" className="mt-1" />}
-        <div className="mt-2 text-[12px]" style={{ color: "#8e8e8e" }} dir="rtl">
-          عرض جميع التعليقات (٤٢)
+        <div className="mt-2 text-[12px]" style={{ color: "#8e8e8e" }}>
+          {t("postPreview.viewComments")}
         </div>
         <div className="mt-1 text-[10px] uppercase" style={{ color: "#8e8e8e" }} dir="ltr">
-          {timeAgo("2 hours ago")}
+          {timeAgo(t("postPreview.timeAgo"))}
         </div>
       </div>
     </article>

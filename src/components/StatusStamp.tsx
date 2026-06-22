@@ -1,7 +1,7 @@
 import { useId } from "react";
+import { useTranslation } from "@/i18n/I18nProvider";
 
 type StatusStampProps = {
-  language?: "en" | "ar";
   className?: string;
 };
 
@@ -9,10 +9,11 @@ type StatusStampProps = {
  * StatusStamp — the signature "Approved" rubber-stamp impression.
  * The only place in the app where color is used boldly. Static; no motion.
  */
-export function StatusStamp({ language = "en", className = "" }: StatusStampProps) {
+export function StatusStamp({ className = "" }: StatusStampProps) {
+  const { t, locale } = useTranslation();
   const filterId = useId();
-  const label = language === "ar" ? "معتمد" : "APPROVED";
-  const isArabic = language === "ar";
+  const label = t("statusStamp.approved");
+  const isArabic = locale === "ar";
 
   return (
     <span

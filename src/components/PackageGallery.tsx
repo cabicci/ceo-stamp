@@ -10,13 +10,14 @@ import {
 } from "@phosphor-icons/react";
 import {
   CAMPAIGN_PACKAGES,
-  CHANNEL_LABEL_AR,
+  CHANNEL_LABEL,
   adaptPackageToAvailable,
   type AdaptedPlan,
   type CampaignPackage,
   type Channel,
 } from "@/lib/campaign-packages";
-import { FRAMEWORK_DYNAMIC_LABEL_AR, getFrameworkDisplayName } from "@/lib/marketing-frameworks";
+import { getFrameworkDisplayName } from "@/lib/marketing-frameworks";
+import { useTranslation } from "@/i18n/I18nProvider";
 
 const ICONS: Record<string, React.ComponentType<{ size?: number; strokeWidth?: number }>> = {
   limited_offer: Lightning,
@@ -33,14 +34,15 @@ type Props = {
 };
 
 export function PackageGallery({ availableChannels, onSelectPlan }: Props) {
+  const { t, locale } = useTranslation();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const adapted = useMemo(() => {
     return CAMPAIGN_PACKAGES.map((pkg) => ({
       pkg,
-      result: adaptPackageToAvailable(pkg, availableChannels),
+      result: adaptPackageToAvailable(pkg, availableChannels, locale),
     }));
-  }, [availableChannels]);
+  }, [availableChannels, locale]);
 
   const noChannels = availableChannels.length === 0;
 
@@ -56,8 +58,7 @@ export function PackageGallery({ availableChannels, onSelectPlan }: Props) {
             borderRadius: "3px",
           }}
         >
-          فعّل القنوات المتاحة من فوق الأول علشان نقدر نكيّف الباكدچات على
-          قنواتك.
+          {t("campaign.packages.enableChannelsFirst")}
         </div>
       )}
 
@@ -102,7 +103,17 @@ function PackageCard({
   isSelected: boolean;
   onPick: () => void;
 }) {
+  const { t, locale } = useTranslation();
   const Icon = ICONS[pkg.id] ?? Megaphone;
+  const pkgKey = pkg.id as
+    | "limited_offer"
+    | "product_launch"
+    | "brand_awareness"
+    | "lead_gen"
+    | "value_authority"
+    | "quick_post";
+  const channelSep = locale === "en" ? ", " : "، ";
+
   return (
     <button
       type="button"
@@ -133,13 +144,13 @@ function PackageCard({
               className="font-display text-[18px] leading-tight"
               style={{ color: "var(--ink-text)", fontWeight: 500 }}
             >
-              {pkg.name_ar}
+              {t(`campaign.packages.${pkgKey}.name`)}
             </div>
             <div
               className="font-mono text-[10px] uppercase tracking-[0.18em] mt-1"
               style={{ color: "var(--muted-text)" }}
             >
-              {pkg.funnel_focus}
+              {pkg.id === "quick_post" ? t("campaign.packages.frameworkDynamic") : pkg.funnel_focus}
             </div>
           </div>
         </div>
@@ -157,27 +168,26 @@ function PackageCard({
         className="text-sm leading-relaxed mb-4"
         style={{ color: "var(--ink-text)" }}
       >
-        {pkg.description_ar}
+        {t(`campaign.packages.${pkgKey}.description`)}
       </p>
 
       <div className="flex flex-wrap gap-2 mb-3">
-        <Pill label={`${totalPosts} بوست`} strong />
+        <Pill label={t("campaign.packages.postsCount", { count: totalPosts })} strong />
         {adaptedChannels.length > 0 ? (
-          adaptedChannels.map((c) => <Pill key={c} label={CHANNEL_LABEL_AR[c]} />)
+          adaptedChannels.map((c) => <Pill key={c} label={CHANNEL_LABEL[c]} />)
         ) : pkg.ideal_channels === "client_choice" ? (
-          <Pill label="القنوات: على اختيارك" />
+          <Pill label={t("campaign.packages.channelsYourChoice")} />
         ) : (
           <Pill
-            label={
-              "المثالي: " +
-              pkg.ideal_channels.map((c) => CHANNEL_LABEL_AR[c]).join("، ")
-            }
+            label={t("campaign.packages.idealChannels", {
+              channels: pkg.ideal_channels.map((c) => CHANNEL_LABEL[c]).join(channelSep),
+            })}
           />
         )}
       </div>
 
       <div className="flex flex-wrap gap-1.5 mb-3">
-        {(pkg.frameworks.length > 0 ? pkg.frameworks : [FRAMEWORK_DYNAMIC_LABEL_AR]).map((f) => (
+        {(pkg.frameworks.length > 0 ? pkg.frameworks : ["__dynamic__"]).map((f) => (
           <span
             key={f}
             className="font-mono text-[9px] uppercase tracking-[0.18em] px-2 py-1"
@@ -187,7 +197,9 @@ function PackageCard({
               borderRadius: "2px",
             }}
           >
-            {pkg.frameworks.length > 0 ? getFrameworkDisplayName(f) : f}
+            {f === "__dynamic__"
+              ? t("campaign.packages.frameworkDynamic")
+              : getFrameworkDisplayName(f, locale)}
           </span>
         ))}
       </div>

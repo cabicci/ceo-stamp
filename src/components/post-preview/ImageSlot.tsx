@@ -3,6 +3,7 @@ import { Sparkle, Upload, LinkSimple, Image as ImageIcon, CircleNotch } from "@p
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { generatePostImage } from "@/lib/generate-post-image.functions";
+import { useTranslation } from "@/i18n/I18nProvider";
 import type { ContentItemPreview, ImageSource } from "./types";
 
 
@@ -40,6 +41,7 @@ export function ImageSlot({
   onChange,
   variant = "card",
 }: Props) {
+  const { t, dir } = useTranslation();
   const [busy, setBusy] = useState<"upload" | "ai" | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [urlDraft, setUrlDraft] = useState(item.image_source === "url" ? item.image_url ?? "" : "");
@@ -54,7 +56,7 @@ export function ImageSlot({
 
   async function handleUpload(file: File) {
     if (!projectId) {
-      alert("لازم تختار مشروع الأول");
+      alert(t("postPreview.selectProjectFirst"));
       return;
     }
     setBusy("upload");
@@ -72,7 +74,7 @@ export function ImageSlot({
       update(data.signedUrl, "upload");
     } catch (e) {
       console.error(e);
-      alert("فشل رفع الصورة");
+      alert(t("postPreview.uploadFailed"));
     } finally {
       setBusy(null);
     }
@@ -80,7 +82,7 @@ export function ImageSlot({
 
   async function handleAi() {
     if (!item.id) {
-      setAiError("لازم تحفظ العنصر الأول قبل توليد الصورة");
+      setAiError(t("postPreview.saveItemFirst"));
       return;
     }
     setAiError(null);
@@ -90,8 +92,8 @@ export function ImageSlot({
       update(res.imageUrl, "ai");
     } catch (e) {
       console.error(e);
-      const msg = e instanceof Error ? e.message : "فشل توليد الصورة";
-      setAiError(msg.length > 200 ? "فشل توليد الصورة — حاول تاني" : msg);
+      const msg = e instanceof Error ? e.message : t("postPreview.generateImageFailed");
+      setAiError(msg.length > 200 ? t("postPreview.generateImageFailed") : msg);
     } finally {
       setBusy(null);
     }
@@ -122,12 +124,11 @@ export function ImageSlot({
               backgroundImage:
                 "repeating-linear-gradient(45deg, var(--surface) 0 12px, var(--hairline) 12px 13px)",
             }}
-            dir="rtl"
-            lang="ar"
+            dir={dir}
           >
             <ImageIcon className="h-7 w-7" style={{ color: "var(--muted-text)" }} />
             <p className="text-xs leading-relaxed" style={{ color: "var(--muted-text)" }}>
-              {item.media_brief?.trim() || "مكان الصورة — لسه ما تم اختيار صورة"}
+              {item.media_brief?.trim() || t("postPreview.imagePlaceholder")}
             </p>
           </div>
         )}
@@ -135,11 +136,10 @@ export function ImageSlot({
           <div
             className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2"
             style={{ backgroundColor: "rgba(0,0,0,0.55)", color: "#fff" }}
-            dir="rtl"
-            lang="ar"
+            dir={dir}
           >
             <CircleNotch className="h-6 w-6 animate-spin" />
-            <p className="text-xs">بيتم توليد الصورة…</p>
+            <p className="text-xs">{t("postPreview.generatingImage")}</p>
           </div>
         )}
       </div>
@@ -147,8 +147,7 @@ export function ImageSlot({
         <div
           className="mt-1 flex items-center justify-between gap-2 rounded px-2 py-1 text-xs"
           style={{ backgroundColor: "#fde2e2", color: "#7a1f1f" }}
-          dir="rtl"
-          lang="ar"
+          dir={dir}
         >
           <span>{aiError}</span>
           <button
@@ -157,7 +156,7 @@ export function ImageSlot({
             className="rounded px-2 py-0.5"
             style={{ backgroundColor: "#7a1f1f", color: "#fff" }}
           >
-            إعادة المحاولة
+            {t("postPreview.retry")}
           </button>
         </div>
       )}
@@ -172,8 +171,7 @@ export function ImageSlot({
               color: variant === "overlay" ? "#fff" : "var(--ink-text)",
               border: variant === "overlay" ? "none" : "1px solid var(--hairline)",
             }}
-            dir="rtl"
-            lang="ar"
+            dir={dir}
           >
             <button
               type="button"
@@ -186,7 +184,7 @@ export function ImageSlot({
               }}
             >
               {busy === "ai" ? <CircleNotch className="h-3 w-3 animate-spin" /> : <Sparkle className="h-3 w-3" />}
-              توليد صورة
+              {t("postPreview.generateImage")}
             </button>
             <button
               type="button"
@@ -199,7 +197,7 @@ export function ImageSlot({
               }}
             >
               {busy === "upload" ? <CircleNotch className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
-              رفع
+              {t("postPreview.upload")}
             </button>
             <button
               type="button"
@@ -211,7 +209,7 @@ export function ImageSlot({
               }}
             >
               <LinkSimple className="h-3 w-3" />
-              لصق رابط
+              {t("postPreview.pasteUrl")}
             </button>
             {hasImage && (
               <button
@@ -219,7 +217,7 @@ export function ImageSlot({
                 onClick={() => update(null, null)}
                 className="ms-auto rounded px-2 py-1 opacity-70 hover:opacity-100"
               >
-                مسح
+                {t("postPreview.clear")}
               </button>
             )}
           </div>

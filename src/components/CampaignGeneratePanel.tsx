@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { CircleNotch, Play, ArrowCounterClockwise } from "@phosphor-icons/react";
 import { generateCampaign } from "@/lib/generate-campaign.functions";
+import { useTranslation } from "@/i18n/I18nProvider";
 
 function formatDateInput(d: Date): string {
   const y = d.getFullYear();
@@ -24,6 +25,7 @@ type Props = {
 };
 
 export function CampaignGeneratePanel({ campaignId, className }: Props) {
+  const { t } = useTranslation();
   const defaults = defaultDateRange();
   const [startDate, setStartDate] = useState(defaults.start);
   const [endDate, setEndDate] = useState(defaults.end);
@@ -35,7 +37,7 @@ export function CampaignGeneratePanel({ campaignId, className }: Props) {
 
   async function startGeneration() {
     if (endDate < startDate) {
-      setError("تاريخ النهاية لازم يكون بعد تاريخ البداية.");
+      setError(t("campaign.generate.endBeforeStart"));
       return;
     }
     setGenerating(true);
@@ -46,7 +48,7 @@ export function CampaignGeneratePanel({ campaignId, className }: Props) {
       });
       navigate({ to: "/campaigns/$campaignId", params: { campaignId } });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "فشل توليد المحتوى");
+      setError(e instanceof Error ? e.message : t("campaign.generate.generateFailed"));
     } finally {
       setGenerating(false);
     }
@@ -58,12 +60,12 @@ export function CampaignGeneratePanel({ campaignId, className }: Props) {
         className="font-mono text-[10px] uppercase tracking-[0.22em] mb-3"
         style={{ color: "var(--muted-text)" }}
       >
-        فترة الحملة
+        {t("campaign.generate.periodTitle")}
       </div>
       <div className="flex flex-wrap gap-3 mb-4">
         <label className="text-sm" style={{ color: "var(--ink-text)" }}>
           <span className="block mb-1 text-[12px]" style={{ color: "var(--muted-text)" }}>
-            من
+            {t("common.from")}
           </span>
           <input
             type="date"
@@ -81,7 +83,7 @@ export function CampaignGeneratePanel({ campaignId, className }: Props) {
         </label>
         <label className="text-sm" style={{ color: "var(--ink-text)" }}>
           <span className="block mb-1 text-[12px]" style={{ color: "var(--muted-text)" }}>
-            إلى
+            {t("common.to")}
           </span>
           <input
             type="date"
@@ -122,17 +124,17 @@ export function CampaignGeneratePanel({ campaignId, className }: Props) {
         {generating ? (
           <>
             <CircleNotch size={14} strokeWidth={2} className="animate-spin" />
-            بيتم توليد المحتوى…
+            {t("campaign.generate.generating")}
           </>
         ) : error ? (
           <>
             <ArrowCounterClockwise size={14} strokeWidth={1.75} />
-            حاول تاني
+            {t("common.retry")}
           </>
         ) : (
           <>
             <Play size={14} strokeWidth={1.75} />
-            ابدأ التوليد
+            {t("campaign.generate.start")}
           </>
         )}
       </button>

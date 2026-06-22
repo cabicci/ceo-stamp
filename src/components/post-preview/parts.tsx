@@ -73,6 +73,6 @@ export function Hashtags({
   );
 }
 
-export function timeAgo(label = "2س") {
+export function timeAgo(label = "2h") {
   return label;
 }

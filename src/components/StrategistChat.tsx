@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { PaperPlaneTilt, ChatCircleText, CheckCircle, CircleNotch, Sparkle } from "@phosphor-icons/react";
 import { strategistChat, approveCampaignPlan } from "@/lib/strategist-chat.functions";
-import { CHANNEL_LABEL_AR, type AdaptedPlan, type Channel } from "@/lib/campaign-packages";
+import { CHANNEL_LABEL, localizedPackageName, localizedPackageDescription, type AdaptedPlan, type Channel } from "@/lib/campaign-packages";
 import { getFrameworkDisplayName } from "@/lib/marketing-frameworks";
 import { CampaignGeneratePanel } from "@/components/CampaignGeneratePanel";
+import { useTranslation } from "@/i18n/I18nProvider";
 
 type Turn = { role: "user" | "assistant"; content: string };
 
@@ -14,10 +15,8 @@ type Props = {
   onApproved?: (campaignId: string, plan: AdaptedPlan) => void;
 };
 
-const INITIAL_GREETING =
-  "أهلاً! أنا الاستراتيجي. اشرح لي الحملة اللي عايزها — الهدف، العرض، أو فكرة عامة. وأنا هساعدك تبني خطة مظبوطة على براندك.";
-
 export function StrategistChat({ projectId, availableChannels, onApproved }: Props) {
+  const { t, locale, dir } = useTranslation();
   const [turns, setTurns] = useState<Turn[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -32,6 +31,7 @@ export function StrategistChat({ projectId, availableChannels, onApproved }: Pro
   const approveFn = useServerFn(approveCampaignPlan);
 
   const noChannels = availableChannels.length === 0;
+  const channelSep = locale === "en" ? ", " : "، ";
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -58,7 +58,7 @@ export function StrategistChat({ projectId, availableChannels, onApproved }: Pro
         setPlan(res.plan);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "حصل خطأ");
+      setError(e instanceof Error ? e.message : t("common.error"));
     } finally {
       setBusy(false);
     }
@@ -73,7 +73,7 @@ export function StrategistChat({ projectId, availableChannels, onApproved }: Pro
       setApprovedId(r.campaign_id);
       onApproved?.(r.campaign_id, plan);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "فشل اعتماد الخطة");
+      setError(e instanceof Error ? e.message : t("strategist.approveFailed"));
     } finally {
       setApproving(false);
     }
@@ -98,7 +98,7 @@ export function StrategistChat({ projectId, availableChannels, onApproved }: Pro
       <div className="flex items-center gap-2 mb-4">
         <ChatCircleText size={18} strokeWidth={1.75} style={{ color: "var(--accent-strong)" }} />
         <div className="font-display text-[18px]" style={{ color: "var(--ink-text)", fontWeight: 500 }}>
-          الاستراتيجي
+          {t("strategist.title")}
         </div>
       </div>
 
@@ -112,7 +112,7 @@ export function StrategistChat({ projectId, availableChannels, onApproved }: Pro
             borderRadius: "3px",
           }}
         >
-          فعّل القنوات المتاحة أولاً من فوق.
+          {t("strategist.enableChannelsFirst")}
         </div>
       )}
 
@@ -121,11 +121,9 @@ export function StrategistChat({ projectId, availableChannels, onApproved }: Pro
         className="space-y-3 mb-4 overflow-y-auto p-2"
         style={{ maxHeight: "360px", minHeight: "180px" }}
       >
-        {turns.length === 0 && (
-          <Bubble role="assistant" text={INITIAL_GREETING} />
-        )}
-        {turns.map((t, i) => (
-          <Bubble key={i} role={t.role} text={t.content} />
+        {turns.length === 0 && <Bubble role="assistant" text={t("strategist.greeting")} dir={dir} />}
+        {turns.map((turn, i) => (
+          <Bubble key={i} role={turn.role} text={turn.content} dir={dir} />
         ))}
         {busy && (
           <div
@@ -133,7 +131,7 @@ export function StrategistChat({ projectId, availableChannels, onApproved }: Pro
             style={{ color: "var(--muted-text)" }}
           >
             <CircleNotch size={14} strokeWidth={2} className="animate-spin" />
-            بيفكّر…
+            {t("strategist.thinking")}
           </div>
         )}
       </div>
@@ -150,7 +148,7 @@ export function StrategistChat({ projectId, availableChannels, onApproved }: Pro
                 send();
               }
             }}
-            placeholder="اشرح الحملة اللي عايزها…"
+            placeholder={t("strategist.inputPlaceholder")}
             rows={2}
             disabled={busy || noChannels}
             className="flex-1 p-3 text-sm resize-none"
@@ -159,7 +157,7 @@ export function StrategistChat({ projectId, availableChannels, onApproved }: Pro
               backgroundColor: "var(--paper)",
               color: "var(--ink-text)",
               borderRadius: "3px",
-              direction: "rtl",
+              direction: dir,
             }}
           />
           <button
@@ -174,7 +172,7 @@ export function StrategistChat({ projectId, availableChannels, onApproved }: Pro
             }}
           >
             <PaperPlaneTilt size={14} strokeWidth={1.75} />
-            ابعت
+            {t("strategist.send")}
           </button>
         </div>
       )}
@@ -201,17 +199,19 @@ export function StrategistChat({ projectId, availableChannels, onApproved }: Pro
             className="font-mono text-[10px] uppercase tracking-[0.22em] mb-2"
             style={{ color: "var(--muted-text)" }}
           >
-            الخطة المقترحة
+            {t("strategist.proposedPlan")}
           </div>
           <div className="font-display text-[18px] mb-1" style={{ color: "var(--ink-text)", fontWeight: 500 }}>
-            {plan.package_name_ar}
+            {localizedPackageName(plan.package_id, plan.package_name_ar, t)}
           </div>
           <p className="text-sm mb-3" style={{ color: "var(--ink-text)" }}>
-            {plan.description_ar}
+            {localizedPackageDescription(plan.package_id, plan.description_ar, t)}
           </p>
           <div className="text-sm mb-3" style={{ color: "var(--ink-text)" }}>
-            {plan.total_posts} بوست على{" "}
-            {plan.channels.map((c) => CHANNEL_LABEL_AR[c]).join("، ")}.
+            {t("strategist.planSummary", {
+              posts: plan.total_posts,
+              channels: plan.channels.map((c) => CHANNEL_LABEL[c]).join(channelSep),
+            })}
           </div>
           <div className="flex flex-wrap gap-1.5 mb-3">
             {plan.frameworks.map((f) => (
@@ -224,7 +224,7 @@ export function StrategistChat({ projectId, availableChannels, onApproved }: Pro
                   borderRadius: "2px",
                 }}
               >
-                {getFrameworkDisplayName(f)}
+                {getFrameworkDisplayName(f, locale)}
               </span>
             ))}
           </div>
@@ -257,7 +257,7 @@ export function StrategistChat({ projectId, availableChannels, onApproved }: Pro
               ) : (
                 <Sparkle size={14} strokeWidth={1.75} />
               )}
-              اعتمد الخطة
+              {t("strategist.approvePlan")}
             </button>
             <button
               type="button"
@@ -265,7 +265,7 @@ export function StrategistChat({ projectId, availableChannels, onApproved }: Pro
               className="text-sm"
               style={{ color: "var(--muted-text)" }}
             >
-              عدّل بالشات
+              {t("strategist.editInChat")}
             </button>
           </div>
         </div>
@@ -287,9 +287,7 @@ export function StrategistChat({ projectId, availableChannels, onApproved }: Pro
                 weight="fill"
                 style={{ color: "var(--accent-strong)" }}
               />
-              <span style={{ color: "var(--ink-text)" }}>
-                الخطة اتعتمدت — جاهزة للتوليد.
-              </span>
+              <span style={{ color: "var(--ink-text)" }}>{t("strategist.planApproved")}</span>
             </div>
             <button
               type="button"
@@ -297,7 +295,7 @@ export function StrategistChat({ projectId, availableChannels, onApproved }: Pro
               className="text-sm"
               style={{ color: "var(--muted-text)" }}
             >
-              ابدأ خطة جديدة
+              {t("strategist.newPlan")}
             </button>
           </div>
           <CampaignGeneratePanel campaignId={approvedId} />
@@ -307,7 +305,7 @@ export function StrategistChat({ projectId, availableChannels, onApproved }: Pro
   );
 }
 
-function Bubble({ role, text }: { role: "user" | "assistant"; text: string }) {
+function Bubble({ role, text, dir }: { role: "user" | "assistant"; text: string; dir: "rtl" | "ltr" }) {
   const isUser = role === "user";
   return (
     <div className={`flex ${isUser ? "justify-start" : "justify-end"}`}>
@@ -318,7 +316,7 @@ function Bubble({ role, text }: { role: "user" | "assistant"; text: string }) {
           color: isUser ? "#FFFFFF" : "var(--ink-text)",
           border: isUser ? "none" : "1px solid var(--hairline)",
           borderRadius: "4px",
-          direction: "rtl",
+          direction: dir,
           whiteSpace: "pre-wrap",
         }}
       >

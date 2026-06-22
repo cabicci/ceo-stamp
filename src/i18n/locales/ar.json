@@ -15,6 +15,29 @@
     "ar": "العربية",
     "en": "English"
   },
+  "common": {
+    "add": "إضافة",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "save": "حفظ",
+    "saving": "جارٍ الحفظ…",
+    "saved": "اتحفظ",
+    "savedAt": "اتحفظ · {time}",
+    "loading": "جارٍ التحميل…",
+    "retry": "حاول تاني",
+    "error": "حصل خطأ",
+    "saveError": "خطأ في الحفظ",
+    "from": "من",
+    "to": "إلى",
+    "deletePersona": "حذف الشخصية"
+  },
+  "channels": {
+    "instagram": "Instagram",
+    "facebook": "Facebook",
+    "tiktok": "TikTok",
+    "linkedin": "LinkedIn",
+    "x": "X"
+  },
   "auth": {
     "eyebrowLogin": "دخول · داخلي",
     "eyebrowSignup": "إنشاء حساب",
@@ -47,6 +70,198 @@
       "urlError": "تأكد إن اسم المشروع موجود وإن رابط الموقع صالح (مثال: masaarat.ai).",
       "saved": "اتحفظ."
     }
+  },
+  "analysis": {
+    "title": "ذكاء الموقع",
+    "unknownError": "حصل خطأ غير معروف.",
+    "idleBody": "لسه ما تم تحليل الموقع. شغّل التحليل عشان الـ AI يقرأ الصفحات ويستخرج نموذج العمل والجمهور ونبرة الصوت ونقاط القوة.",
+    "analyzeButton": "حلّل الموقع",
+    "runningAnalyzing": "بيتم تحليل المحتوى…",
+    "runningScraping": "بيتم سحب صفحات الموقع…",
+    "runningStarting": "جارٍ بدء التحليل…",
+    "runningHint": "ممكن ياخد دقيقة. سيب الصفحة مفتوحة.",
+    "failedTitle": "فشل التحليل",
+    "fields": {
+      "businessModel": "نموذج العمل",
+      "targetAudience": "الجمهور المستهدف",
+      "toneOfVoice": "نبرة الصوت",
+      "usps": "نقاط القوة",
+      "painPoints": "نقاط الألم",
+      "personas": "الشخصيات",
+      "objections": "الاعتراضات",
+      "contentGaps": "فجوات المحتوى",
+      "contentPillars": "أعمدة المحتوى"
+    },
+    "placeholders": {
+      "usp": "نقطة قوة",
+      "painPoint": "نقطة ألم",
+      "contentGap": "فجوة محتوى",
+      "pillar": "عمود محتوى",
+      "objection": "اعتراض",
+      "personaName": "اسم الشخصية"
+    },
+    "saveEdits": "حفظ التعديلات",
+    "reanalyze": "إعادة تحليل",
+    "addPersona": "إضافة شخصية"
+  },
+  "connectedSites": {
+    "title": "المواقع المربوطة",
+    "linkSite": "ربط موقع",
+    "nameLabel": "الاسم (مثال: لوحة الطالب)",
+    "loginUrlLabel": "رابط تسجيل الدخول",
+    "emptyHint": "لو موقعك بيحتاج تسجيل دخول، اربطه هنا عشان نقدر نقرأ صفحاتك المحمية. إحنا مش بنشوف ولا بنخزّن كلمة السر — بنحفظ الجلسة بس.",
+    "sessionStartFailed": "فشل بدء الجلسة",
+    "sessionSaveFailed": "فشل حفظ الجلسة",
+    "scrapeFailed": "فشل تحليل الصفحات المحمية",
+    "scrapeOpening": "بيتم فتح الجلسة…",
+    "scrapeReading": "بيتم قراءة الصفحات المحمية…",
+    "scrapeAnalyzing": "بيتم التحليل…",
+    "scrapeProtected": "حلّل الصفحات المحمية",
+    "scrapeRunning": "جارٍ التحليل…",
+    "refreshSession": "تحديث الجلسة",
+    "reconnect": "اربط تاني",
+    "linkYourSite": "اربط موقعك",
+    "lastConnected": "آخر اتصال · {time}",
+    "status": {
+      "connected": "متصل",
+      "connecting": "بيتم الربط…",
+      "expired": "الجلسة انتهت",
+      "error": "خطأ",
+      "disconnected": "غير متصل"
+    },
+    "modal": {
+      "title": "ربط الموقع",
+      "subtitle": "سجّل دخولك على موقعك",
+      "instructions": "النافذة دي متصفح حقيقي على موقعك. اكتب الإيميل والباسوورد فيها زي ما بتعمل عادي. إحنا مش بنشوف ولا بنخزّن كلمة السر — بنحفظ الجلسة بس عشان نقدر نقرأ صفحاتك المحمية. لما تخلّص لوج إن، دوس \"تم تسجيل الدخول\".",
+      "passwordNote": "الباسوورد بيدخل لموقعك مباشرة — مش بيمر علينا.",
+      "openNewTab": "فتح في تبويب جديد",
+      "signedIn": "تم تسجيل الدخول",
+      "signingIn": "جارٍ الحفظ…"
+    }
+  },
+  "channelSettings": {
+    "title": "القنوات المتاحة",
+    "description": "فعّل بس المنصات اللي عندك حساب نشط عليها. ده اللي هيتحدد على أساسه أي حملة جاية.",
+    "pickOne": "اختار قناة واحدة على الأقل قبل ما تبدأ حملة.",
+    "save": "احفظ القنوات",
+    "saving": "بيتم الحفظ…",
+    "savedAt": "اتحفظ {time}"
+  },
+  "campaign": {
+    "settingsTitle": "إعدادات الحملة",
+    "startTitle": "ابدأ الحملة",
+    "tabPackages": "اختر باكدچ",
+    "tabStrategist": "اتكلم مع الاستراتيجي",
+    "pickedPlanTitle": "الخطة المختارة",
+    "pickedPlanSummary": "{posts} بوست على {channels} قناة. الإطار: {frameworks}.",
+    "approvePlan": "اعتمد الخطة",
+    "approvingPlan": "بيتم الاعتماد…",
+    "approveFailed": "فشل اعتماد الخطة",
+    "planApproved": "الخطة اتعتمدت — جاهزة للتوليد.",
+    "generate": {
+      "periodTitle": "فترة الحملة",
+      "endBeforeStart": "تاريخ النهاية لازم يكون بعد تاريخ البداية.",
+      "generateFailed": "فشل توليد المحتوى",
+      "generating": "بيتم توليد المحتوى…",
+      "start": "ابدأ التوليد"
+    },
+    "packages": {
+      "enableChannelsFirst": "فعّل القنوات المتاحة من فوق الأول علشان نقدر نكيّف الباكدچات على قنواتك.",
+      "postsCount": "{count} بوست",
+      "channelsYourChoice": "القنوات: على اختيارك",
+      "frameworkDynamic": "يتحدد حسب الهدف",
+      "idealChannels": "المثالي: {channels}",
+      "limited_offer": {
+        "name": "عرض / خصم محدود بوقت",
+        "description": "حملة ضغط شراء قصيرة. بتشتغل على العملاء اللي عارفين البراند بالفعل وقربين من القرار."
+      },
+      "product_launch": {
+        "name": "إطلاق منتج / خدمة جديدة",
+        "description": "تعريف السوق بحاجة جديدة وبناء قصة واضحة حواليها، من أول الوعي لحد القرار."
+      },
+      "brand_awareness": {
+        "name": "توعية بالبراند",
+        "description": "بناء حضور ذهني (mental availability) وأصول مميزة يفتكرها الجمهور بسرعة."
+      },
+      "lead_gen": {
+        "name": "جذب عملاء محتملين",
+        "description": "حملة هدفها لفت الانتباه لمشكلة محددة ودفع المهتم يسيب بياناته."
+      },
+      "value_authority": {
+        "name": "محتوى قيمة / تأسيس سلطة",
+        "description": "محتوى تعليمي بيخلي البراند هو المرشد (Guide) في مجاله، وبيبني ثقة طويلة المدى."
+      },
+      "quick_post": {
+        "name": "بوست واحد سريع",
+        "description": "بوست مفرد بهدف محدد. الإطار التسويقي بيتحدد حسب الهدف وقت التوليد."
+      }
+    },
+    "adaptation": {
+      "droppedIdeal": "الباكدچ ده مظبوط لـ {ideal}. اشتغلنا على {chosen} لأن باقي القنوات مش متاحة عندك.",
+      "noIdeal": "مفيش أي قناة من قنوات الباكدچ المثالية ({ideal}) متاحة عندك، فاشتغلنا على {chosen}.",
+      "reducedPosts": "قللنا عدد البوستات الإجمالي إلى {total} علشان نحافظ على توازن التوزيع على القنوات المتاحة (بدل {original})."
+    }
+  },
+  "strategist": {
+    "title": "الاستراتيجي",
+    "greeting": "أهلاً! أنا الاستراتيجي. اشرح لي الحملة اللي عايزها — الهدف، العرض، أو فكرة عامة. وأنا هساعدك تبني خطة مظبوطة على براندك.",
+    "enableChannelsFirst": "فعّل القنوات المتاحة أولاً من فوق.",
+    "thinking": "بيفكّر…",
+    "inputPlaceholder": "اشرح الحملة اللي عايزها…",
+    "send": "ابعت",
+    "proposedPlan": "الخطة المقترحة",
+    "planSummary": "{posts} بوست على {channels}.",
+    "approvePlan": "اعتمد الخطة",
+    "editInChat": "عدّل بالشات",
+    "planApproved": "الخطة اتعتمدت — جاهزة للتوليد.",
+    "newPlan": "ابدأ خطة جديدة",
+    "approveFailed": "فشل اعتماد الخطة"
+  },
+  "campaignPage": {
+    "notFound": "الحملة مش موجودة.",
+    "defaultName": "حملة",
+    "defaultBrand": "البراند",
+    "loadFailed": "فشل تحميل الحملة",
+    "backToProject": "رجوع للمشروع",
+    "generatedContent": "المحتوى المولّد",
+    "frameworks": "الأطر: {frameworks}",
+    "posts": "البوستات ({count})",
+    "noPosts": "مفيش بوستات لسه.",
+    "ads": "الإعلانات ({count})",
+    "noAds": "مفيش إعلانات لسه.",
+    "variant": "variant {label}"
+  },
+  "postPreview": {
+    "imagePlaceholder": "مكان الصورة — لسه ما تم اختيار صورة",
+    "generatingImage": "بيتم توليد الصورة…",
+    "retry": "إعادة المحاولة",
+    "generateImage": "توليد صورة",
+    "upload": "رفع",
+    "pasteUrl": "لصق رابط",
+    "clear": "مسح",
+    "selectProjectFirst": "لازم تختار مشروع الأول",
+    "uploadFailed": "فشل رفع الصورة",
+    "saveItemFirst": "لازم تحفظ العنصر الأول قبل توليد الصورة",
+    "generateImageFailed": "فشل توليد الصورة — حاول تاني",
+    "share": "مشاركة",
+    "sponsored": "مُموَّل",
+    "likes": "2,843 إعجاب",
+    "viewComments": "عرض جميع التعليقات (٤٢)",
+    "more": "…المزيد",
+    "commentsReshares": "48 تعليق · 14 إعادة نشر",
+    "facebookEngagement": "84 تعليق · 12 مشاركة",
+    "timeAgo": "منذ ساعتين",
+    "timeAgoShort": "٢ س"
+  },
+  "postPreviewGallery": {
+    "eyebrow": "معرض المعاينة",
+    "title": "معاينة المنشورات — شكلها لما تنزل فعلًا",
+    "subtitle": "عيّنات مبدئية بشكل كل منصة، مع تحكّم في الصورة (توليد / رفع / لصق رابط).",
+    "sampleBrandName": "مسارات",
+    "sampleHeadline": "منصة تدريب وتأهيل · القاهرة"
+  },
+  "statusStamp": {
+    "approved": "معتمد"
   },
   "admin": {
     "eyebrow": "إشراف",

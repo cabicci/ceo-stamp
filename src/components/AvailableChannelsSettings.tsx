@@ -1,11 +1,8 @@
 import { useEffect, useState } from "react";
 import { FloppyDisk, Check } from "@phosphor-icons/react";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  ALL_CHANNELS,
-  CHANNEL_LABEL_AR,
-  type Channel,
-} from "@/lib/campaign-packages";
+import { ALL_CHANNELS, CHANNEL_LABEL, type Channel } from "@/lib/campaign-packages";
+import { useTranslation } from "@/i18n/I18nProvider";
 
 type Props = {
   projectId: string;
@@ -13,6 +10,7 @@ type Props = {
 };
 
 export function AvailableChannelsSettings({ projectId, onChange }: Props) {
+  const { t, locale } = useTranslation();
   const [channels, setChannels] = useState<Channel[] | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -53,7 +51,6 @@ export function AvailableChannelsSettings({ projectId, onChange }: Props) {
     setSaving(true);
     setError(null);
     try {
-      // Upsert brand_profiles row (one per project).
       const { error: upErr } = await supabase
         .from("brand_profiles")
         .upsert(
@@ -61,10 +58,12 @@ export function AvailableChannelsSettings({ projectId, onChange }: Props) {
           { onConflict: "project_id" },
         );
       if (upErr) throw upErr;
-      setSavedAt(new Date().toLocaleTimeString("ar-EG"));
+      setSavedAt(
+        new Date().toLocaleTimeString(locale === "ar" ? "ar-EG" : "en-GB"),
+      );
       onChange?.(channels);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "خطأ في الحفظ");
+      setError(e instanceof Error ? e.message : t("common.saveError"));
     } finally {
       setSaving(false);
     }
@@ -76,7 +75,7 @@ export function AvailableChannelsSettings({ projectId, onChange }: Props) {
         className="font-mono text-[10px] uppercase tracking-[0.18em]"
         style={{ color: "var(--muted-text)" }}
       >
-        جارٍ التحميل…
+        {t("common.loading")}
       </div>
     );
   }
@@ -96,11 +95,10 @@ export function AvailableChannelsSettings({ projectId, onChange }: Props) {
         className="font-mono text-[10px] uppercase tracking-[0.22em] mb-3"
         style={{ color: "var(--muted-text)" }}
       >
-        القنوات المتاحة
+        {t("channelSettings.title")}
       </div>
       <p className="text-sm leading-relaxed mb-5" style={{ color: "var(--ink-text)" }}>
-        فعّل بس المنصات اللي عندك حساب نشط عليها. ده اللي هيتحدد على أساسه أي
-        حملة جاية.
+        {t("channelSettings.description")}
       </p>
 
       <div className="flex flex-wrap gap-2 mb-5">
@@ -120,7 +118,7 @@ export function AvailableChannelsSettings({ projectId, onChange }: Props) {
               }}
             >
               {on && <Check size={12} strokeWidth={2} />}
-              {CHANNEL_LABEL_AR[c]}
+              {CHANNEL_LABEL[c]}
             </button>
           );
         })}
@@ -131,7 +129,7 @@ export function AvailableChannelsSettings({ projectId, onChange }: Props) {
           className="font-mono text-[10px] uppercase tracking-[0.18em] mb-4"
           style={{ color: "var(--danger)" }}
         >
-          اختار قناة واحدة على الأقل قبل ما تبدأ حملة.
+          {t("channelSettings.pickOne")}
         </div>
       )}
 
@@ -157,14 +155,14 @@ export function AvailableChannelsSettings({ projectId, onChange }: Props) {
           }}
         >
           <FloppyDisk size={14} strokeWidth={1.75} />
-          {saving ? "بيتم الحفظ…" : "احفظ القنوات"}
+          {saving ? t("channelSettings.saving") : t("channelSettings.save")}
         </button>
         {savedAt && (
           <div
             className="font-mono text-[10px] uppercase tracking-[0.18em]"
             style={{ color: "var(--muted-text)" }}
           >
-            اتحفظ {savedAt}
+            {t("channelSettings.savedAt", { time: savedAt })}
           </div>
         )}
       </div>

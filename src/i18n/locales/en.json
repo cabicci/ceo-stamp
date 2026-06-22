@@ -15,6 +15,29 @@
     "ar": "العربية",
     "en": "English"
   },
+  "common": {
+    "add": "Add",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "save": "Save",
+    "saving": "Saving…",
+    "saved": "Saved",
+    "savedAt": "Saved · {time}",
+    "loading": "Loading…",
+    "retry": "Try again",
+    "error": "Something went wrong",
+    "saveError": "Could not save",
+    "from": "From",
+    "to": "To",
+    "deletePersona": "Delete persona"
+  },
+  "channels": {
+    "instagram": "Instagram",
+    "facebook": "Facebook",
+    "tiktok": "TikTok",
+    "linkedin": "LinkedIn",
+    "x": "X"
+  },
   "auth": {
     "eyebrowLogin": "Sign in · Internal",
     "eyebrowSignup": "Create account",
@@ -47,6 +70,198 @@
       "urlError": "Add a project name and a valid website (e.g. masaarat.ai).",
       "saved": "Saved."
     }
+  },
+  "analysis": {
+    "title": "Website intelligence",
+    "unknownError": "An unknown error occurred.",
+    "idleBody": "This site hasn't been analyzed yet. Run analysis so AI can read your pages and extract your business model, audience, tone of voice, and strengths.",
+    "analyzeButton": "Analyze website",
+    "runningAnalyzing": "Analyzing content…",
+    "runningScraping": "Fetching website pages…",
+    "runningStarting": "Starting analysis…",
+    "runningHint": "This can take a minute. Keep this tab open.",
+    "failedTitle": "Analysis failed",
+    "fields": {
+      "businessModel": "Business model",
+      "targetAudience": "Target audience",
+      "toneOfVoice": "Tone of voice",
+      "usps": "Strengths",
+      "painPoints": "Pain points",
+      "personas": "Personas",
+      "objections": "Objections",
+      "contentGaps": "Content gaps",
+      "contentPillars": "Content pillars"
+    },
+    "placeholders": {
+      "usp": "Strength",
+      "painPoint": "Pain point",
+      "contentGap": "Content gap",
+      "pillar": "Content pillar",
+      "objection": "Objection",
+      "personaName": "Persona name"
+    },
+    "saveEdits": "Save edits",
+    "reanalyze": "Re-analyze",
+    "addPersona": "Add persona"
+  },
+  "connectedSites": {
+    "title": "Connected sites",
+    "linkSite": "Link site",
+    "nameLabel": "Name (e.g. Student dashboard)",
+    "loginUrlLabel": "Login URL",
+    "emptyHint": "If your site requires login, connect it here so we can read your protected pages. We never see or store your password — only the session.",
+    "sessionStartFailed": "Could not start session",
+    "sessionSaveFailed": "Could not save session",
+    "scrapeFailed": "Could not analyze protected pages",
+    "scrapeOpening": "Opening session…",
+    "scrapeReading": "Reading protected pages…",
+    "scrapeAnalyzing": "Analyzing…",
+    "scrapeProtected": "Analyze protected pages",
+    "scrapeRunning": "Analyzing…",
+    "refreshSession": "Refresh session",
+    "reconnect": "Reconnect",
+    "linkYourSite": "Link your site",
+    "lastConnected": "Last connected · {time}",
+    "status": {
+      "connected": "Connected",
+      "connecting": "Connecting…",
+      "expired": "Session expired",
+      "error": "Error",
+      "disconnected": "Not connected"
+    },
+    "modal": {
+      "title": "Link site",
+      "subtitle": "Sign in to your site",
+      "instructions": "This window is a real browser on your site. Type your email and password there as you normally would. We never see or store your password — we only save the session so we can read your protected pages. When you're logged in, click \"I'm signed in\".",
+      "passwordNote": "Your password goes directly to your site — it never passes through us.",
+      "openNewTab": "Open in new tab",
+      "signedIn": "I'm signed in",
+      "signingIn": "Saving…"
+    }
+  },
+  "channelSettings": {
+    "title": "Available channels",
+    "description": "Enable only the platforms where you have an active account. Future campaigns will be built around this list.",
+    "pickOne": "Select at least one channel before starting a campaign.",
+    "save": "Save channels",
+    "saving": "Saving…",
+    "savedAt": "Saved {time}"
+  },
+  "campaign": {
+    "settingsTitle": "Campaign settings",
+    "startTitle": "Start campaign",
+    "tabPackages": "Pick a package",
+    "tabStrategist": "Talk to strategist",
+    "pickedPlanTitle": "Selected plan",
+    "pickedPlanSummary": "{posts} posts across {channels} channels. Framework: {frameworks}.",
+    "approvePlan": "Approve plan",
+    "approvingPlan": "Approving…",
+    "approveFailed": "Could not approve plan",
+    "planApproved": "Plan approved — ready to generate.",
+    "generate": {
+      "periodTitle": "Campaign period",
+      "endBeforeStart": "End date must be after start date.",
+      "generateFailed": "Content generation failed",
+      "generating": "Generating content…",
+      "start": "Start generation"
+    },
+    "packages": {
+      "enableChannelsFirst": "Enable your available channels above first so we can tailor packages to your platforms.",
+      "postsCount": "{count} posts",
+      "channelsYourChoice": "Channels: your choice",
+      "frameworkDynamic": "Set by objective",
+      "idealChannels": "Ideal: {channels}",
+      "limited_offer": {
+        "name": "Limited-time offer / discount",
+        "description": "Short purchase-push campaign for customers who already know the brand and are close to buying."
+      },
+      "product_launch": {
+        "name": "New product / service launch",
+        "description": "Introduce a new need to the market and build a clear story from awareness through decision."
+      },
+      "brand_awareness": {
+        "name": "Brand awareness",
+        "description": "Build mental availability and distinctive assets your audience remembers quickly."
+      },
+      "lead_gen": {
+        "name": "Lead generation",
+        "description": "Draw attention to a specific problem and get interested prospects to share their details."
+      },
+      "value_authority": {
+        "name": "Value content / authority building",
+        "description": "Educational content that positions the brand as the guide in its field and builds long-term trust."
+      },
+      "quick_post": {
+        "name": "Quick single post",
+        "description": "One post with a specific goal. The marketing framework is chosen at generation time based on the objective."
+      }
+    },
+    "adaptation": {
+      "droppedIdeal": "This package is designed for {ideal}. We adapted it to {chosen} because the other channels aren't available.",
+      "noIdeal": "None of the package's ideal channels ({ideal}) are available, so we used {chosen}.",
+      "reducedPosts": "We reduced the total post count to {total} to keep a balanced split across your available channels (instead of {original})."
+    }
+  },
+  "strategist": {
+    "title": "Strategist",
+    "greeting": "Hi! I'm your strategist. Tell me about the campaign you want — the goal, the offer, or a general idea — and I'll help you build a plan tailored to your brand.",
+    "enableChannelsFirst": "Enable your available channels above first.",
+    "thinking": "Thinking…",
+    "inputPlaceholder": "Describe the campaign you want…",
+    "send": "Send",
+    "proposedPlan": "Proposed plan",
+    "planSummary": "{posts} posts on {channels}.",
+    "approvePlan": "Approve plan",
+    "editInChat": "Edit in chat",
+    "planApproved": "Plan approved — ready to generate.",
+    "newPlan": "Start a new plan",
+    "approveFailed": "Could not approve plan"
+  },
+  "campaignPage": {
+    "notFound": "Campaign not found.",
+    "defaultName": "Campaign",
+    "defaultBrand": "Brand",
+    "loadFailed": "Could not load campaign",
+    "backToProject": "Back to project",
+    "generatedContent": "Generated content",
+    "frameworks": "Frameworks: {frameworks}",
+    "posts": "Posts ({count})",
+    "noPosts": "No posts yet.",
+    "ads": "Ads ({count})",
+    "noAds": "No ads yet.",
+    "variant": "variant {label}"
+  },
+  "postPreview": {
+    "imagePlaceholder": "Image slot — no image selected yet",
+    "generatingImage": "Generating image…",
+    "retry": "Retry",
+    "generateImage": "Generate image",
+    "upload": "Upload",
+    "pasteUrl": "Paste URL",
+    "clear": "Clear",
+    "selectProjectFirst": "Select a project first",
+    "uploadFailed": "Image upload failed",
+    "saveItemFirst": "Save this item before generating an image",
+    "generateImageFailed": "Image generation failed — try again",
+    "share": "Share",
+    "sponsored": "Sponsored",
+    "likes": "2,843 likes",
+    "viewComments": "View all comments (42)",
+    "more": "…more",
+    "commentsReshares": "48 comments · 14 reshares",
+    "facebookEngagement": "84 comments · 12 shares",
+    "timeAgo": "2 hours ago",
+    "timeAgoShort": "2h"
+  },
+  "postPreviewGallery": {
+    "eyebrow": "Preview gallery",
+    "title": "Post previews — how they'll look when published",
+    "subtitle": "Sample layouts for each platform, with image controls (generate / upload / paste URL).",
+    "sampleBrandName": "Masaarat",
+    "sampleHeadline": "Training & placement platform · Cairo"
+  },
+  "statusStamp": {
+    "approved": "APPROVED"
   },
   "admin": {
     "eyebrow": "Oversight",
