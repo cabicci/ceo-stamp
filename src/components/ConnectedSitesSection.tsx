@@ -7,6 +7,7 @@ import { scrapeAuthenticated } from "@/lib/scrape-authenticated.functions";
 import { useTranslation, type TranslateFn } from "@/i18n/I18nProvider";
 import { translateAnalysisError } from "@/lib/translate-analysis-error";
 import { normalizeWebsiteUrl } from "@/lib/project-schema";
+import type { ConnectNavigateDebugInfo } from "@/lib/browserbase-cdp.server";
 
 
 type Row = {
@@ -38,6 +39,7 @@ export function ConnectedSitesSection({
     liveViewUrl: string;
     loginUrl: string;
     loginNavigationFailed: boolean;
+    debugInfo?: ConnectNavigateDebugInfo;
   } | null>(null);
 
   const startFn = useServerFn(startConnectSession);
@@ -96,6 +98,7 @@ export function ConnectedSitesSection({
         liveViewUrl: res.liveViewUrl,
         loginUrl: res.loginUrl,
         loginNavigationFailed: res.loginNavigationFailed ?? false,
+        debugInfo: res.debugInfo,
       });
       await load();
     } catch (e) {
@@ -322,6 +325,7 @@ export function ConnectedSitesSection({
           loginUrl={active.loginUrl}
           liveViewUrl={active.liveViewUrl}
           loginNavigationFailed={active.loginNavigationFailed}
+          debugInfo={active.debugInfo}
           captureError={captureError}
           onDone={handleCaptured}
           onCancel={handleCancel}
@@ -539,6 +543,7 @@ function ConnectModal({
   loginUrl,
   liveViewUrl,
   loginNavigationFailed,
+  debugInfo,
   captureError,
   onDone,
   onCancel,
@@ -546,6 +551,7 @@ function ConnectModal({
   loginUrl: string;
   liveViewUrl: string;
   loginNavigationFailed: boolean;
+  debugInfo?: ConnectNavigateDebugInfo;
   captureError: string | null;
   onDone: () => void;
   onCancel: () => void;
@@ -608,6 +614,21 @@ function ConnectModal({
               >
                 {t("connectedSites.modal.loginNavigationFailed")}
               </p>
+            )}
+            {loginNavigationFailed && debugInfo && (
+              <pre
+                className="mt-2 text-[11px] leading-relaxed py-2 px-3 overflow-x-auto whitespace-pre-wrap break-all"
+                dir="ltr"
+                style={{
+                  color: "var(--ink-text)",
+                  border: "1px dashed var(--hairline)",
+                  borderRadius: "3px",
+                  backgroundColor: "var(--surface)",
+                  fontFamily: "var(--font-mono)",
+                }}
+              >
+                {`DEBUG\n${JSON.stringify(debugInfo, null, 2)}`}
+              </pre>
             )}
           </div>
           <button

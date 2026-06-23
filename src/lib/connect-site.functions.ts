@@ -104,6 +104,7 @@ export const startConnectSession = createServerFn({ method: "POST" })
         loginUrl: site.login_url,
         liveViewUrl: debug.debuggerFullscreenUrl,
         loginNavigationFailed,
+        debugInfo: loginNavigationFailed ? nav.debugInfo : undefined,
       };
     } catch (e) {
       // Never surface raw API/HTML bodies to the client — use an i18n key.
