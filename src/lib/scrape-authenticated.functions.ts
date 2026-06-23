@@ -11,6 +11,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  ANALYSIS_ERROR,
+  clearStaleAnalysisRuns,
+  markAnalysisError,
+} from "@/lib/analysis-lifecycle.server";
 
 const Input = z.object({
   connectedSiteId: z.string().uuid(),
@@ -85,6 +90,9 @@ export const scrapeAuthenticated = createServerFn({ method: "POST" })
     // 4) Create the analysis row up front (status='scraping') so the UI polls.
     const projectId: string = site.project_id;
     const websiteUrl: string = site.projects.website_url;
+
+    await clearStaleAnalysisRuns(sb, projectId);
+
     const { data: priorAnalysis } = await sb
       .from("website_analysis")
       .select("pages_scraped")
@@ -199,29 +207,20 @@ export const scrapeAuthenticated = createServerFn({ method: "POST" })
           .from("connected_sites")
           .update({ status: "expired" })
           .eq("id", site.id);
-        await sb
-          .from("website_analysis")
-          .update({ status: "error", error_message: "الجلسة انتهت — اربط الموقع تاني." })
-          .eq("id", analysisId);
+        await markAnalysisError(sb, analysisId, ANALYSIS_ERROR.authSessionExpired);
         return {
           ok: false,
           authExpired: true,
-          message: "الجلسة انتهت — اربط الموقع تاني.",
+          message: ANALYSIS_ERROR.authSessionExpired,
         };
       }
 
       if (collected.length === 0) {
-        await sb
-          .from("website_analysis")
-          .update({
-            status: "error",
-            error_message: "ما قدرناش نقرأ أي صفحة محمية. ممكن الموقع يحتاج رندر إضافي.",
-          })
-          .eq("id", analysisId);
+        await markAnalysisError(sb, analysisId, ANALYSIS_ERROR.noProtectedPages);
         return {
           ok: false,
           authExpired: false,
-          message: "ما قدرناش نقرأ أي صفحة محمية.",
+          message: ANALYSIS_ERROR.noProtectedPages,
         };
       }
 
@@ -247,11 +246,7 @@ export const scrapeAuthenticated = createServerFn({ method: "POST" })
 
       return { ok: true, analysisId, pagesCount: collected.length };
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      await sb
-        .from("website_analysis")
-        .update({ status: "error", error_message: message })
-        .eq("id", analysisId);
+      await markAnalysisError(sb, analysisId, err);
       throw err;
     } finally {
       // Always release the Browserbase session — they cost money/time.

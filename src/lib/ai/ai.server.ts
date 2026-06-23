@@ -14,6 +14,8 @@ export interface ProviderRequest {
   model: string;
   systemPrompt: string;
   userContent: string;
+  /** Abort the provider HTTP call after this many milliseconds. */
+  timeoutMs?: number;
 }
 
 export interface Provider {
@@ -43,24 +45,40 @@ const TASK_ROUTING: Record<TaskName, TaskRoute> = {
 
 const anthropicProvider: Provider = {
   name: "anthropic",
-  async call({ model, systemPrompt, userContent }) {
+  async call({ model, systemPrompt, userContent, timeoutMs }) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
 
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 4096,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userContent }],
-      }),
-    });
+    const signal = timeoutMs ? AbortSignal.timeout(timeoutMs) : undefined;
+
+    let res: Response;
+    try {
+      res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 4096,
+          system: systemPrompt,
+          messages: [{ role: "user", content: userContent }],
+        }),
+        signal,
+      });
+    } catch (err) {
+      if (
+        timeoutMs &&
+        err instanceof Error &&
+        (err.name === "TimeoutError" || err.name === "AbortError")
+      ) {
+        const { AITimeoutError } = await import("@/lib/analysis-lifecycle.server");
+        throw new AITimeoutError();
+      }
+      throw err;
+    }
 
     if (!res.ok) {
       const body = await res.text();
@@ -169,6 +187,8 @@ export interface CallAIArgs {
   jsonMode?: boolean;
   /** Optional context for the ai_generation_log audit row. */
   logContext?: AILogContext;
+  /** Abort the provider HTTP call after this many milliseconds. */
+  timeoutMs?: number;
 }
 
 async function writeAILog(args: {
@@ -218,6 +238,7 @@ export async function callAI(args: CallAIArgs): Promise<unknown> {
     model: route.model,
     systemPrompt: args.systemPrompt,
     userContent: args.userContent,
+    timeoutMs: args.timeoutMs,
   });
 
   await writeAILog({

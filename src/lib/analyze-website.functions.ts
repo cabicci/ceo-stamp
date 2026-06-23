@@ -1,6 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  ANALYSIS_ERROR,
+  AnalysisPipelineError,
+  clearStaleAnalysisRuns,
+  HOMEPAGE_FETCH_TIMEOUT_MS,
+  markAnalysisError,
+} from "@/lib/analysis-lifecycle.server";
 
 const InputSchema = z.object({
   projectId: z.string().uuid(),
@@ -19,17 +26,33 @@ function stripHtml(html: string): string {
 }
 
 async function fetchPage(url: string): Promise<{ url: string; text: string }> {
-  const res = await fetch(url, {
-    headers: {
-      "user-agent":
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      accept: "text/html,application/xhtml+xml",
-      "accept-language": "ar,en;q=0.8",
-    },
-  });
-  if (!res.ok) throw new Error(`فشل جلب ${url} (HTTP ${res.status})`);
-  const html = await res.text();
-  return { url, text: stripHtml(html).slice(0, 20_000) };
+  const signal = AbortSignal.timeout(HOMEPAGE_FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      signal,
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        accept: "text/html,application/xhtml+xml",
+        "accept-language": "ar,en;q=0.8",
+      },
+    });
+    if (!res.ok) {
+      throw new AnalysisPipelineError(ANALYSIS_ERROR.fetchHttp, { status: res.status });
+    }
+    const html = await res.text();
+    return { url, text: stripHtml(html).slice(0, 20_000) };
+  } catch (err) {
+    if (
+      err instanceof AnalysisPipelineError ||
+      (err instanceof Error &&
+        (err.name === "TimeoutError" || err.name === "AbortError"))
+    ) {
+      if (err instanceof AnalysisPipelineError) throw err;
+      throw new AnalysisPipelineError(ANALYSIS_ERROR.fetchTimeout, err);
+    }
+    throw err;
+  }
 }
 
 export const analyzeWebsite = createServerFn({ method: "POST" })
@@ -44,6 +67,8 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
       .eq("id", data.projectId)
       .single();
     if (projectErr || !project) throw new Error("Project not found");
+
+    await clearStaleAnalysisRuns(supabase, project.id);
 
     const { data: analysisRow, error: insertErr } = await supabase
       .from("website_analysis")
@@ -61,11 +86,8 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
       const homepage = await fetchPage(project.website_url);
       const pages = [homepage];
 
-      // JS-rendered-site guard.
       if (homepage.text.length < 400) {
-        throw new Error(
-          "الموقع يعتمد على رندر JavaScript في المتصفح، فالنسخة المستخرجة فاضية تقريبًا. لو الموقع وراء تسجيل دخول، اربطه واستخدم \"حلّل الصفحات المحمية\".",
-        );
+        throw new AnalysisPipelineError(ANALYSIS_ERROR.jsRenderedSite);
       }
 
       await supabase
@@ -84,11 +106,7 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
 
       return { analysisId: analysisRow.id };
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      await supabase
-        .from("website_analysis")
-        .update({ status: "error", error_message: message })
-        .eq("id", analysisRow.id);
+      await markAnalysisError(supabase, analysisRow.id, err);
       throw err;
     }
   });

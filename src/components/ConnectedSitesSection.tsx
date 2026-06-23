@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { startConnectSession, captureSession } from "@/lib/connect-site.functions";
 import { scrapeAuthenticated } from "@/lib/scrape-authenticated.functions";
 import { useTranslation, type TranslateFn } from "@/i18n/I18nProvider";
+import { translateAnalysisError } from "@/lib/translate-analysis-error";
 
 
 type Row = {
@@ -125,11 +126,7 @@ export function ConnectedSitesSection({
     try {
       const res = await scrapeFn({ data: { connectedSiteId: row.id } });
       if (!res.ok) {
-        if (res.authExpired) {
-          alert(res.message);
-        } else {
-          alert(res.message);
-        }
+        alert(translateAnalysisError(res.message, t));
       } else {
         // Notify the parent page to refresh the analysis form.
         window.dispatchEvent(new CustomEvent("analysis-refresh"));

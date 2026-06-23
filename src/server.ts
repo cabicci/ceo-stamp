@@ -37,8 +37,25 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   });
 }
 
+let staleAnalysisCleanupStarted = false;
+
+function runStaleAnalysisCleanupOnce(): void {
+  if (staleAnalysisCleanupStarted) return;
+  staleAnalysisCleanupStarted = true;
+  void (async () => {
+    try {
+      const { clearAllStaleAnalysisRuns } = await import("./lib/analysis-lifecycle.server");
+      const { supabaseAdmin } = await import("./integrations/supabase/client.server");
+      await clearAllStaleAnalysisRuns(supabaseAdmin);
+    } catch (e) {
+      console.warn("[analysis] stale-run cleanup skipped:", e);
+    }
+  })();
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
+    runStaleAnalysisCleanupOnce();
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);

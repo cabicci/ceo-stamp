@@ -117,6 +117,17 @@
     "runningStarting": "Starting analysis…",
     "runningHint": "This can take a minute. Keep this tab open.",
     "failedTitle": "Analysis failed",
+    "errors": {
+      "staleRun": "This analysis timed out and was stopped. Try again.",
+      "fetchTimeout": "We couldn't reach your site within 30 seconds. Check that the URL works.",
+      "aiTimeout": "The AI analysis step timed out. Try again.",
+      "jsRenderedSite": "Very little readable text was found — the site may need JavaScript. If it requires login, connect it under Connected Sites.",
+      "thinContent": "Not enough readable content to analyze. Make sure your pages include sufficient text.",
+      "fetchHttp": "Couldn't open the site (HTTP {status}). Check that the URL works.",
+      "pipelineFailed": "Analysis failed. Please try again.",
+      "authSessionExpired": "Your session expired — reconnect the site.",
+      "noProtectedPages": "We couldn't read any protected pages. The site may need extra rendering."
+    },
     "fields": {
       "businessModel": "Business model",
       "targetAudience": "Target audience",

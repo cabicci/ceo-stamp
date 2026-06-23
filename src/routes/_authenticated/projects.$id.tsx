@@ -16,6 +16,7 @@ import { approveCampaignPlan } from "@/lib/strategist-chat.functions";
 import { CampaignGeneratePanel } from "@/components/CampaignGeneratePanel";
 import { ExportAnalysisReportButton } from "@/components/ExportAnalysisReportButton";
 import { projectSchema } from "@/lib/project-schema";
+import { translateAnalysisError } from "@/lib/translate-analysis-error";
 
 
 export const Route = createFileRoute("/_authenticated/projects/$id")({
@@ -300,7 +301,7 @@ function ProjectDetail() {
 
           {status === "error" && !isWorking && (
             <ErrorCard
-              message={latest?.error_message ?? t("analysis.unknownError")}
+              message={translateAnalysisError(latest?.error_message, t)}
               onRetry={handleAnalyze}
             />
           )}
