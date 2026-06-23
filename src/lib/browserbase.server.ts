@@ -96,3 +96,25 @@ export async function endSession(sessionId: string): Promise<void> {
     json: { projectId, status: "REQUEST_RELEASE" },
   });
 }
+
+/**
+ * Release every currently-running Browserbase session for this project.
+ * Browserbase enforces a concurrent-session cap (default 3); abandoned
+ * sessions from prior runs block new ones with HTTP 429.
+ */
+export async function releaseRunningSessions(): Promise<number> {
+  const { projectId } = env();
+  try {
+    const sessions = await bb<Array<{ id: string; status: string }>>(
+      `/sessions?projectId=${encodeURIComponent(projectId)}&status=RUNNING`,
+      { method: "GET" },
+    );
+    if (!Array.isArray(sessions) || sessions.length === 0) return 0;
+    await Promise.all(
+      sessions.map((s) => endSession(s.id).catch(() => undefined)),
+    );
+    return sessions.length;
+  } catch {
+    return 0;
+  }
+}
