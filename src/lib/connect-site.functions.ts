@@ -79,13 +79,8 @@ export const startConnectSession = createServerFn({ method: "POST" })
 
       // 3) Navigate to login_url before the client opens the live view.
       const cdpNav = await import("./browserbase-cdp.server");
-      let loginNavigationFailed = false;
-      try {
-        const nav = await cdpNav.navigateBrowserbaseDebugPage(debug, site.login_url);
-        if (!nav.ok) loginNavigationFailed = true;
-      } catch {
-        loginNavigationFailed = true;
-      }
+      const nav = await cdpNav.navigateBrowserbaseDebugPage(debug, site.login_url);
+      const loginNavigationFailed = !nav.ok;
 
       // Persist the (encrypted) contextId now so capture-session can find it
       // even if the browser tab is closed unexpectedly. The cookies still
