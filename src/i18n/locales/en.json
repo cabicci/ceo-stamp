@@ -80,16 +80,16 @@
         "title": "Analyze website",
         "subtitle": "One-time foundation — we read your site and extract your business intelligence. You can re-run this anytime.",
         "oneTimeNote": "This step analyzes your website, not a campaign. Campaign ideas come later.",
-        "loginProtectedHint": "If parts of your site require login, you can connect them in Step 2 after the first scan.",
+        "connectedSitesPreamble": "If your site has pages behind login, connect them here before analysis for a sharper result. Otherwise, run analysis on public content as usual.",
+        "connectedSitesPanel": {
+          "title": "Connect a login-protected site (optional)",
+          "hint": "Connect the site, sign in in the browser window, then run analysis — or skip and scan public pages only."
+        },
         "completeSummary": "Website analysis is complete. Review and edit your brand profile in the next step."
       },
       "step2": {
         "title": "Brand profile",
-        "subtitle": "Review and refine what we learned about your brand.",
-        "connectedSitesPanel": {
-          "title": "Connect a login-protected site (optional)",
-          "hint": "If you have pages behind a login, connect the site here so we can analyze them too."
-        }
+        "subtitle": "Review and refine what we learned about your brand."
       },
       "step3": {
         "title": "Available channels",

@@ -128,7 +128,7 @@ RLS pattern: **owner read/write** on project-scoped data; **`is_admin()` read-on
 - **Admin Project Tracker view** — `/admin` renders `PROJECT_TRACKER.md` via a build-time `?raw` import (single source of truth, no duplicate content); collapsible panel with markdown display + copy button (admin-only).
 - **Mobile-responsive navigation** — `AppShell` sidebar becomes an off-canvas drawer on small screens: hamburger top bar, backdrop overlay, close on nav tap or route change; desktop sidebar unchanged. Main content uses responsive horizontal/vertical padding.
 - **Lovable preview `/index` redirect** — `src/routes/[index].tsx` redirects `/index` → `/` so Lovable's preview URL no longer 404s.
-- **Project detail wizard** — `/projects/$id` restructured into a guided sequential flow: **Step 1** Analyze Website (one-time foundation) → **Step 2** Brand Profile (review/edit + optional connected sites) → **Step 3** Available Channels → **Step 4** Campaigns (repeatable — package gallery + AI strategist). Later steps are gated/locked with Arabic hints until the prior step completes; completed steps stay collapsible. Progress indicator (1→4) via `projects.flow.*` i18n keys. Connected Sites (Browserbase login) surfaced at the **top of Step 2** in a collapsible sub-panel; wizard focuses Step 2 after first analysis completes.
+- **Project detail wizard** — `/projects/$id` restructured into a guided sequential flow: **Step 1** Analyze Website (one-time foundation; optional **Connected Sites** sub-panel at top — usable before first analysis) → **Step 2** Brand Profile (review/edit) → **Step 3** Available Channels → **Step 4** Campaigns (repeatable — package gallery + AI strategist). Later steps are gated/locked with Arabic hints until the prior step completes; completed steps stay collapsible. Progress indicator (1→4) via `projects.flow.*` i18n keys. Wizard focuses Step 2 after first analysis completes.
 - **`t()` interpolation typing** — `TranslateFn` exported from `I18nProvider`; optional `vars` object for `{placeholder}` substitution. Fixes pre-existing type error in `ConnectedSitesSection.tsx` (`lastConnected`, etc.).
 
 ### Routes (implemented)
@@ -178,5 +178,6 @@ Nav links for `/analysis`, `/campaigns`, `/review` exist in sidebar but **routes
 | 2026-06-22 | Added `/index` → `/` redirect route so Lovable preview URLs stop returning 404. |
 | 2026-06-22 | Restructured project page into a gated 4-step wizard; fixed `t()` interpolation typing. |
 | 2026-06-22 | Surfaced Connected Sites at top of wizard Step 2 (collapsible sub-panel); Step 2 becomes current after first analysis; Step 1 hint for login-protected pages. |
+| 2026-06-22 | Moved Connected Sites to Step 1 (visible before analysis); optional collapsible sub-panel with pre-analysis connect hint. |
 | 2026-06-22 | Refocused website analysis on marketing-usable intelligence: `content_opportunities` + `marketing_angles`, Egyptian Arabic output, no SWOT/weaknesses. |
 | 2026-06-22 | Extensible PDF marketing report (`src/lib/report/`): analysis section with Arabic RTL via Cairo + react-pdf; Step 2 export button. |

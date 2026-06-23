@@ -284,11 +284,13 @@ function ProjectDetail() {
           </p>
 
           <p
-            className="text-sm mb-4 leading-relaxed"
+            className="text-sm mb-3 leading-relaxed"
             style={{ color: "var(--muted-text)" }}
           >
-            {t("projects.flow.step1.loginProtectedHint")}
+            {t("projects.flow.step1.connectedSitesPreamble")}
           </p>
+
+          <ConnectedSitesSubPanel projectId={project.id} />
 
           {status === "idle" && (
             <IdleCard onAnalyze={handleAnalyze} disabled={isWorking} />
@@ -348,8 +350,7 @@ function ProjectDetail() {
         >
           {analysisDone && latest && (
             <>
-              <ConnectedSitesSubPanel projectId={project.id} />
-              <div className="mt-8 pt-6" style={{ borderTop: "1px solid var(--hairline)" }}>
+              <div className="mt-2">
                 <ExportAnalysisReportButton projectId={project.id} />
                 <AnalysisEditor
                   projectId={project.id}
@@ -737,7 +738,7 @@ function EntryTab({
 
 function ConnectedSitesSubPanel({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <div
@@ -764,10 +765,10 @@ function ConnectedSitesSubPanel({ projectId }: { projectId: string }) {
             className="font-display text-[16px] mb-1"
             style={{ color: "var(--ink-text)", fontWeight: 500 }}
           >
-            {t("projects.flow.step2.connectedSitesPanel.title")}
+            {t("projects.flow.step1.connectedSitesPanel.title")}
           </div>
           <p className="text-sm leading-relaxed" style={{ color: "var(--muted-text)" }}>
-            {t("projects.flow.step2.connectedSitesPanel.hint")}
+            {t("projects.flow.step1.connectedSitesPanel.hint")}
           </p>
         </div>
         <span className="shrink-0 mt-1" style={{ color: "var(--muted-text)" }}>
