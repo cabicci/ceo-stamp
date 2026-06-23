@@ -219,6 +219,7 @@
       "instructions": "This window is a real browser on your site. Type your email and password there as you normally would. We never see or store your password — we only save the session so we can read your protected pages. When you're logged in, click \"I'm signed in\".",
       "passwordNote": "Your password goes directly to your site — it never passes through us.",
       "openNewTab": "Open in new tab",
+      "loginNavigationFailed": "Couldn't open the login page automatically. Enter the URL manually in the browser window.",
       "signedIn": "I'm signed in",
       "signingIn": "Saving…"
     }

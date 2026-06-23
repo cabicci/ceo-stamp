@@ -77,6 +77,16 @@ export const startConnectSession = createServerFn({ method: "POST" })
       const session = await bb.createSession({ contextId, persist: true });
       const debug = await bb.getDebugUrls(session.id);
 
+      // 3) Navigate to login_url before the client opens the live view.
+      const cdpNav = await import("./browserbase-cdp.server");
+      let loginNavigationFailed = false;
+      try {
+        const nav = await cdpNav.navigateBrowserbaseDebugPage(debug, site.login_url);
+        if (!nav.ok) loginNavigationFailed = true;
+      } catch {
+        loginNavigationFailed = true;
+      }
+
       // Persist the (encrypted) contextId now so capture-session can find it
       // even if the browser tab is closed unexpectedly. The cookies still
       // live ONLY inside Browserbase; this row holds an encrypted handle.
@@ -98,6 +108,7 @@ export const startConnectSession = createServerFn({ method: "POST" })
         contextId,
         loginUrl: site.login_url,
         liveViewUrl: debug.debuggerFullscreenUrl,
+        loginNavigationFailed,
       };
     } catch (e) {
       const message = e instanceof Error ? e.message : "فشل بدء جلسة المتصفح";

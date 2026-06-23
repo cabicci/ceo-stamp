@@ -6,6 +6,7 @@ import { startConnectSession, captureSession } from "@/lib/connect-site.function
 import { scrapeAuthenticated } from "@/lib/scrape-authenticated.functions";
 import { useTranslation, type TranslateFn } from "@/i18n/I18nProvider";
 import { translateAnalysisError } from "@/lib/translate-analysis-error";
+import { normalizeWebsiteUrl } from "@/lib/project-schema";
 
 
 type Row = {
@@ -36,6 +37,7 @@ export function ConnectedSitesSection({
     sessionId: string;
     liveViewUrl: string;
     loginUrl: string;
+    loginNavigationFailed: boolean;
   } | null>(null);
 
   const startFn = useServerFn(startConnectSession);
@@ -63,7 +65,7 @@ export function ConnectedSitesSection({
     await supabase.from("connected_sites").insert({
       project_id: projectId,
       label: label.trim(),
-      login_url: loginUrl.trim(),
+      login_url: normalizeWebsiteUrl(loginUrl),
     });
     setLabel("");
     setLoginUrl("");
@@ -84,6 +86,7 @@ export function ConnectedSitesSection({
         sessionId: res.sessionId,
         liveViewUrl: res.liveViewUrl,
         loginUrl: res.loginUrl,
+        loginNavigationFailed: res.loginNavigationFailed ?? false,
       });
       await load();
     } catch (e) {
@@ -290,6 +293,7 @@ export function ConnectedSitesSection({
         <ConnectModal
           loginUrl={active.loginUrl}
           liveViewUrl={active.liveViewUrl}
+          loginNavigationFailed={active.loginNavigationFailed}
           onDone={handleCaptured}
           onCancel={handleCancel}
         />
@@ -472,11 +476,13 @@ function SiteRow({
 function ConnectModal({
   loginUrl,
   liveViewUrl,
+  loginNavigationFailed,
   onDone,
   onCancel,
 }: {
   loginUrl: string;
   liveViewUrl: string;
+  loginNavigationFailed: boolean;
   onDone: () => void;
   onCancel: () => void;
 }) {
@@ -526,6 +532,19 @@ function ConnectModal({
             >
               {loginUrl}
             </div>
+            {loginNavigationFailed && (
+              <p
+                className="mt-3 text-sm leading-relaxed py-2 px-3"
+                style={{
+                  color: "var(--review)",
+                  border: "1px solid var(--review)",
+                  borderRadius: "3px",
+                  backgroundColor: "var(--surface)",
+                }}
+              >
+                {t("connectedSites.modal.loginNavigationFailed")}
+              </p>
+            )}
           </div>
           <button
             type="button"

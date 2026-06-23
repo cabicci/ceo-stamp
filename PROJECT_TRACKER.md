@@ -65,7 +65,7 @@
 
 - **API keys strictly server-side** — `.server.ts` files and TanStack Start server functions; client never sees provider keys.
 - **Admin via `user_roles` + `is_admin()`** — roles live in a dedicated table, not on `profiles`. Seeded admin email: `khalil.wahid@gmail.com` (auto-promoted on signup via `handle_new_user` trigger).
-- **Passwords never stored** — authenticated scraping opens a real Browserbase session; user logs in on their site. We persist only an **AES-256-GCM** encrypted `contextId` in `connected_sites.session_data_encrypted` (`crypto.server.ts`). Browserbase holds the actual session.
+- **Passwords never stored** — authenticated scraping opens a real Browserbase session; user logs in on their site. We persist only an **AES-256-GCM** encrypted `contextId` in `connected_sites.session_data_encrypted` (`crypto.server.ts`). Browserbase holds the actual session. Connect flow navigates to `login_url` via CDP before showing the live view.
 - **`available_channels` is the hard ceiling** — stored on `brand_profiles`; package gallery, strategist, and generation all filter through `constrainPlanToAvailableChannels()`.
 - **Single campaign pipeline** — both entry points (6 package gallery + AI strategist chat) produce an **`AdaptedPlan`** → `approveCampaignPlan` saves `campaigns.campaign_plan` → `generateCampaign` writes `content_items` + `ad_copies`.
 - **Marketing science layer** — `marketing-frameworks.ts` is the single source of truth (17 frameworks: Cialdini×6, Schwartz×5, Byron Sharp×3, StoryBrand, AIDA, PAS). Selective prompt injection into generation/strategist; **no RAG by design**.
@@ -184,4 +184,5 @@ Nav links for `/analysis`, `/campaigns`, `/review` exist in sidebar but **routes
 | 2026-06-22 | Extensible PDF marketing report (`src/lib/report/`): analysis section with Arabic RTL via Cairo + react-pdf; Step 2 export button. |
 | 2026-06-22 | Analysis timeouts + zombie-row cleanup: 30s homepage fetch, 90s AI timeout, stale `scraping`/`analyzing` rows (>5 min) → `error`; i18n `analysis.errors.*` keys. |
 | 2026-06-22 | Client analysis watchdog (2.5 min), Connected Sites expanded by default in Step 1, delete-project with confirm + cascade. |
+| 2026-06-22 | Browserbase connect navigates to `login_url` via CDP before live view; `login_url` normalized on insert (`normalizeWebsiteUrl`). |
 | 2026-06-22 | Confirmed `SUPABASE_SERVICE_ROLE_KEY` wired server-side + stale-run cleanup (`analysis-lifecycle.server.ts`) working via `supabaseAdmin` on cold start and before each run. |
