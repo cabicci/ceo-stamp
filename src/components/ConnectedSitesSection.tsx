@@ -18,7 +18,13 @@ type Row = {
   error_message: string | null;
 };
 
-export function ConnectedSitesSection({ projectId }: { projectId: string }) {
+export function ConnectedSitesSection({
+  projectId,
+  hideHeader = false,
+}: {
+  projectId: string;
+  hideHeader?: boolean;
+}) {
   const { t } = useTranslation();
   const [rows, setRows] = useState<Row[]>([]);
   const [adding, setAdding] = useState(false);
@@ -142,14 +148,18 @@ export function ConnectedSitesSection({ projectId }: { projectId: string }) {
 
 
   return (
-    <section className="mb-8">
-      <div className="flex items-center justify-between mb-4">
-        <div
-          className="font-mono text-[10px] uppercase tracking-[0.22em]"
-          style={{ color: "var(--muted-text)" }}
-        >
-          {t("connectedSites.title")}
-        </div>
+    <section className={hideHeader ? undefined : "mb-8"}>
+      <div
+        className={`flex items-center mb-4 ${hideHeader ? "justify-end" : "justify-between"}`}
+      >
+        {!hideHeader && (
+          <div
+            className="font-mono text-[10px] uppercase tracking-[0.22em]"
+            style={{ color: "var(--muted-text)" }}
+          >
+            {t("connectedSites.title")}
+          </div>
+        )}
         {!adding && (
           <button
             type="button"

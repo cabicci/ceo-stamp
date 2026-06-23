@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { ArrowLeft, ArrowSquareOut, Plus, Trash, Sparkle, ArrowCounterClockwise, FloppyDisk, Lock, CheckCircle, CaretDown, CaretUp } from "@phosphor-icons/react";
+import { ArrowLeft, ArrowSquareOut, Plus, Trash, Sparkle, ArrowCounterClockwise, FloppyDisk, Lock, CheckCircle, CaretDown, CaretUp, LinkSimple } from "@phosphor-icons/react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/i18n/I18nProvider";
@@ -161,7 +161,7 @@ function ProjectDetail() {
   const step3Unlocked = analysisDone;
   const step4Unlocked = channelsSet;
 
-  const currentStep: number = !analysisDone ? 1 : !channelsSet ? 3 : 4;
+  const currentStep: number = !analysisDone ? 1 : !channelsSet ? 2 : 4;
 
   useEffect(() => {
     setExpandedSteps((prev) => {
@@ -275,6 +275,13 @@ function ProjectDetail() {
             {t("projects.flow.step1.oneTimeNote")}
           </p>
 
+          <p
+            className="text-sm mb-4 leading-relaxed"
+            style={{ color: "var(--muted-text)" }}
+          >
+            {t("projects.flow.step1.loginProtectedHint")}
+          </p>
+
           {status === "idle" && (
             <IdleCard onAnalyze={handleAnalyze} disabled={isWorking} />
           )}
@@ -333,23 +340,14 @@ function ProjectDetail() {
         >
           {analysisDone && latest && (
             <>
-              <AnalysisEditor
-                projectId={project.id}
-                analysisId={latest.id}
-                initial={normalize(latest.ai_analysis)}
-                onReanalyze={handleAnalyze}
-              />
+              <ConnectedSitesSubPanel projectId={project.id} />
               <div className="mt-8 pt-6" style={{ borderTop: "1px solid var(--hairline)" }}>
-                <div
-                  className="font-mono text-[10px] uppercase tracking-[0.22em] mb-2"
-                  style={{ color: "var(--muted-text)" }}
-                >
-                  {t("projects.flow.step2.connectedSitesTitle")}
-                </div>
-                <p className="text-sm mb-4" style={{ color: "var(--muted-text)" }}>
-                  {t("projects.flow.step2.connectedSitesHint")}
-                </p>
-                <ConnectedSitesSection projectId={project.id} />
+                <AnalysisEditor
+                  projectId={project.id}
+                  analysisId={latest.id}
+                  initial={normalize(latest.ai_analysis)}
+                  onReanalyze={handleAnalyze}
+                />
               </div>
             </>
           )}
@@ -727,6 +725,59 @@ function EntryTab({
 // -----------------------------------------------------------------------------
 // Wizard flow
 // -----------------------------------------------------------------------------
+
+function ConnectedSitesSubPanel({ projectId }: { projectId: string }) {
+  const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(true);
+
+  return (
+    <div
+      className="overflow-hidden mb-6"
+      style={{
+        border: "1px solid var(--hairline)",
+        borderRadius: "4px",
+        backgroundColor: "var(--surface)",
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => setExpanded((prev) => !prev)}
+        className="w-full text-start px-5 py-4 flex items-start gap-3"
+      >
+        <LinkSimple
+          size={20}
+          strokeWidth={1.75}
+          className="shrink-0 mt-0.5"
+          style={{ color: "var(--review)" }}
+        />
+        <div className="flex-1 min-w-0">
+          <div
+            className="font-display text-[16px] mb-1"
+            style={{ color: "var(--ink-text)", fontWeight: 500 }}
+          >
+            {t("projects.flow.step2.connectedSitesPanel.title")}
+          </div>
+          <p className="text-sm leading-relaxed" style={{ color: "var(--muted-text)" }}>
+            {t("projects.flow.step2.connectedSitesPanel.hint")}
+          </p>
+        </div>
+        <span className="shrink-0 mt-1" style={{ color: "var(--muted-text)" }}>
+          {expanded ? (
+            <CaretUp size={16} strokeWidth={1.75} />
+          ) : (
+            <CaretDown size={16} strokeWidth={1.75} />
+          )}
+        </span>
+      </button>
+
+      {expanded && (
+        <div className="px-5 pb-5 pt-1" style={{ borderTop: "1px solid var(--hairline)" }}>
+          <ConnectedSitesSection projectId={projectId} hideHeader />
+        </div>
+      )}
+    </div>
+  );
+}
 
 const WIZARD_STEPS = [1, 2, 3, 4] as const;
 
