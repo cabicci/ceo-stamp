@@ -130,6 +130,7 @@ RLS pattern: **owner read/write** on project-scoped data; **`is_admin()` read-on
 - **Lovable preview `/index` redirect** — `src/routes/[index].tsx` redirects `/index` → `/` so Lovable's preview URL no longer 404s.
 - **Project detail wizard** — `/projects/$id` restructured into a guided sequential flow: **Step 1** Analyze Website (one-time foundation; optional **Connected Sites** sub-panel at top — expanded by default, usable before first analysis) → **Step 2** Brand Profile (review/edit) → **Step 3** Available Channels → **Step 4** Campaigns (repeatable — package gallery + AI strategist). Later steps are gated/locked with Arabic hints until the prior step completes; completed steps stay collapsible. Progress indicator (1→4) via `projects.flow.*` i18n keys. Wizard focuses Step 2 after first analysis completes. **Delete project** in settings (confirm dialog, cascade delete, redirect to list).
 - **`t()` interpolation typing** — `TranslateFn` exported from `I18nProvider`; optional `vars` object for `{placeholder}` substitution. Fixes pre-existing type error in `ConnectedSitesSection.tsx` (`lastConnected`, etc.).
+- **Supabase service role key + stale-run cleanup confirmed working** — `SUPABASE_SERVICE_ROLE_KEY` is wired server-side (`.env` secret); `analysis-lifecycle.server.ts` uses `supabaseAdmin` to reliably mark abandoned `scraping`/`analyzing` rows (>5 min) as `error` on every server cold start and before each new analysis run. No client-side changes.
 
 ### Routes (implemented)
 
@@ -183,3 +184,4 @@ Nav links for `/analysis`, `/campaigns`, `/review` exist in sidebar but **routes
 | 2026-06-22 | Extensible PDF marketing report (`src/lib/report/`): analysis section with Arabic RTL via Cairo + react-pdf; Step 2 export button. |
 | 2026-06-22 | Analysis timeouts + zombie-row cleanup: 30s homepage fetch, 90s AI timeout, stale `scraping`/`analyzing` rows (>5 min) → `error`; i18n `analysis.errors.*` keys. |
 | 2026-06-22 | Client analysis watchdog (2.5 min), Connected Sites expanded by default in Step 1, delete-project with confirm + cascade. |
+| 2026-06-22 | Confirmed `SUPABASE_SERVICE_ROLE_KEY` wired server-side + stale-run cleanup (`analysis-lifecycle.server.ts`) working via `supabaseAdmin` on cold start and before each run. |
