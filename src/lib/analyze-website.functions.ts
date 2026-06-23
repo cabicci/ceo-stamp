@@ -110,8 +110,9 @@ const SaveSchema = z.object({
         objections: z.array(z.string()),
       }),
     ),
-    content_gaps: z.array(z.string()),
+    content_opportunities: z.array(z.string()),
     content_pillars: z.array(z.string()),
+    marketing_angles: z.array(z.string()),
   }),
 });
 

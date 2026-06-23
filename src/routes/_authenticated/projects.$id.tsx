@@ -44,8 +44,9 @@ type Analysis = {
   usps: string[];
   pain_points: string[];
   personas: Persona[];
-  content_gaps: string[];
+  content_opportunities: string[];
   content_pillars: string[];
+  marketing_angles: string[];
 };
 
 type AnalysisRow = {
@@ -63,11 +64,12 @@ const EMPTY_ANALYSIS: Analysis = {
   usps: [],
   pain_points: [],
   personas: [],
-  content_gaps: [],
+  content_opportunities: [],
   content_pillars: [],
+  marketing_angles: [],
 };
 
-function normalize(raw: Partial<Analysis> | null | undefined): Analysis {
+function normalize(raw: Partial<Analysis> & { content_gaps?: string[] } | null | undefined): Analysis {
   if (!raw) return EMPTY_ANALYSIS;
   return {
     business_model: raw.business_model ?? "",
@@ -82,8 +84,13 @@ function normalize(raw: Partial<Analysis> | null | undefined): Analysis {
           objections: Array.isArray(p?.objections) ? p.objections : [],
         }))
       : [],
-    content_gaps: Array.isArray(raw.content_gaps) ? raw.content_gaps : [],
+    content_opportunities: Array.isArray(raw.content_opportunities)
+      ? raw.content_opportunities
+      : Array.isArray(raw.content_gaps)
+        ? raw.content_gaps
+        : [],
     content_pillars: Array.isArray(raw.content_pillars) ? raw.content_pillars : [],
+    marketing_angles: Array.isArray(raw.marketing_angles) ? raw.marketing_angles : [],
   };
 }
 
@@ -1258,11 +1265,20 @@ function AnalysisEditor({
       </Card>
 
       <Card>
-        <FieldLabel>{t("analysis.fields.contentGaps")}</FieldLabel>
+        <FieldLabel>{t("analysis.fields.contentOpportunities")}</FieldLabel>
         <StringList
-          items={a.content_gaps}
-          onChange={(content_gaps) => setA({ ...a, content_gaps })}
-          placeholder={t("analysis.placeholders.contentGap")}
+          items={a.content_opportunities}
+          onChange={(content_opportunities) => setA({ ...a, content_opportunities })}
+          placeholder={t("analysis.placeholders.contentOpportunity")}
+        />
+      </Card>
+
+      <Card>
+        <FieldLabel>{t("analysis.fields.marketingAngles")}</FieldLabel>
+        <StringList
+          items={a.marketing_angles}
+          onChange={(marketing_angles) => setA({ ...a, marketing_angles })}
+          placeholder={t("analysis.placeholders.marketingAngle")}
         />
       </Card>
 
