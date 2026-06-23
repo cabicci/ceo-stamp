@@ -9,6 +9,32 @@ import {
   markAnalysisError,
 } from "@/lib/analysis-lifecycle.server";
 
+const WatchdogInputSchema = z.object({
+  analysisId: z.string().uuid(),
+});
+
+/** Client-side watchdog: mark a stuck in-flight analysis row as error. */
+export const failAnalysisWatchdog = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: unknown) => WatchdogInputSchema.parse(data))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+
+    const { data: row, error: fetchErr } = await supabase
+      .from("website_analysis")
+      .select("id, status")
+      .eq("id", data.analysisId)
+      .single();
+
+    if (fetchErr || !row) return { ok: false as const };
+    if (row.status !== "scraping" && row.status !== "analyzing") {
+      return { ok: true as const };
+    }
+
+    await markAnalysisError(supabase, data.analysisId, ANALYSIS_ERROR.watchdogTimeout);
+    return { ok: true as const };
+  });
+
 const InputSchema = z.object({
   projectId: z.string().uuid(),
 });

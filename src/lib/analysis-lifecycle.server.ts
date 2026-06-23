@@ -20,6 +20,7 @@ export const ANALYSIS_ERROR = {
   pipelineFailed: "analysis.errors.pipelineFailed",
   authSessionExpired: "analysis.errors.authSessionExpired",
   noProtectedPages: "analysis.errors.noProtectedPages",
+  watchdogTimeout: "analysis.errors.watchdogTimeout",
 } as const;
 
 export type AnalysisErrorKey = (typeof ANALYSIS_ERROR)[keyof typeof ANALYSIS_ERROR];

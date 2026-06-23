@@ -70,6 +70,14 @@
       "urlError": "Add a project name and a valid website (e.g. masaarat.ai).",
       "saved": "Saved."
     },
+    "delete": {
+      "button": "Delete project",
+      "confirmMessage": "Are you sure you want to delete this project? This will permanently remove all analyses, campaigns, and content linked to it — there is no undo.",
+      "confirmButton": "Yes, delete project",
+      "cancelButton": "Cancel",
+      "deleting": "Deleting…",
+      "failed": "Could not delete the project. Please try again."
+    },
     "flow": {
       "progressEyebrow": "Setup progress",
       "stepOf": "Step {current} of {total}",
@@ -126,7 +134,8 @@
       "fetchHttp": "Couldn't open the site (HTTP {status}). Check that the URL works.",
       "pipelineFailed": "Analysis failed. Please try again.",
       "authSessionExpired": "Your session expired — reconnect the site.",
-      "noProtectedPages": "We couldn't read any protected pages. The site may need extra rendering."
+      "noProtectedPages": "We couldn't read any protected pages. The site may need extra rendering.",
+      "watchdogTimeout": "This analysis took too long and was stopped. Try again."
     },
     "fields": {
       "businessModel": "Business model",

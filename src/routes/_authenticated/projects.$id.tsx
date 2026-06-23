@@ -1,11 +1,12 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { ArrowLeft, ArrowSquareOut, Plus, Trash, Sparkle, ArrowCounterClockwise, FloppyDisk, Lock, CheckCircle, CaretDown, CaretUp, LinkSimple } from "@phosphor-icons/react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/i18n/I18nProvider";
 import { useServerFn } from "@tanstack/react-start";
-import { analyzeWebsite, saveAnalysisEdits } from "@/lib/analyze-website.functions";
+import { analyzeWebsite, failAnalysisWatchdog, saveAnalysisEdits } from "@/lib/analyze-website.functions";
+import { deleteProject } from "@/lib/delete-project.functions";
 import { ConnectedSitesSection } from "@/components/ConnectedSitesSection";
 import { AvailableChannelsSettings } from "@/components/AvailableChannelsSettings";
 import { PackageGallery } from "@/components/PackageGallery";
@@ -96,17 +97,23 @@ function normalize(raw: Partial<Analysis> & { content_gaps?: string[] } | null |
   };
 }
 
+const ANALYSIS_WATCHDOG_MS = 2.5 * 60 * 1000;
+
 function ProjectDetail() {
   const { id } = Route.useParams();
   const { t } = useTranslation();
   const [project, setProject] = useState<Project | null | undefined>(undefined);
   const [latest, setLatest] = useState<AnalysisRow | null>(null);
   const [running, setRunning] = useState(false);
+  const [watchdogTripped, setWatchdogTripped] = useState(false);
   const [availableChannels, setAvailableChannels] = useState<Channel[]>([]);
   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set([1]));
   const pollRef = useRef<number | null>(null);
+  const runStartedAtRef = useRef<number | null>(null);
+  const watchdogFiredRef = useRef(false);
 
   const analyzeFn = useServerFn(analyzeWebsite);
+  const watchdogFn = useServerFn(failAnalysisWatchdog);
 
   async function loadAvailableChannels() {
     const { data } = await supabase
@@ -148,6 +155,10 @@ function ProjectDetail() {
     loadLatestAnalysis();
     loadAvailableChannels();
     const onRefresh = () => {
+      runStartedAtRef.current = Date.now();
+      watchdogFiredRef.current = false;
+      setWatchdogTripped(false);
+      setRunning(true);
       loadLatestAnalysis();
       startPolling();
     };
@@ -159,7 +170,10 @@ function ProjectDetail() {
   }, [id]);
 
   const status = latest?.status ?? "idle";
-  const isWorking = running || status === "scraping" || status === "analyzing";
+  const isWorking =
+    !watchdogTripped &&
+    (running || status === "scraping" || status === "analyzing");
+  const analysisFailed = status === "error" || watchdogTripped;
   const analysisDone = status === "done";
   const channelsSet = availableChannels.length > 0;
 
@@ -194,19 +208,63 @@ function ProjectDetail() {
     });
   }
 
+  function stopPolling() {
+    if (pollRef.current) {
+      window.clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }
+
+  async function triggerWatchdog(analysisId: string) {
+    if (watchdogFiredRef.current) return;
+    watchdogFiredRef.current = true;
+    stopPolling();
+    setRunning(false);
+    setWatchdogTripped(true);
+
+    try {
+      await watchdogFn({ data: { analysisId } });
+    } catch {
+      /* still show local error state */
+    }
+
+    setLatest((prev) =>
+      prev
+        ? {
+            ...prev,
+            status: "error",
+            error_message: "analysis.errors.watchdogTimeout",
+          }
+        : prev,
+    );
+    await loadLatestAnalysis();
+  }
+
   function startPolling() {
-    if (pollRef.current) window.clearInterval(pollRef.current);
+    stopPolling();
+    if (!runStartedAtRef.current) runStartedAtRef.current = Date.now();
     pollRef.current = window.setInterval(async () => {
       const row = await loadLatestAnalysis();
       if (row && (row.status === "done" || row.status === "error")) {
-        if (pollRef.current) window.clearInterval(pollRef.current);
-        pollRef.current = null;
+        stopPolling();
         setRunning(false);
+        return;
+      }
+      if (
+        runStartedAtRef.current &&
+        Date.now() - runStartedAtRef.current >= ANALYSIS_WATCHDOG_MS &&
+        row &&
+        (row.status === "scraping" || row.status === "analyzing")
+      ) {
+        await triggerWatchdog(row.id);
       }
     }, 2000);
   }
 
   async function handleAnalyze() {
+    runStartedAtRef.current = Date.now();
+    watchdogFiredRef.current = false;
+    setWatchdogTripped(false);
     setRunning(true);
     startPolling();
     try {
@@ -216,10 +274,7 @@ function ProjectDetail() {
     } finally {
       await loadLatestAnalysis();
       setRunning(false);
-      if (pollRef.current) {
-        window.clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
+      stopPolling();
     }
   }
 
@@ -299,7 +354,7 @@ function ProjectDetail() {
 
           {isWorking && <RunningCard status={status} />}
 
-          {status === "error" && !isWorking && (
+          {analysisFailed && !isWorking && (
             <ErrorCard
               message={translateAnalysisError(latest?.error_message, t)}
               onRetry={handleAnalyze}
@@ -419,11 +474,16 @@ function ProjectSettingsForm({
   onSaved: () => Promise<void>;
 }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const deleteFn = useServerFn(deleteProject);
   const [name, setName] = useState(project.name);
   const [url, setUrl] = useState(project.website_url);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     setName(project.name);
@@ -457,6 +517,20 @@ function ProjectSettingsForm({
       setError(err instanceof Error ? err.message : "Error");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleDeleteConfirm() {
+    setDeleteError(null);
+    setDeleting(true);
+    try {
+      await deleteFn({ data: { projectId: project.id } });
+      navigate({ to: "/" });
+    } catch {
+      setDeleteError(t("projects.delete.failed"));
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(false);
     }
   }
 
@@ -564,6 +638,78 @@ function ProjectSettingsForm({
         <FloppyDisk size={14} strokeWidth={1.75} />
         {saving ? t("projects.form.saving") : t("projects.form.save")}
       </button>
+
+      <div
+        className="mt-10 pt-8"
+        style={{ borderTop: "1px solid var(--hairline)" }}
+      >
+        {!confirmDelete ? (
+          <button
+            type="button"
+            onClick={() => {
+              setConfirmDelete(true);
+              setDeleteError(null);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm"
+            style={{
+              color: "var(--danger)",
+              border: "1px solid var(--danger)",
+              borderRadius: "3px",
+              backgroundColor: "transparent",
+            }}
+          >
+            <Trash size={14} strokeWidth={1.75} />
+            {t("projects.delete.button")}
+          </button>
+        ) : (
+          <div
+            className="p-5 max-w-xl"
+            style={{
+              border: "1px solid var(--danger)",
+              borderRadius: "4px",
+              backgroundColor: "var(--surface)",
+            }}
+          >
+            <p className="text-sm mb-4 leading-relaxed" style={{ color: "var(--ink-text)" }}>
+              {t("projects.delete.confirmMessage")}
+            </p>
+            {deleteError ? (
+              <p className="text-sm mb-3" style={{ color: "var(--danger)" }}>
+                {deleteError}
+              </p>
+            ) : null}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                disabled={deleting}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm disabled:opacity-50"
+                style={{
+                  backgroundColor: "var(--danger)",
+                  color: "#FFFFFF",
+                  borderRadius: "3px",
+                }}
+              >
+                <Trash size={14} strokeWidth={1.75} />
+                {deleting ? t("projects.delete.deleting") : t("projects.delete.confirmButton")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleting}
+                className="px-4 py-2 text-sm disabled:opacity-50"
+                style={{
+                  border: "1px solid var(--hairline)",
+                  color: "var(--ink-text)",
+                  borderRadius: "3px",
+                }}
+              >
+                {t("projects.delete.cancelButton")}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </form>
   );
 }
@@ -739,7 +885,7 @@ function EntryTab({
 
 function ConnectedSitesSubPanel({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   return (
     <div
