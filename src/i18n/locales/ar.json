@@ -142,6 +142,32 @@
     "reanalyze": "إعادة تحليل",
     "addPersona": "إضافة شخصية"
   },
+  "report": {
+    "exportPdf": "تصدير التقرير PDF",
+    "exporting": "جارٍ تجهيز التقرير…",
+    "exportFailed": "فشل تصدير التقرير.",
+    "documentTitle": "تقرير الاستراتيجية التسويقية",
+    "generatedOn": "تاريخ الإصدار",
+    "pageOf": "صفحة {current} من {total}",
+    "emptyList": "—",
+    "sections": {
+      "analysis": "التحليل التسويقي"
+    },
+    "fields": {
+      "businessModel": "نموذج العمل",
+      "targetAudience": "الجمهور المستهدف",
+      "toneOfVoice": "نبرة الصوت",
+      "usps": "نقاط قوة تسويقية",
+      "painPoints": "مشاكل الجمهور (زوايا تسويق)",
+      "personas": "الشخصيات",
+      "personaPainPoints": "نقاط الألم",
+      "personaObjections": "الاعتراضات",
+      "contentOpportunities": "فرص تسويقية ومحتوى",
+      "marketingAngles": "زوايا تسويقية مقترحة",
+      "contentPillars": "أعمدة المحتوى",
+      "website": "الموقع"
+    }
+  },
   "connectedSites": {
     "title": "المواقع المربوطة",
     "linkSite": "ربط موقع",

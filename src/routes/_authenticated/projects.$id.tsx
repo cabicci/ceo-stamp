@@ -14,6 +14,7 @@ import { formatFrameworksDisplay } from "@/lib/marketing-frameworks";
 import { StrategistChat } from "@/components/StrategistChat";
 import { approveCampaignPlan } from "@/lib/strategist-chat.functions";
 import { CampaignGeneratePanel } from "@/components/CampaignGeneratePanel";
+import { ExportAnalysisReportButton } from "@/components/ExportAnalysisReportButton";
 import { projectSchema } from "@/lib/project-schema";
 
 
@@ -349,6 +350,7 @@ function ProjectDetail() {
             <>
               <ConnectedSitesSubPanel projectId={project.id} />
               <div className="mt-8 pt-6" style={{ borderTop: "1px solid var(--hairline)" }}>
+                <ExportAnalysisReportButton projectId={project.id} />
                 <AnalysisEditor
                   projectId={project.id}
                   analysisId={latest.id}

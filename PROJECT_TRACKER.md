@@ -115,6 +115,7 @@ RLS pattern: **owner read/write** on project-scoped data; **`is_admin()` read-on
 - **Auth** — Supabase email/password; protected `_authenticated` routes.
 - **Admin dashboard** — `/admin`: user/project/campaign/content totals (RLS-gated).
 - **Website intelligence** — public scrape + **Browserbase** authenticated scrape; shared `analysis-pipeline.server.ts`; marketing-focused analysis output (Egyptian Arabic): USPs, audience pain points, content opportunities, marketing angles — no generic business audit; editable on project page Step 2.
+- **Marketing report PDF (extensible)** — `src/lib/report/` modular section builder (`ReportSectionModule` + `composeReportDocument`); first section **التحليل التسويقي** exported via server fn (`@react-pdf/renderer` + embedded Cairo woff2 for Arabic RTL shaping); Step 2 **تصدير التقرير PDF** button.
 - **Brand profile** — auto-upserted from analysis into `brand_profiles`; channel settings UI.
 - **Campaign packages** — 6 packages in `campaign-packages.ts` with channel adaptation.
 - **AI strategist chat** — multi-turn planning → `AdaptedPlan` → approve.
@@ -160,6 +161,7 @@ Nav links for `/analysis`, `/campaigns`, `/review` exist in sidebar but **routes
 | History / clone / templates | `cloned_from_id`, `is_template`, `archived` columns exist |
 | Social publishing | `social_connections`, `publish_jobs` schema only |
 | Billing | `subscriptions` + `usage_counters` — **last priority** |
+| Full strategy PDF (campaign + posts sections) | Analysis section shipped; extend `src/lib/report/` with campaign + posts modules |
 
 ---
 
@@ -177,3 +179,4 @@ Nav links for `/analysis`, `/campaigns`, `/review` exist in sidebar but **routes
 | 2026-06-22 | Restructured project page into a gated 4-step wizard; fixed `t()` interpolation typing. |
 | 2026-06-22 | Surfaced Connected Sites at top of wizard Step 2 (collapsible sub-panel); Step 2 becomes current after first analysis; Step 1 hint for login-protected pages. |
 | 2026-06-22 | Refocused website analysis on marketing-usable intelligence: `content_opportunities` + `marketing_angles`, Egyptian Arabic output, no SWOT/weaknesses. |
+| 2026-06-22 | Extensible PDF marketing report (`src/lib/report/`): analysis section with Arabic RTL via Cairo + react-pdf; Step 2 export button. |
