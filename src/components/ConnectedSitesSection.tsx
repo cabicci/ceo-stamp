@@ -45,6 +45,14 @@ export function ConnectedSitesSection({
   const scrapeFn = useServerFn(scrapeAuthenticated);
   const [scrapingFor, setScrapingFor] = useState<string | null>(null);
   const [scrapeStage, setScrapeStage] = useState<string>("");
+  const [connectError, setConnectError] = useState<string | null>(null);
+  const [captureError, setCaptureError] = useState<string | null>(null);
+  const [scrapeError, setScrapeError] = useState<string | null>(null);
+
+  function translateServerMessage(message: string): string {
+    if (message.startsWith("connectedSites.")) return t(message);
+    return message;
+  }
 
 
   async function load() {
@@ -79,6 +87,7 @@ export function ConnectedSitesSection({
   }
 
   async function handleConnect(row: Row) {
+    setConnectError(null);
     try {
       const res = await startFn({ data: { connectedSiteId: row.id } });
       setActive({
@@ -90,13 +99,19 @@ export function ConnectedSitesSection({
       });
       await load();
     } catch (e) {
-      alert(e instanceof Error ? e.message : t("connectedSites.sessionStartFailed"));
+      const raw = e instanceof Error ? e.message : "";
+      setConnectError(
+        raw.startsWith("connectedSites.")
+          ? translateServerMessage(raw)
+          : t("connectedSites.errors.sessionStartFailed"),
+      );
       await load();
     }
   }
 
   async function handleCaptured() {
     if (!active) return;
+    setCaptureError(null);
     try {
       await captureFn({
         data: { connectedSiteId: active.siteId, sessionId: active.sessionId },
@@ -104,7 +119,12 @@ export function ConnectedSitesSection({
       setActive(null);
       await load();
     } catch (e) {
-      alert(e instanceof Error ? e.message : t("connectedSites.sessionSaveFailed"));
+      const raw = e instanceof Error ? e.message : "";
+      setCaptureError(
+        raw.startsWith("connectedSites.")
+          ? translateServerMessage(raw)
+          : t("connectedSites.errors.sessionSaveFailed"),
+      );
       await load();
     }
   }
@@ -121,6 +141,7 @@ export function ConnectedSitesSection({
   }
 
   async function handleScrape(row: Row) {
+    setScrapeError(null);
     setScrapingFor(row.id);
     setScrapeStage(t("connectedSites.scrapeOpening"));
     // Lightweight stage advancer (visual only).
@@ -129,14 +150,14 @@ export function ConnectedSitesSection({
     try {
       const res = await scrapeFn({ data: { connectedSiteId: row.id } });
       if (!res.ok) {
-        alert(translateAnalysisError(res.message, t));
+        setScrapeError(translateAnalysisError(res.message, t));
       } else {
         // Notify the parent page to refresh the analysis form.
         window.dispatchEvent(new CustomEvent("analysis-refresh"));
       }
       await load();
-    } catch (e) {
-      alert(e instanceof Error ? e.message : t("connectedSites.scrapeFailed"));
+    } catch {
+      setScrapeError(t("connectedSites.scrapeFailed"));
       await load();
     } finally {
       window.clearTimeout(t1);
@@ -176,6 +197,13 @@ export function ConnectedSitesSection({
           </button>
         )}
       </div>
+
+      {connectError && (
+        <ConnectFlowError message={connectError} onDismiss={() => setConnectError(null)} />
+      )}
+      {scrapeError && (
+        <ConnectFlowError message={scrapeError} onDismiss={() => setScrapeError(null)} />
+      )}
 
       {adding && (
         <div
@@ -294,6 +322,7 @@ export function ConnectedSitesSection({
           loginUrl={active.loginUrl}
           liveViewUrl={active.liveViewUrl}
           loginNavigationFailed={active.loginNavigationFailed}
+          captureError={captureError}
           onDone={handleCaptured}
           onCancel={handleCancel}
         />
@@ -473,16 +502,51 @@ function SiteRow({
   );
 }
 
+function ConnectFlowError({
+  message,
+  onDismiss,
+}: {
+  message: string;
+  onDismiss: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div
+      className="mb-4 p-4 flex items-start justify-between gap-3"
+      style={{
+        border: "1px solid var(--danger)",
+        borderRadius: "4px",
+        backgroundColor: "var(--surface)",
+      }}
+    >
+      <p className="text-sm leading-relaxed" style={{ color: "var(--danger)" }}>
+        {message}
+      </p>
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label={t("common.cancel")}
+        className="shrink-0 p-1"
+        style={{ color: "var(--muted-text)" }}
+      >
+        <X size={14} strokeWidth={1.5} />
+      </button>
+    </div>
+  );
+}
+
 function ConnectModal({
   loginUrl,
   liveViewUrl,
   loginNavigationFailed,
+  captureError,
   onDone,
   onCancel,
 }: {
   loginUrl: string;
   liveViewUrl: string;
   loginNavigationFailed: boolean;
+  captureError: string | null;
   onDone: () => void;
   onCancel: () => void;
 }) {
@@ -575,12 +639,19 @@ function ConnectModal({
           className="p-4 flex items-center justify-between gap-3 flex-wrap"
           style={{ borderTop: "1px solid var(--hairline)" }}
         >
-          <div
-            className="flex items-center gap-2 text-xs"
-            style={{ color: "var(--muted-text)" }}
-          >
-            <ShieldCheck size={14} strokeWidth={1.5} style={{ color: "var(--approve)" }} />
-            {t("connectedSites.modal.passwordNote")}
+          <div className="flex flex-col gap-2 min-w-0">
+            <div
+              className="flex items-center gap-2 text-xs"
+              style={{ color: "var(--muted-text)" }}
+            >
+              <ShieldCheck size={14} strokeWidth={1.5} style={{ color: "var(--approve)" }} />
+              {t("connectedSites.modal.passwordNote")}
+            </div>
+            {captureError && (
+              <p className="text-sm" style={{ color: "var(--danger)" }}>
+                {captureError}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <a

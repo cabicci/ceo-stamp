@@ -197,6 +197,10 @@
     "sessionStartFailed": "Could not start session",
     "sessionSaveFailed": "Could not save session",
     "scrapeFailed": "Could not analyze protected pages",
+    "errors": {
+      "sessionStartFailed": "Could not start the connect session. Please try again.",
+      "sessionSaveFailed": "Could not save your session after sign-in. Please try again."
+    },
     "scrapeOpening": "Opening session…",
     "scrapeReading": "Reading protected pages…",
     "scrapeAnalyzing": "Analyzing…",

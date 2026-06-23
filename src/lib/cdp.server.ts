@@ -61,10 +61,15 @@ export class CDPSession {
   static async connect(wsUrl: string): Promise<CDPSession> {
     // workerd: outbound WebSocket via fetch+Upgrade
     const httpUrl = wsUrl.replace(/^wss:/, "https:").replace(/^ws:/, "http:");
-    const resp = await fetch(httpUrl, { headers: { Upgrade: "websocket" } });
+    let resp: Response;
+    try {
+      resp = await fetch(httpUrl, { headers: { Upgrade: "websocket" } });
+    } catch {
+      throw new Error("CDP WebSocket connect failed");
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const ws = (resp as any).webSocket;
-    if (!ws) throw new Error(`WebSocket upgrade failed (status ${resp.status})`);
+    if (!ws) throw new Error("CDP WebSocket upgrade failed");
     ws.accept();
     return new CDPSession(ws);
   }
@@ -103,13 +108,24 @@ export class CDPSession {
   }
 }
 
-/** Navigate the page, wait until load fires (or timeout), then return final URL. */
+/** Navigate the page, wait until load fires (or timeout), then return status only. */
 export async function navigate(
   cdp: CDPSession,
   url: string,
   timeoutMs = 15_000,
+  options?: { readFinalUrl?: boolean; dismissDialogs?: boolean },
 ): Promise<{ finalUrl: string; ok: boolean }> {
+  const readFinalUrl = options?.readFinalUrl !== false;
+  const dismissDialogs = options?.dismissDialogs === true;
+
   await cdp.send("Page.enable");
+
+  if (dismissDialogs) {
+    cdp.on("Page.javascriptDialogOpening", () => {
+      void cdp.send("Page.handleJavaScriptDialog", { accept: false });
+    });
+  }
+
   const loaded = new Promise<void>((resolve) => {
     const onLoad = () => {
       cdp.send("Page.disable").catch(() => {});
@@ -120,7 +136,7 @@ export async function navigate(
   });
   try {
     await cdp.send("Page.navigate", { url });
-  } catch (e) {
+  } catch {
     return { finalUrl: url, ok: false };
   }
   await Promise.race([
@@ -129,11 +145,20 @@ export async function navigate(
   ]);
   // Small settle delay for SPA hydration
   await new Promise((r) => setTimeout(r, 600));
-  const res = (await cdp.send("Runtime.evaluate", {
-    expression: "location.href",
-    returnByValue: true,
-  })) as { result?: { value?: string } };
-  return { finalUrl: res.result?.value ?? url, ok: true };
+
+  if (!readFinalUrl) {
+    return { finalUrl: url, ok: true };
+  }
+
+  try {
+    const res = (await cdp.send("Runtime.evaluate", {
+      expression: "location.href",
+      returnByValue: true,
+    })) as { result?: { value?: string } };
+    return { finalUrl: res.result?.value ?? url, ok: true };
+  } catch {
+    return { finalUrl: url, ok: true };
+  }
 }
 
 /** Extract visible text + same-host links from the current page. */

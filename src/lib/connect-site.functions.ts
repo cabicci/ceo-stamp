@@ -111,12 +111,14 @@ export const startConnectSession = createServerFn({ method: "POST" })
         loginNavigationFailed,
       };
     } catch (e) {
-      const message = e instanceof Error ? e.message : "فشل بدء جلسة المتصفح";
+      // Never surface raw API/HTML bodies to the client — use an i18n key.
+      const message = "connectedSites.errors.sessionStartFailed";
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from("connected_sites")
         .update({ status: "error", error_message: message })
         .eq("id", site.id);
+      console.error("[startConnectSession]", e instanceof Error ? e.message : e);
       throw new Error(message);
     }
   });
@@ -196,13 +198,14 @@ export const captureSession = createServerFn({ method: "POST" })
 
       return { ok: true as const, expiresAt: expires.toISOString() };
     } catch (e) {
-      const message = e instanceof Error ? e.message : "فشل حفظ الجلسة";
+      const message = "connectedSites.errors.sessionSaveFailed";
       await sb
         .from("connected_sites")
         .update({ status: "error", error_message: message })
         .eq("id", site.id);
       // Best-effort release of the Browserbase session.
       await bb.endSession(data.sessionId).catch(() => {});
+      console.error("[captureSession]", e instanceof Error ? e.message : e);
       throw new Error(message);
     }
   });

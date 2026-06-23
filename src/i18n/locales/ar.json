@@ -197,6 +197,10 @@
     "sessionStartFailed": "فشل بدء الجلسة",
     "sessionSaveFailed": "فشل حفظ الجلسة",
     "scrapeFailed": "فشل تحليل الصفحات المحمية",
+    "errors": {
+      "sessionStartFailed": "فشل بدء جلسة الربط. حاول تاني.",
+      "sessionSaveFailed": "فشل حفظ الجلسة بعد تسجيل الدخول. حاول تاني."
+    },
     "scrapeOpening": "بيتم فتح الجلسة…",
     "scrapeReading": "بيتم قراءة الصفحات المحمية…",
     "scrapeAnalyzing": "بيتم التحليل…",
