@@ -74,7 +74,21 @@ export const startConnectSession = createServerFn({ method: "POST" })
       }
 
       // 2) Open a session bound to that context with persist=true.
-      const session = await bb.createSession({ contextId, persist: true });
+      //    If we hit Browserbase's concurrent-session cap, release any
+      //    leftover running sessions from prior runs and retry once.
+      let session: Awaited<ReturnType<typeof bb.createSession>>;
+      try {
+        session = await bb.createSession({ contextId, persist: true });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("429")) {
+          const released = await bb.releaseRunningSessions();
+          console.warn(`[startConnectSession] released ${released} stale Browserbase sessions, retrying`);
+          session = await bb.createSession({ contextId, persist: true });
+        } else {
+          throw err;
+        }
+      }
       const debug = await bb.getDebugUrls(session.id);
 
       // 3) Navigate to login_url before the client opens the live view.
