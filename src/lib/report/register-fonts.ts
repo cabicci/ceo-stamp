@@ -8,12 +8,15 @@ let registered = false;
 export function registerReportFonts() {
   if (registered) return;
   const dir = path.dirname(fileURLToPath(import.meta.url));
+  const ttf = path.join(dir, "fonts", "Cairo-Regular.ttf");
   Font.register({
     family: "Cairo",
     fonts: [
-      { src: path.join(dir, "fonts", "Cairo-Regular.woff2"), fontWeight: 400 },
-      { src: path.join(dir, "fonts", "Cairo-SemiBold.woff2"), fontWeight: 600 },
+      { src: ttf, fontWeight: 400 },
+      { src: ttf, fontWeight: 600 },
     ],
   });
+  // Disable hyphenation — breaks Arabic shaping in @react-pdf/textkit
+  Font.registerHyphenationCallback((word) => [word]);
   registered = true;
 }
