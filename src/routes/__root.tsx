@@ -111,6 +111,39 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
+        <div
+          id="app-boot-fallback"
+          aria-live="polite"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 2147483647,
+            display: "grid",
+            placeItems: "center",
+            padding: "24px",
+            background: "#FFFFFF",
+            color: "#1A1B1F",
+            fontFamily:
+              '"IBM Plex Sans Arabic", "IBM Plex Sans", system-ui, -apple-system, sans-serif',
+            textAlign: "center",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontFamily: '"Fraunces", serif',
+                fontSize: "28px",
+                fontWeight: 500,
+                direction: "ltr",
+              }}
+            >
+              Marketing CEO
+            </div>
+            <div style={{ marginTop: "14px", color: "#6B6B66", fontSize: "14px" }}>
+              جاري تحميل البريفيو…
+            </div>
+          </div>
+        </div>
         {children}
         <Scripts />
       </body>
@@ -120,6 +153,10 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    document.getElementById("app-boot-fallback")?.remove();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
