@@ -199,6 +199,9 @@
     "scrapeFailed": "فشل تحليل الصفحات المحمية",
     "errors": {
       "sessionStartFailed": "فشل بدء جلسة الربط. حاول تاني.",
+      "browserbaseNotConfigured": "خدمة المتصفح الآمن غير مفعّلة على السيرفر. تأكد من مفاتيح Browserbase ثم أعد تشغيل البريفيو.",
+      "sessionEncryptionNotConfigured": "مفتاح تشفير الجلسات غير مفعّل على السيرفر. تأكد من SESSION_ENCRYPTION_KEY ثم أعد تشغيل البريفيو.",
+      "browserbaseCapacity": "كل جلسات المتصفح الآمن مشغولة حالياً. تم تنظيف الجلسات القديمة؛ حاول مرة تانية بعد لحظات.",
       "sessionSaveFailed": "فشل حفظ الجلسة بعد تسجيل الدخول. حاول تاني."
     },
     "scrapeOpening": "بيتم فتح الجلسة…",

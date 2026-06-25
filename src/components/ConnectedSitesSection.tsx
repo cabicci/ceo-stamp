@@ -92,6 +92,11 @@ export function ConnectedSitesSection({
     setConnectError(null);
     try {
       const res = await startFn({ data: { connectedSiteId: row.id } });
+      if (!res.ok) {
+        setConnectError(translateServerMessage(res.message));
+        await load();
+        return;
+      }
       setActive({
         siteId: row.id,
         sessionId: res.sessionId,

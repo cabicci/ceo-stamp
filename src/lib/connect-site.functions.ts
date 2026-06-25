@@ -20,6 +20,29 @@ const CaptureInput = z.object({
   sessionId: z.string().min(1),
 });
 
+function classifyStartError(err: unknown): string {
+  const message = err instanceof Error ? err.message : String(err);
+  if (
+    message.includes("BROWSERBASE_API_KEY") ||
+    message.includes("BROWSERBASE_PROJECT_ID") ||
+    message.includes("Browserbase 401") ||
+    message.includes("Browserbase 403")
+  ) {
+    return "connectedSites.errors.browserbaseNotConfigured";
+  }
+  if (message.includes("SESSION_ENCRYPTION_KEY")) {
+    return "connectedSites.errors.sessionEncryptionNotConfigured";
+  }
+  if (
+    message.includes("429") ||
+    message.toLowerCase().includes("concurrent") ||
+    message.toLowerCase().includes("rate limit")
+  ) {
+    return "connectedSites.errors.browserbaseCapacity";
+  }
+  return "connectedSites.errors.sessionStartFailed";
+}
+
 async function assertOwnsSite(
   supabase: ReturnType<typeof Object>,
   connectedSiteId: string,
@@ -48,6 +71,8 @@ export const startConnectSession = createServerFn({ method: "POST" })
 
     const bb = await import("./browserbase.server");
     const crypto = await import("./crypto.server");
+
+    let sessionIdToRelease: string | null = null;
 
     try {
       // 1) Create (or reuse) a persistent Browserbase context for this site.
@@ -89,6 +114,7 @@ export const startConnectSession = createServerFn({ method: "POST" })
           throw err;
         }
       }
+      sessionIdToRelease = session.id;
       const debug = await bb.getDebugUrls(session.id);
 
       // 3) Navigate to login_url before the client opens the live view.
@@ -112,7 +138,9 @@ export const startConnectSession = createServerFn({ method: "POST" })
         .eq("id", site.id);
 
 
+      sessionIdToRelease = null;
       return {
+        ok: true as const,
         sessionId: session.id,
         contextId,
         loginUrl: site.login_url,
@@ -122,14 +150,17 @@ export const startConnectSession = createServerFn({ method: "POST" })
       };
     } catch (e) {
       // Never surface raw API/HTML bodies to the client — use an i18n key.
-      const message = "connectedSites.errors.sessionStartFailed";
+      const message = classifyStartError(e);
+      if (sessionIdToRelease) {
+        await bb.endSession(sessionIdToRelease).catch(() => undefined);
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from("connected_sites")
         .update({ status: "error", error_message: message })
         .eq("id", site.id);
       console.error("[startConnectSession]", e instanceof Error ? e.message : e);
-      throw new Error(message);
+      return { ok: false as const, message };
     }
   });
 
