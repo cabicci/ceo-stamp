@@ -12,10 +12,16 @@ function PreviewEntryRedirect() {
   useEffect(() => {
     let active = true;
 
-    supabase.auth.getUser().then(({ data }) => {
-      if (!active) return;
-      navigate({ to: data.user ? "/" : "/auth", replace: true });
-    });
+    supabase.auth
+      .getUser()
+      .then(({ data }) => {
+        if (!active) return;
+        navigate({ to: data.user ? "/" : "/auth", replace: true });
+      })
+      .catch(() => {
+        if (!active) return;
+        navigate({ to: "/auth", replace: true });
+      });
 
     return () => {
       active = false;
