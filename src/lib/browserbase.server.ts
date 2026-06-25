@@ -16,6 +16,49 @@
 
 const BASE = "https://api.browserbase.com/v1";
 
+function sanitizeApiBody(text: string): string {
+  const noHtml = text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  return noHtml.length > 300 ? `${noHtml.slice(0, 300)}…` : noHtml;
+}
+
+/** Thrown on non-2xx Browserbase REST responses — carries status + sanitized body. */
+export class BrowserbaseApiError extends Error {
+  readonly status: number;
+  readonly body: string;
+
+  constructor(status: number, body: string) {
+    super(`Browserbase ${status}: ${body}`);
+    this.name = "BrowserbaseApiError";
+    this.status = status;
+    this.body = body;
+  }
+}
+
+export function browserbaseEnvCheck(): { hasApiKey: boolean; hasProjectId: boolean } {
+  return {
+    hasApiKey: Boolean(process.env.BROWSERBASE_API_KEY),
+    hasProjectId: Boolean(process.env.BROWSERBASE_PROJECT_ID),
+  };
+}
+
+export function parseBrowserbaseError(err: unknown): { status: number | null; message: string } {
+  if (err instanceof BrowserbaseApiError) {
+    return { status: err.status, message: err.body };
+  }
+  const msg = err instanceof Error ? err.message : String(err);
+  const match = msg.match(/^Browserbase (\d+): ([\s\S]*)$/);
+  if (match) {
+    return { status: Number(match[1]), message: match[2].slice(0, 300) };
+  }
+  if (msg.includes("BROWSERBASE_API_KEY")) {
+    return { status: null, message: "BROWSERBASE_API_KEY is not set" };
+  }
+  if (msg.includes("BROWSERBASE_PROJECT_ID")) {
+    return { status: null, message: "BROWSERBASE_PROJECT_ID is not set" };
+  }
+  return { status: null, message: msg.slice(0, 300) };
+}
+
 function env() {
   const apiKey = process.env.BROWSERBASE_API_KEY;
   const projectId = process.env.BROWSERBASE_PROJECT_ID;
@@ -41,7 +84,7 @@ async function bb<T = unknown>(
   });
   const text = await res.text();
   if (!res.ok) {
-    throw new Error(`Browserbase ${res.status}: ${text.slice(0, 300)}`);
+    throw new BrowserbaseApiError(res.status, sanitizeApiBody(text));
   }
   return text ? (JSON.parse(text) as T) : (undefined as T);
 }
@@ -122,17 +165,16 @@ export type ReleaseRunningSessionsOpts = {
 
 export async function listRunningSessions(): Promise<BBSessionListItem[]> {
   const { projectId } = env();
-  try {
-    const raw = await bb<unknown>("/sessions?status=RUNNING", { method: "GET" });
-    return parseSessionList(raw).filter((s) => s.projectId === projectId);
-  } catch (err) {
-    console.error(
-      "[browserbase] list RUNNING sessions failed:",
-      err instanceof Error ? err.message : err,
-    );
-    return [];
-  }
+  const raw = await bb<unknown>("/sessions?status=RUNNING", { method: "GET" });
+  return parseSessionList(raw).filter((s) => s.projectId === projectId);
 }
+
+export type OrphanCleanupStats = {
+  orphanCleanupRan: boolean;
+  runningSessionsFound: number;
+  sessionsReleased: number;
+  listError?: string;
+};
 
 /**
  * Release RUNNING sessions for this project except actively-tracked IDs.
@@ -140,10 +182,26 @@ export async function listRunningSessions(): Promise<BBSessionListItem[]> {
  */
 export async function releaseOrphanSessions(
   protectedSessionIds: ReadonlySet<string> = new Set(),
-): Promise<number> {
-  const sessions = await listRunningSessions();
+): Promise<OrphanCleanupStats> {
+  let sessions: BBSessionListItem[];
+  try {
+    sessions = await listRunningSessions();
+  } catch (err) {
+    const listError = err instanceof Error ? err.message : String(err);
+    console.error("[browserbase] list RUNNING sessions failed:", listError);
+    return {
+      orphanCleanupRan: true,
+      runningSessionsFound: 0,
+      sessionsReleased: 0,
+      listError: listError.slice(0, 300),
+    };
+  }
+
+  const runningSessionsFound = sessions.length;
   const toRelease = sessions.filter((s) => !protectedSessionIds.has(s.id));
-  if (toRelease.length === 0) return 0;
+  if (toRelease.length === 0) {
+    return { orphanCleanupRan: true, runningSessionsFound, sessionsReleased: 0 };
+  }
 
   await Promise.all(
     toRelease.map((s) =>
@@ -155,7 +213,11 @@ export async function releaseOrphanSessions(
       }),
     ),
   );
-  return toRelease.length;
+  return {
+    orphanCleanupRan: true,
+    runningSessionsFound,
+    sessionsReleased: toRelease.length,
+  };
 }
 
 /**

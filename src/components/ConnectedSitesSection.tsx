@@ -9,6 +9,7 @@ import { translateAnalysisError } from "@/lib/translate-analysis-error";
 import { translateConnectedSitesError } from "@/lib/translate-connected-sites-error";
 import { normalizeWebsiteUrl } from "@/lib/project-schema";
 import type { ConnectNavigateDebugInfo } from "@/lib/browserbase-cdp.server";
+import type { ConnectStartDebugInfo } from "@/lib/connect-site.functions";
 
 
 type Row = {
@@ -50,6 +51,7 @@ export function ConnectedSitesSection({
   const [scrapingFor, setScrapingFor] = useState<string | null>(null);
   const [scrapeStage, setScrapeStage] = useState<string>("");
   const [connectError, setConnectError] = useState<string | null>(null);
+  const [connectStartDebug, setConnectStartDebug] = useState<ConnectStartDebugInfo | null>(null);
   const [connectSuccess, setConnectSuccess] = useState<string | null>(null);
   const [captureError, setCaptureError] = useState<string | null>(null);
   const [scrapeError, setScrapeError] = useState<string | null>(null);
@@ -87,11 +89,13 @@ export function ConnectedSitesSection({
 
   async function handleConnect(row: Row) {
     setConnectError(null);
+    setConnectStartDebug(null);
     setConnectSuccess(null);
     try {
       const res = await startFn({ data: { connectedSiteId: row.id } });
       if (!res.ok) {
         setConnectError(translateConnectedSitesError(res.message, t));
+        setConnectStartDebug(res.debugInfo ?? null);
         await load();
         return;
       }
@@ -213,7 +217,14 @@ export function ConnectedSitesSection({
       </div>
 
       {connectError && (
-        <ConnectFlowError message={connectError} onDismiss={() => setConnectError(null)} />
+        <ConnectFlowError
+          message={connectError}
+          debugInfo={connectStartDebug ?? undefined}
+          onDismiss={() => {
+            setConnectError(null);
+            setConnectStartDebug(null);
+          }}
+        />
       )}
       {connectSuccess && (
         <ConnectFlowSuccess message={connectSuccess} onDismiss={() => setConnectSuccess(null)} />
@@ -522,33 +533,52 @@ function SiteRow({
 
 function ConnectFlowError({
   message,
+  debugInfo,
   onDismiss,
 }: {
   message: string;
+  debugInfo?: ConnectStartDebugInfo;
   onDismiss: () => void;
 }) {
   const { t } = useTranslation();
   return (
     <div
-      className="mb-4 p-4 flex items-start justify-between gap-3"
+      className="mb-4 p-4"
       style={{
         border: "1px solid var(--danger)",
         borderRadius: "4px",
         backgroundColor: "var(--surface)",
       }}
     >
-      <p className="text-sm leading-relaxed" style={{ color: "var(--danger)" }}>
-        {message}
-      </p>
-      <button
-        type="button"
-        onClick={onDismiss}
-        aria-label={t("common.cancel")}
-        className="shrink-0 p-1"
-        style={{ color: "var(--muted-text)" }}
-      >
-        <X size={14} strokeWidth={1.5} />
-      </button>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm leading-relaxed" style={{ color: "var(--danger)" }}>
+          {message}
+        </p>
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label={t("common.cancel")}
+          className="shrink-0 p-1"
+          style={{ color: "var(--muted-text)" }}
+        >
+          <X size={14} strokeWidth={1.5} />
+        </button>
+      </div>
+      {debugInfo && (
+        <pre
+          className="mt-3 text-[11px] leading-relaxed py-2 px-3 overflow-x-auto whitespace-pre-wrap break-all"
+          dir="ltr"
+          style={{
+            color: "var(--ink-text)",
+            border: "1px dashed var(--hairline)",
+            borderRadius: "3px",
+            backgroundColor: "var(--paper)",
+            fontFamily: "var(--font-mono)",
+          }}
+        >
+          {`DEBUG\n${JSON.stringify(debugInfo, null, 2)}`}
+        </pre>
+      )}
     </div>
   );
 }

@@ -26,6 +26,57 @@ const AbandonInput = z.object({
 
 const ACTIVE_CONNECT_MS = 2 * 60 * 1000;
 
+/** TEMPORARY — surfaced in connect error banner when startConnectSession fails. */
+export type ConnectStartDebugInfo = {
+  hasApiKey: boolean;
+  hasProjectId: boolean;
+  orphanCleanupRan: boolean;
+  runningSessionsFound: number;
+  sessionsReleased: number;
+  retriedAfter429: boolean;
+  createStatus: number | null;
+  createMessage: string | null;
+  failurePhase: string;
+  contextIdPrefix: string | null;
+  listError?: string | null;
+  supabaseError?: string | null;
+};
+
+function truncateDebug(msg: string): string {
+  return msg.length > 300 ? `${msg.slice(0, 300)}…` : msg;
+}
+
+function buildStartDebugInfo(
+  partial: Omit<ConnectStartDebugInfo, "hasApiKey" | "hasProjectId"> & {
+    hasApiKey?: boolean;
+    hasProjectId?: boolean;
+  },
+): ConnectStartDebugInfo {
+  const env = partial.hasApiKey !== undefined
+    ? { hasApiKey: partial.hasApiKey, hasProjectId: partial.hasProjectId! }
+    : (() => {
+        // Lazy import avoided — env check is sync via process.env in handler
+        return {
+          hasApiKey: Boolean(process.env.BROWSERBASE_API_KEY),
+          hasProjectId: Boolean(process.env.BROWSERBASE_PROJECT_ID),
+        };
+      })();
+  return {
+    hasApiKey: partial.hasApiKey ?? env.hasApiKey,
+    hasProjectId: partial.hasProjectId ?? env.hasProjectId,
+    orphanCleanupRan: partial.orphanCleanupRan,
+    runningSessionsFound: partial.runningSessionsFound,
+    sessionsReleased: partial.sessionsReleased,
+    retriedAfter429: partial.retriedAfter429,
+    createStatus: partial.createStatus,
+    createMessage: partial.createMessage,
+    failurePhase: partial.failurePhase,
+    contextIdPrefix: partial.contextIdPrefix,
+    listError: partial.listError ?? null,
+    supabaseError: partial.supabaseError ?? null,
+  };
+}
+
 function classifyStartError(err: unknown): string {
   if (err instanceof Error && err.name === "BrowserbaseCapacityError") {
     return "connectedSites.errors.browserbaseCapacity";
@@ -56,26 +107,33 @@ function classifyStartError(err: unknown): string {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SupabaseClient = any;
 
-async function getProtectedConnectingSessionIds(sb: SupabaseClient): Promise<Set<string>> {
+async function getProtectedConnectingSessionIds(sb: SupabaseClient): Promise<{
+  ids: Set<string>;
+  error: string | null;
+}> {
   const cutoff = new Date(Date.now() - ACTIVE_CONNECT_MS).toISOString();
-  const { data } = await sb
+  const { data, error } = await sb
     .from("connected_sites")
     .select("browserbase_session_id")
     .eq("status", "connecting")
     .gte("connect_started_at", cutoff)
     .not("browserbase_session_id", "is", null);
 
+  if (error) {
+    return { ids: new Set(), error: error.message };
+  }
+
   const ids = new Set<string>();
   for (const row of data ?? []) {
     if (row.browserbase_session_id) ids.add(row.browserbase_session_id as string);
   }
-  return ids;
+  return { ids, error: null };
 }
 
 /** Mark stale in-flight connects as disconnected so their sessions become orphans. */
-async function expireStaleConnectingRows(sb: SupabaseClient): Promise<void> {
+async function expireStaleConnectingRows(sb: SupabaseClient): Promise<string | null> {
   const cutoff = new Date(Date.now() - ACTIVE_CONNECT_MS).toISOString();
-  await sb
+  const { error } = await sb
     .from("connected_sites")
     .update({
       status: "disconnected",
@@ -85,33 +143,75 @@ async function expireStaleConnectingRows(sb: SupabaseClient): Promise<void> {
     })
     .eq("status", "connecting")
     .lt("connect_started_at", cutoff);
+
+  return error?.message ?? null;
 }
+
+type OpenSessionDebug = {
+  orphanCleanupRan: boolean;
+  runningSessionsFound: number;
+  sessionsReleased: number;
+  retriedAfter429: boolean;
+  createStatus: number | null;
+  createMessage: string | null;
+  listError?: string | null;
+};
 
 async function openConnectBrowserSession(
   bb: typeof import("./browserbase.server"),
   contextId: string,
   protectedSessionIds: ReadonlySet<string>,
-): Promise<Awaited<ReturnType<typeof bb.createSession>>> {
-  const orphans = await bb.releaseOrphanSessions(protectedSessionIds);
-  if (orphans > 0) {
-    console.warn(`[startConnectSession] released ${orphans} orphan Browserbase session(s)`);
+): Promise<{ session: Awaited<ReturnType<typeof bb.createSession>>; debug: OpenSessionDebug }> {
+  const cleanup = await bb.releaseOrphanSessions(protectedSessionIds);
+  if (cleanup.sessionsReleased > 0) {
+    console.warn(
+      `[startConnectSession] released ${cleanup.sessionsReleased} orphan Browserbase session(s)`,
+    );
   }
 
+  const debug: OpenSessionDebug = {
+    orphanCleanupRan: cleanup.orphanCleanupRan,
+    runningSessionsFound: cleanup.runningSessionsFound,
+    sessionsReleased: cleanup.sessionsReleased,
+    retriedAfter429: false,
+    createStatus: null,
+    createMessage: null,
+    listError: cleanup.listError ?? null,
+  };
+
+  const attemptCreate = async (): Promise<Awaited<ReturnType<typeof bb.createSession>>> => {
+    try {
+      return await bb.createSession({ contextId, persist: true });
+    } catch (err) {
+      const parsed = bb.parseBrowserbaseError(err);
+      debug.createStatus = parsed.status;
+      debug.createMessage = parsed.message;
+      throw err;
+    }
+  };
+
   try {
-    return await bb.createSession({ contextId, persist: true });
+    const session = await attemptCreate();
+    return { session, debug };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     if (!bb.isBrowserbaseConcurrentLimitError(msg)) throw err;
 
-    const released = await bb.releaseRunningSessions();
+    const extraReleased = await bb.releaseRunningSessions();
+    debug.sessionsReleased += extraReleased;
+    debug.retriedAfter429 = true;
     console.warn(
-      `[startConnectSession] concurrent limit — released ${released} running session(s), retrying`,
+      `[startConnectSession] concurrent limit — released ${extraReleased} running session(s), retrying`,
     );
     await new Promise((r) => setTimeout(r, 1000));
 
     try {
-      return await bb.createSession({ contextId, persist: true });
-    } catch {
+      const session = await attemptCreate();
+      return { session, debug };
+    } catch (retryErr) {
+      const parsed = bb.parseBrowserbaseError(retryErr);
+      debug.createStatus = parsed.status;
+      debug.createMessage = parsed.message;
       throw new bb.BrowserbaseCapacityError();
     }
   }
@@ -159,16 +259,40 @@ export const startConnectSession = createServerFn({ method: "POST" })
     const sb = supabase as SupabaseClient;
 
     let sessionIdToRelease: string | null = null;
+    let failurePhase = "init";
+    let openDebug: OpenSessionDebug | null = null;
+    let contextIdPrefix: string | null = null;
+    let supabaseError: string | null = null;
+    const envCheck = {
+      hasApiKey: Boolean(process.env.BROWSERBASE_API_KEY),
+      hasProjectId: Boolean(process.env.BROWSERBASE_PROJECT_ID),
+    };
 
     try {
-      await expireStaleConnectingRows(sb);
-      const protectedIds = await getProtectedConnectingSessionIds(sb);
+      failurePhase = "expireStaleConnecting";
+      const staleErr = await expireStaleConnectingRows(sb);
+      if (staleErr) {
+        supabaseError = truncateDebug(staleErr);
+        throw new Error(`Supabase expireStaleConnecting: ${staleErr}`);
+      }
 
-      const { data: existing } = await sb
+      failurePhase = "getProtectedIds";
+      const protectedSessions = await getProtectedConnectingSessionIds(sb);
+      if (protectedSessions.error) {
+        supabaseError = truncateDebug(protectedSessions.error);
+        throw new Error(`Supabase getProtectedIds: ${protectedSessions.error}`);
+      }
+
+      failurePhase = "loadExistingContext";
+      const { data: existing, error: existingErr } = await sb
         .from("connected_sites")
         .select("session_data_encrypted")
         .eq("id", site.id)
         .maybeSingle();
+      if (existingErr) {
+        supabaseError = truncateDebug(existingErr.message);
+        throw new Error(existingErr.message);
+      }
 
       let contextId: string | null = null;
       if (existing?.session_data_encrypted) {
@@ -179,20 +303,29 @@ export const startConnectSession = createServerFn({ method: "POST" })
           /* corrupt or old shape — fall through and create a new context */
         }
       }
+
+      failurePhase = "createContext";
       if (!contextId) {
         const ctx = await bb.createContext();
         contextId = ctx.id;
       }
+      contextIdPrefix = contextId.slice(0, 12);
 
-      const session = await openConnectBrowserSession(bb, contextId, protectedIds);
+      failurePhase = "createSession";
+      const opened = await openConnectBrowserSession(bb, contextId, protectedSessions.ids);
+      openDebug = opened.debug;
+      const session = opened.session;
       sessionIdToRelease = session.id;
 
+      failurePhase = "getDebugUrls";
       const debug = await bb.getDebugUrls(session.id);
 
+      failurePhase = "cdpNavigate";
       const cdpNav = await import("./browserbase-cdp.server");
       const nav = await cdpNav.navigateBrowserbaseDebugPage(debug, site.login_url);
       const loginNavigationFailed = !nav.ok;
 
+      failurePhase = "dbUpdateConnecting";
       const connectStartedAt = new Date().toISOString();
       const handle = crypto.encrypt(
         JSON.stringify({
@@ -202,7 +335,7 @@ export const startConnectSession = createServerFn({ method: "POST" })
         }),
       );
 
-      await sb
+      const { error: updateErr } = await sb
         .from("connected_sites")
         .update({
           status: "connecting",
@@ -212,6 +345,10 @@ export const startConnectSession = createServerFn({ method: "POST" })
           connect_started_at: connectStartedAt,
         })
         .eq("id", site.id);
+      if (updateErr) {
+        supabaseError = truncateDebug(updateErr.message);
+        throw new Error(updateErr.message);
+      }
 
       sessionIdToRelease = null;
       return {
@@ -225,7 +362,22 @@ export const startConnectSession = createServerFn({ method: "POST" })
       };
     } catch (e) {
       const message = classifyStartError(e);
-      await sb
+      const parsed = bb.parseBrowserbaseError(e);
+      const debugInfo = buildStartDebugInfo({
+        ...envCheck,
+        orphanCleanupRan: openDebug?.orphanCleanupRan ?? false,
+        runningSessionsFound: openDebug?.runningSessionsFound ?? 0,
+        sessionsReleased: openDebug?.sessionsReleased ?? 0,
+        retriedAfter429: openDebug?.retriedAfter429 ?? false,
+        createStatus: openDebug?.createStatus ?? parsed.status,
+        createMessage: openDebug?.createMessage ?? (parsed.message ? truncateDebug(parsed.message) : null),
+        failurePhase,
+        contextIdPrefix,
+        listError: openDebug?.listError ?? null,
+        supabaseError,
+      });
+
+      const { error: errUpdate } = await sb
         .from("connected_sites")
         .update({
           status: "error",
@@ -234,8 +386,12 @@ export const startConnectSession = createServerFn({ method: "POST" })
           connect_started_at: null,
         })
         .eq("id", site.id);
-      console.error("[startConnectSession]", e instanceof Error ? e.message : e);
-      return { ok: false as const, message };
+      if (errUpdate) {
+        debugInfo.supabaseError = truncateDebug(errUpdate.message);
+      }
+
+      console.error("[startConnectSession]", e instanceof Error ? e.message : e, debugInfo);
+      return { ok: false as const, message, debugInfo };
     } finally {
       await endBrowserbaseSession(bb, sessionIdToRelease);
     }
