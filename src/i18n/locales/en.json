@@ -196,12 +196,13 @@
     "emptyHint": "If your site requires login, connect it here so we can read your protected pages. We never see or store your password — only the session.",
     "sessionStartFailed": "Could not start session",
     "sessionSaveFailed": "Could not save session",
+    "connectSuccess": "Site connected successfully.",
     "scrapeFailed": "Could not analyze protected pages",
     "errors": {
       "sessionStartFailed": "Could not start the connect session. Please try again.",
       "browserbaseNotConfigured": "Secure browser access is not configured on the server. Check the Browserbase keys, then restart the preview.",
       "sessionEncryptionNotConfigured": "Session encryption is not configured on the server. Check SESSION_ENCRYPTION_KEY, then restart the preview.",
-      "browserbaseCapacity": "All secure browser sessions are currently busy. Old sessions were cleaned up; try again in a moment.",
+      "browserbaseCapacity": "Too many browser sessions are running. Wait a minute and try again.",
       "sessionSaveFailed": "Could not save your session after sign-in. Please try again."
     },
     "scrapeOpening": "Opening session…",

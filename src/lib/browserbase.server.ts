@@ -116,7 +116,47 @@ function parseSessionList(raw: unknown): BBSessionListItem[] {
 export type ReleaseRunningSessionsOpts = {
   /** Release only sessions started before now − this many ms. Omit to release all running. */
   olderThanMs?: number;
+  /** Never release these session IDs (actively tracked in-flight connects). */
+  exceptSessionIds?: ReadonlySet<string>;
 };
+
+export async function listRunningSessions(): Promise<BBSessionListItem[]> {
+  const { projectId } = env();
+  try {
+    const raw = await bb<unknown>("/sessions?status=RUNNING", { method: "GET" });
+    return parseSessionList(raw).filter((s) => s.projectId === projectId);
+  } catch (err) {
+    console.error(
+      "[browserbase] list RUNNING sessions failed:",
+      err instanceof Error ? err.message : err,
+    );
+    return [];
+  }
+}
+
+/**
+ * Release RUNNING sessions for this project except actively-tracked IDs.
+ * Call before every new connect attempt to clear orphan/zombie sessions.
+ */
+export async function releaseOrphanSessions(
+  protectedSessionIds: ReadonlySet<string> = new Set(),
+): Promise<number> {
+  const sessions = await listRunningSessions();
+  const toRelease = sessions.filter((s) => !protectedSessionIds.has(s.id));
+  if (toRelease.length === 0) return 0;
+
+  await Promise.all(
+    toRelease.map((s) =>
+      endSession(s.id).catch((err) => {
+        console.warn(
+          `[browserbase] endSession ${s.id} failed:`,
+          err instanceof Error ? err.message : err,
+        );
+      }),
+    ),
+  );
+  return toRelease.length;
+}
 
 /**
  * List RUNNING sessions for this project and request release on each match.
@@ -126,21 +166,13 @@ export type ReleaseRunningSessionsOpts = {
 export async function releaseRunningSessions(
   opts: ReleaseRunningSessionsOpts = {},
 ): Promise<number> {
-  const { projectId } = env();
-  let sessions: BBSessionListItem[];
-  try {
-    const raw = await bb<unknown>("/sessions?status=RUNNING", { method: "GET" });
-    sessions = parseSessionList(raw);
-  } catch (err) {
-    console.error("[browserbase] list RUNNING sessions failed:", err instanceof Error ? err.message : err);
-    return 0;
-  }
-
+  const sessions = await listRunningSessions();
   const now = Date.now();
   const cutoff = opts.olderThanMs !== undefined ? now - opts.olderThanMs : null;
+  const except = opts.exceptSessionIds ?? new Set<string>();
 
   const toRelease = sessions.filter((s) => {
-    if (s.projectId !== projectId) return false;
+    if (except.has(s.id)) return false;
     if (cutoff === null) return true;
     const started = s.startedAt ?? s.createdAt;
     if (!started) return true;
@@ -160,6 +192,13 @@ export async function releaseRunningSessions(
     ),
   );
   return toRelease.length;
+}
+
+export class BrowserbaseCapacityError extends Error {
+  constructor() {
+    super("BROWSERBASE_CAPACITY_EXHAUSTED");
+    this.name = "BrowserbaseCapacityError";
+  }
 }
 
 export function isBrowserbaseConcurrentLimitError(message: string): boolean {

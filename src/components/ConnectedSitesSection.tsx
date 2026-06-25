@@ -50,6 +50,7 @@ export function ConnectedSitesSection({
   const [scrapingFor, setScrapingFor] = useState<string | null>(null);
   const [scrapeStage, setScrapeStage] = useState<string>("");
   const [connectError, setConnectError] = useState<string | null>(null);
+  const [connectSuccess, setConnectSuccess] = useState<string | null>(null);
   const [captureError, setCaptureError] = useState<string | null>(null);
   const [scrapeError, setScrapeError] = useState<string | null>(null);
 
@@ -86,6 +87,7 @@ export function ConnectedSitesSection({
 
   async function handleConnect(row: Row) {
     setConnectError(null);
+    setConnectSuccess(null);
     try {
       const res = await startFn({ data: { connectedSiteId: row.id } });
       if (!res.ok) {
@@ -117,9 +119,15 @@ export function ConnectedSitesSection({
     if (!active) return;
     setCaptureError(null);
     try {
-      await captureFn({
+      const res = await captureFn({
         data: { connectedSiteId: active.siteId, sessionId: active.sessionId },
       });
+      if (!res.ok) {
+        setCaptureError(translateConnectedSitesError(res.message, t));
+        await load();
+        return;
+      }
+      setConnectSuccess(translateConnectedSitesError(res.message, t));
       setActive(null);
       await load();
     } catch (e) {
@@ -206,6 +214,9 @@ export function ConnectedSitesSection({
 
       {connectError && (
         <ConnectFlowError message={connectError} onDismiss={() => setConnectError(null)} />
+      )}
+      {connectSuccess && (
+        <ConnectFlowSuccess message={connectSuccess} onDismiss={() => setConnectSuccess(null)} />
       )}
       {scrapeError && (
         <ConnectFlowError message={scrapeError} onDismiss={() => setScrapeError(null)} />
@@ -527,6 +538,39 @@ function ConnectFlowError({
       }}
     >
       <p className="text-sm leading-relaxed" style={{ color: "var(--danger)" }}>
+        {message}
+      </p>
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label={t("common.cancel")}
+        className="shrink-0 p-1"
+        style={{ color: "var(--muted-text)" }}
+      >
+        <X size={14} strokeWidth={1.5} />
+      </button>
+    </div>
+  );
+}
+
+function ConnectFlowSuccess({
+  message,
+  onDismiss,
+}: {
+  message: string;
+  onDismiss: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div
+      className="mb-4 p-4 flex items-start justify-between gap-3"
+      style={{
+        border: "1px solid var(--approve)",
+        borderRadius: "4px",
+        backgroundColor: "var(--surface)",
+      }}
+    >
+      <p className="text-sm leading-relaxed" style={{ color: "var(--approve)" }}>
         {message}
       </p>
       <button

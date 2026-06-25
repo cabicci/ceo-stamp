@@ -133,6 +133,7 @@ RLS pattern: **owner read/write** on project-scoped data; **`is_admin()` read-on
 - **Supabase service role key + stale-run cleanup confirmed working** — `SUPABASE_SERVICE_ROLE_KEY` is wired server-side (`.env` secret); `analysis-lifecycle.server.ts` uses `supabaseAdmin` to reliably mark abandoned `scraping`/`analyzing` rows (>5 min) as `error` on every server cold start and before each new analysis run. No client-side changes.
 - **Browserbase connect session hygiene** — proactive release of stale RUNNING sessions (>2 min) before each connect; on 429/concurrent-limit, release all RUNNING sessions for the project and retry once. `releaseRunningSessions` lists via Browserbase API (project-filtered client-side), logs failures instead of swallowing them. `startConnectSession` always ends leaked sessions in `finally`; `abandonConnectSession` ends Browserbase session on modal cancel.
 - **Connected Sites i18n errors** — `connected_sites.error_message` keys (`connectedSites.errors.*`) resolved via `translateConnectedSitesError()` in row UI + connect/capture banners (no raw keys shown).
+- **Definitive Browserbase connect lifecycle** — `browserbase_session_id` + `connect_started_at` on `connected_sites`; before every connect, release all RUNNING orphan sessions except actively-tracked connects (<2 min). On 429: release all, wait 1s, retry once; clear Arabic capacity message. `captureSession` persists encrypted contextId immediately after flush (before any further cleanup); always-close via `try/finally` on start/capture/abandon. Success banner: `connectedSites.connectSuccess`.
 
 ### Routes (implemented)
 
@@ -191,3 +192,4 @@ Nav links for `/analysis`, `/campaigns`, `/review` exist in sidebar but **routes
 | 2026-06-22 | Fix connect CDP: align with scrape — page `debuggerUrl` (not session `wsUrl`); structured `[connect-nav]` server logs only. |
 | 2026-06-22 | Confirmed `SUPABASE_SERVICE_ROLE_KEY` wired server-side + stale-run cleanup (`analysis-lifecycle.server.ts`) working via `supabaseAdmin` on cold start and before each run. |
 | 2026-06-22 | Browserbase connect: proactive session release + always-close on failure/cancel; fixed raw `connectedSites.errors.*` i18n keys in UI. |
+| 2026-06-22 | Definitive Browserbase session lifecycle: orphan cleanup (DB-tracked active connects), always-close, persist-on-login-confirm, success/capacity i18n. |
