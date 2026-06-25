@@ -230,8 +230,6 @@ export type Database = {
       }
       connected_sites: {
         Row: {
-          browserbase_session_id: string | null
-          connect_started_at: string | null
           created_at: string
           error_message: string | null
           expires_at: string | null
@@ -244,8 +242,6 @@ export type Database = {
           status: string
         }
         Insert: {
-          browserbase_session_id?: string | null
-          connect_started_at?: string | null
           created_at?: string
           error_message?: string | null
           expires_at?: string | null
@@ -258,8 +254,6 @@ export type Database = {
           status?: string
         }
         Update: {
-          browserbase_session_id?: string | null
-          connect_started_at?: string | null
           created_at?: string
           error_message?: string | null
           expires_at?: string | null
