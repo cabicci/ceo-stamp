@@ -122,10 +122,11 @@ export const scrapeAuthenticated = createServerFn({ method: "POST" })
       sessionId = session.id;
 
       const debug = await bb.getDebugUrls(session.id);
-      const pageDebugger = debug.pages?.[0]?.debuggerUrl ?? debug.debuggerUrl;
-      if (!pageDebugger) throw new Error("لم نستطع فتح المتصفح");
+      const cdpBb = await import("./browserbase-cdp.server");
+      const wsUrl = cdpBb.resolvePageCdpWebSocketUrl(debug);
+      if (!wsUrl) throw new Error("لم نستطع فتح المتصفح");
 
-      const cdp = await cdpMod.CDPSession.connect(pageDebugger);
+      const cdp = await cdpMod.CDPSession.connect(wsUrl);
 
       const loginOrigin = new URL(site.login_url).origin;
       const loginPath = new URL(site.login_url).pathname.toLowerCase();

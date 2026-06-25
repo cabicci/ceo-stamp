@@ -15,6 +15,31 @@ type Resolver = {
   reject: (e: Error) => void;
 };
 
+/** Thrown when fetch+Upgrade cannot obtain a workerd WebSocket. */
+export class CdpConnectError extends Error {
+  readonly wsUrlPrefix: string;
+  readonly upgradeStatus?: number;
+  readonly upgradeContentType: string | null;
+  readonly hasWebSocket: boolean;
+
+  constructor(
+    message: string,
+    meta: {
+      wsUrlPrefix: string;
+      upgradeStatus?: number;
+      upgradeContentType?: string | null;
+      hasWebSocket: boolean;
+    },
+  ) {
+    super(message);
+    this.name = "CdpConnectError";
+    this.wsUrlPrefix = meta.wsUrlPrefix;
+    this.upgradeStatus = meta.upgradeStatus;
+    this.upgradeContentType = meta.upgradeContentType ?? null;
+    this.hasWebSocket = meta.hasWebSocket;
+  }
+}
+
 export class CDPSession {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private ws: any;
@@ -59,17 +84,33 @@ export class CDPSession {
   }
 
   static async connect(wsUrl: string): Promise<CDPSession> {
+    const wsUrlPrefix = wsUrl.slice(0, 70);
     // workerd: outbound WebSocket via fetch+Upgrade
     const httpUrl = wsUrl.replace(/^wss:/, "https:").replace(/^ws:/, "http:");
     let resp: Response;
     try {
       resp = await fetch(httpUrl, { headers: { Upgrade: "websocket" } });
-    } catch {
-      throw new Error("CDP WebSocket connect failed");
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      throw new CdpConnectError(`CDP WebSocket connect failed: ${detail}`, {
+        wsUrlPrefix,
+        hasWebSocket: false,
+      });
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const ws = (resp as any).webSocket;
-    if (!ws) throw new Error("CDP WebSocket upgrade failed");
+    if (!ws) {
+      const contentType = resp.headers.get("content-type");
+      throw new CdpConnectError(
+        `CDP WebSocket upgrade failed (status=${resp.status}, content-type=${contentType ?? "(none)"}, webSocket=undefined)`,
+        {
+          wsUrlPrefix,
+          upgradeStatus: resp.status,
+          upgradeContentType: contentType,
+          hasWebSocket: false,
+        },
+      );
+    }
     ws.accept();
     return new CDPSession(ws);
   }
