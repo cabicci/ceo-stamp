@@ -131,6 +131,8 @@ RLS pattern: **owner read/write** on project-scoped data; **`is_admin()` read-on
 - **Project detail wizard** — `/projects/$id` restructured into a guided sequential flow: **Step 1** Analyze Website (one-time foundation; optional **Connected Sites** sub-panel at top — expanded by default, usable before first analysis) → **Step 2** Brand Profile (review/edit) → **Step 3** Available Channels → **Step 4** Campaigns (repeatable — package gallery + AI strategist). Later steps are gated/locked with Arabic hints until the prior step completes; completed steps stay collapsible. Progress indicator (1→4) via `projects.flow.*` i18n keys. Wizard focuses Step 2 after first analysis completes. **Delete project** in settings (confirm dialog, cascade delete, redirect to list).
 - **`t()` interpolation typing** — `TranslateFn` exported from `I18nProvider`; optional `vars` object for `{placeholder}` substitution. Fixes pre-existing type error in `ConnectedSitesSection.tsx` (`lastConnected`, etc.).
 - **Supabase service role key + stale-run cleanup confirmed working** — `SUPABASE_SERVICE_ROLE_KEY` is wired server-side (`.env` secret); `analysis-lifecycle.server.ts` uses `supabaseAdmin` to reliably mark abandoned `scraping`/`analyzing` rows (>5 min) as `error` on every server cold start and before each new analysis run. No client-side changes.
+- **Browserbase connect session hygiene** — proactive release of stale RUNNING sessions (>2 min) before each connect; on 429/concurrent-limit, release all RUNNING sessions for the project and retry once. `releaseRunningSessions` lists via Browserbase API (project-filtered client-side), logs failures instead of swallowing them. `startConnectSession` always ends leaked sessions in `finally`; `abandonConnectSession` ends Browserbase session on modal cancel.
+- **Connected Sites i18n errors** — `connected_sites.error_message` keys (`connectedSites.errors.*`) resolved via `translateConnectedSitesError()` in row UI + connect/capture banners (no raw keys shown).
 
 ### Routes (implemented)
 
@@ -188,3 +190,4 @@ Nav links for `/analysis`, `/campaigns`, `/review` exist in sidebar but **routes
 | 2026-06-22 | Fix connect CDP: use session `wsUrl` (not debugger HTML URL); dismiss JS dialogs; no `alert()` / no page source in errors. |
 | 2026-06-22 | Fix connect CDP: align with scrape — page `debuggerUrl` (not session `wsUrl`); structured `[connect-nav]` server logs only. |
 | 2026-06-22 | Confirmed `SUPABASE_SERVICE_ROLE_KEY` wired server-side + stale-run cleanup (`analysis-lifecycle.server.ts`) working via `supabaseAdmin` on cold start and before each run. |
+| 2026-06-22 | Browserbase connect: proactive session release + always-close on failure/cancel; fixed raw `connectedSites.errors.*` i18n keys in UI. |

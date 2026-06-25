@@ -19,6 +19,12 @@ const CaptureInput = z.object({
   connectedSiteId: z.string().uuid(),
   sessionId: z.string().min(1),
 });
+const AbandonInput = z.object({
+  connectedSiteId: z.string().uuid(),
+  sessionId: z.string().min(1).optional(),
+});
+
+const STALE_SESSION_MS = 2 * 60 * 1000;
 
 function classifyStartError(err: unknown): string {
   const message = err instanceof Error ? err.message : String(err);
@@ -41,6 +47,32 @@ function classifyStartError(err: unknown): string {
     return "connectedSites.errors.browserbaseCapacity";
   }
   return "connectedSites.errors.sessionStartFailed";
+}
+
+async function openConnectBrowserSession(
+  bb: typeof import("./browserbase.server"),
+  contextId: string,
+): Promise<Awaited<ReturnType<typeof bb.createSession>>> {
+  const staleReleased = await bb.releaseRunningSessions({ olderThanMs: STALE_SESSION_MS });
+  if (staleReleased > 0) {
+    console.warn(
+      `[startConnectSession] proactively released ${staleReleased} stale Browserbase session(s)`,
+    );
+  }
+
+  try {
+    return await bb.createSession({ contextId, persist: true });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (!bb.isBrowserbaseConcurrentLimitError(msg)) throw err;
+
+    const released = await bb.releaseRunningSessions();
+    console.warn(
+      `[startConnectSession] concurrent limit — released ${released} running session(s), retrying`,
+    );
+    await new Promise((r) => setTimeout(r, 500));
+    return await bb.createSession({ contextId, persist: true });
+  }
 }
 
 async function assertOwnsSite(
@@ -99,21 +131,7 @@ export const startConnectSession = createServerFn({ method: "POST" })
       }
 
       // 2) Open a session bound to that context with persist=true.
-      //    If we hit Browserbase's concurrent-session cap, release any
-      //    leftover running sessions from prior runs and retry once.
-      let session: Awaited<ReturnType<typeof bb.createSession>>;
-      try {
-        session = await bb.createSession({ contextId, persist: true });
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        if (msg.includes("429")) {
-          const released = await bb.releaseRunningSessions();
-          console.warn(`[startConnectSession] released ${released} stale Browserbase sessions, retrying`);
-          session = await bb.createSession({ contextId, persist: true });
-        } else {
-          throw err;
-        }
-      }
+      const session = await openConnectBrowserSession(bb, contextId);
       sessionIdToRelease = session.id;
       const debug = await bb.getDebugUrls(session.id);
 
@@ -151,9 +169,6 @@ export const startConnectSession = createServerFn({ method: "POST" })
     } catch (e) {
       // Never surface raw API/HTML bodies to the client — use an i18n key.
       const message = classifyStartError(e);
-      if (sessionIdToRelease) {
-        await bb.endSession(sessionIdToRelease).catch(() => undefined);
-      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from("connected_sites")
@@ -161,7 +176,33 @@ export const startConnectSession = createServerFn({ method: "POST" })
         .eq("id", site.id);
       console.error("[startConnectSession]", e instanceof Error ? e.message : e);
       return { ok: false as const, message };
+    } finally {
+      if (sessionIdToRelease) {
+        await bb.endSession(sessionIdToRelease).catch(() => undefined);
+      }
     }
+  });
+
+export const abandonConnectSession = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => AbandonInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const site = await assertOwnsSite(supabase, data.connectedSiteId, userId);
+    const bb = await import("./browserbase.server");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb = supabase as any;
+
+    if (data.sessionId) {
+      await bb.endSession(data.sessionId).catch(() => undefined);
+    }
+
+    await sb
+      .from("connected_sites")
+      .update({ status: "disconnected", error_message: null })
+      .eq("id", site.id);
+
+    return { ok: true as const };
   });
 
 export const captureSession = createServerFn({ method: "POST" })

@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { Plus, Trash, LinkSimple, ArrowCounterClockwise, ShieldCheck, X, Sparkle } from "@phosphor-icons/react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { startConnectSession, captureSession } from "@/lib/connect-site.functions";
+import { startConnectSession, captureSession, abandonConnectSession } from "@/lib/connect-site.functions";
 import { scrapeAuthenticated } from "@/lib/scrape-authenticated.functions";
 import { useTranslation, type TranslateFn } from "@/i18n/I18nProvider";
 import { translateAnalysisError } from "@/lib/translate-analysis-error";
+import { translateConnectedSitesError } from "@/lib/translate-connected-sites-error";
 import { normalizeWebsiteUrl } from "@/lib/project-schema";
 import type { ConnectNavigateDebugInfo } from "@/lib/browserbase-cdp.server";
 
@@ -44,18 +45,13 @@ export function ConnectedSitesSection({
 
   const startFn = useServerFn(startConnectSession);
   const captureFn = useServerFn(captureSession);
+  const abandonFn = useServerFn(abandonConnectSession);
   const scrapeFn = useServerFn(scrapeAuthenticated);
   const [scrapingFor, setScrapingFor] = useState<string | null>(null);
   const [scrapeStage, setScrapeStage] = useState<string>("");
   const [connectError, setConnectError] = useState<string | null>(null);
   const [captureError, setCaptureError] = useState<string | null>(null);
   const [scrapeError, setScrapeError] = useState<string | null>(null);
-
-  function translateServerMessage(message: string): string {
-    if (message.startsWith("connectedSites.")) return t(message);
-    return message;
-  }
-
 
   async function load() {
     const { data } = await supabase
@@ -93,7 +89,7 @@ export function ConnectedSitesSection({
     try {
       const res = await startFn({ data: { connectedSiteId: row.id } });
       if (!res.ok) {
-        setConnectError(translateServerMessage(res.message));
+        setConnectError(translateConnectedSitesError(res.message, t));
         await load();
         return;
       }
@@ -110,7 +106,7 @@ export function ConnectedSitesSection({
       const raw = e instanceof Error ? e.message : "";
       setConnectError(
         raw.startsWith("connectedSites.")
-          ? translateServerMessage(raw)
+          ? translateConnectedSitesError(raw, t)
           : t("connectedSites.errors.sessionStartFailed"),
       );
       await load();
@@ -130,7 +126,7 @@ export function ConnectedSitesSection({
       const raw = e instanceof Error ? e.message : "";
       setCaptureError(
         raw.startsWith("connectedSites.")
-          ? translateServerMessage(raw)
+          ? translateConnectedSitesError(raw, t)
           : t("connectedSites.errors.sessionSaveFailed"),
       );
       await load();
@@ -139,11 +135,13 @@ export function ConnectedSitesSection({
 
   async function handleCancel() {
     if (!active) return;
-    // Mark as disconnected; capture wasn't pressed.
-    await supabase
-      .from("connected_sites")
-      .update({ status: "disconnected" })
-      .eq("id", active.siteId);
+    try {
+      await abandonFn({
+        data: { connectedSiteId: active.siteId, sessionId: active.sessionId },
+      });
+    } catch {
+      /* best-effort — still close modal */
+    }
     setActive(null);
     await load();
   }
@@ -420,7 +418,7 @@ function SiteRow({
               className="mt-2 text-xs"
               style={{ color: "var(--danger)" }}
             >
-              {row.error_message}
+              {translateConnectedSitesError(row.error_message, t)}
             </div>
           )}
           {row.last_connected_at && isConnected && (

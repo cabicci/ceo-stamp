@@ -52,6 +52,14 @@ export type BBSession = {
   contextId?: string;
 };
 
+export type BBSessionListItem = {
+  id: string;
+  status: string;
+  projectId: string;
+  startedAt?: string;
+  createdAt?: string;
+};
+
 export type BBDebug = {
   debuggerFullscreenUrl: string;
   debuggerUrl: string;
@@ -97,24 +105,69 @@ export async function endSession(sessionId: string): Promise<void> {
   });
 }
 
+function parseSessionList(raw: unknown): BBSessionListItem[] {
+  if (Array.isArray(raw)) return raw as BBSessionListItem[];
+  if (raw && typeof raw === "object" && Array.isArray((raw as { sessions?: unknown }).sessions)) {
+    return (raw as { sessions: BBSessionListItem[] }).sessions;
+  }
+  return [];
+}
+
+export type ReleaseRunningSessionsOpts = {
+  /** Release only sessions started before now − this many ms. Omit to release all running. */
+  olderThanMs?: number;
+};
+
 /**
- * Release every currently-running Browserbase session for this project.
- * Browserbase enforces a concurrent-session cap (default 3); abandoned
- * sessions from prior runs block new ones with HTTP 429.
+ * List RUNNING sessions for this project and request release on each match.
+ * Browserbase enforces a concurrent-session cap (default 3); abandoned sessions
+ * from prior connect attempts block new ones with HTTP 429.
  */
-export async function releaseRunningSessions(): Promise<number> {
+export async function releaseRunningSessions(
+  opts: ReleaseRunningSessionsOpts = {},
+): Promise<number> {
   const { projectId } = env();
+  let sessions: BBSessionListItem[];
   try {
-    const sessions = await bb<Array<{ id: string; status: string }>>(
-      `/sessions?projectId=${encodeURIComponent(projectId)}&status=RUNNING`,
-      { method: "GET" },
-    );
-    if (!Array.isArray(sessions) || sessions.length === 0) return 0;
-    await Promise.all(
-      sessions.map((s) => endSession(s.id).catch(() => undefined)),
-    );
-    return sessions.length;
-  } catch {
+    const raw = await bb<unknown>("/sessions?status=RUNNING", { method: "GET" });
+    sessions = parseSessionList(raw);
+  } catch (err) {
+    console.error("[browserbase] list RUNNING sessions failed:", err instanceof Error ? err.message : err);
     return 0;
   }
+
+  const now = Date.now();
+  const cutoff = opts.olderThanMs !== undefined ? now - opts.olderThanMs : null;
+
+  const toRelease = sessions.filter((s) => {
+    if (s.projectId !== projectId) return false;
+    if (cutoff === null) return true;
+    const started = s.startedAt ?? s.createdAt;
+    if (!started) return true;
+    return new Date(started).getTime() < cutoff;
+  });
+
+  if (toRelease.length === 0) return 0;
+
+  await Promise.all(
+    toRelease.map((s) =>
+      endSession(s.id).catch((err) => {
+        console.warn(
+          `[browserbase] endSession ${s.id} failed:`,
+          err instanceof Error ? err.message : err,
+        );
+      }),
+    ),
+  );
+  return toRelease.length;
+}
+
+export function isBrowserbaseConcurrentLimitError(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    message.includes("429") ||
+    lower.includes("concurrent") ||
+    lower.includes("rate limit") ||
+    lower.includes("session limit")
+  );
 }
