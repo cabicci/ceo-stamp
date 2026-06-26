@@ -6,11 +6,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 
-const navItems = [
-  { key: "projects", to: "/", icon: Folder },
-  { key: "analysis", to: "/analysis", icon: ChartLine },
-  { key: "campaigns", to: "/campaigns", icon: Megaphone },
-  { key: "review", to: "/review", icon: SealCheck },
+const primaryNav = [{ key: "projects", to: "/", icon: Folder }] as const;
+
+/** Sidebar placeholders — routes not implemented yet (see PROJECT_TRACKER). */
+const comingSoonNav = [
+  { key: "analysis", icon: ChartLine },
+  { key: "campaigns", icon: Megaphone },
+  { key: "review", icon: SealCheck },
 ] as const;
 
 function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -69,7 +71,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
 
       <nav className="flex-1 px-3 overflow-y-auto">
         <ul className="space-y-1">
-          {navItems.map((item) => {
+          {primaryNav.map((item) => {
             const active = pathname === item.to;
             const Icon = item.icon;
             return (
@@ -87,6 +89,26 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
                   <Icon size={16} strokeWidth={1.5} />
                   <span>{t(`nav.${item.key}`)}</span>
                 </Link>
+              </li>
+            );
+          })}
+          {comingSoonNav.map((item) => {
+            const Icon = item.icon;
+            return (
+              <li key={item.key}>
+                <span
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-[3px] text-sm"
+                  style={{
+                    color: "var(--muted-text)",
+                    opacity: 0.55,
+                    cursor: "not-allowed",
+                  }}
+                  aria-disabled="true"
+                  title={t("nav.comingSoon")}
+                >
+                  <Icon size={16} strokeWidth={1.5} />
+                  <span>{t(`nav.${item.key}`)}</span>
+                </span>
               </li>
             );
           })}
