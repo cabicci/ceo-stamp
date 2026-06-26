@@ -6,14 +6,14 @@ const AUTH_VERIFY_TIMEOUT_MS = 4_500;
 
 function withTimeout<T>(promise: PromiseLike<T>, timeoutMs: number): Promise<T | null> {
   return new Promise((resolve) => {
-    const timer = window.setTimeout(() => resolve(null), timeoutMs);
+    const timer = globalThis.setTimeout(() => resolve(null), timeoutMs);
     Promise.resolve(promise).then(
       (value) => {
-        window.clearTimeout(timer);
+        globalThis.clearTimeout(timer);
         resolve(value);
       },
       () => {
-        window.clearTimeout(timer);
+        globalThis.clearTimeout(timer);
         resolve(null);
       },
     );
