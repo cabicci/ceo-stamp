@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft } from "@phosphor-icons/react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
-import { PostPreview, type BrandIdentity, type ContentItemPreview, type Platform } from "@/components/post-preview";
+import { PostPreview, type BrandIdentity, type ContentItemPreview, type ImageSource, type Platform } from "@/components/post-preview";
 import { CHANNEL_LABEL, localizedPackageName, localizedPackageDescription, type Channel } from "@/lib/campaign-packages";
 import type { ContentLanguage } from "@/lib/campaign-generation.types";
 import { formatFrameworksDisplay } from "@/lib/marketing-frameworks";
@@ -32,6 +32,8 @@ type ContentRow = {
   content_type: string | null;
   copy: string | null;
   media_brief: string | null;
+  image_url: string | null;
+  image_source: string | null;
   framework_applied: string | null;
   rationale: string | null;
   scheduled_date: string | null;
@@ -145,10 +147,15 @@ function PostGroupCard({
   group,
   brand,
   projectId,
+  onImageChange,
 }: {
   group: PostGroup;
   brand: BrandIdentity;
   projectId: string | null;
+  onImageChange: (
+    contentItemId: string,
+    next: { image_url: string | null; image_source: ImageSource | null },
+  ) => void;
 }) {
   const { t } = useTranslation();
   const hasPair = !!group.adaptation;
@@ -165,6 +172,8 @@ function PostGroupCard({
     copy: active.copy,
     media_brief: active.media_brief,
     content_type: active.content_type,
+    image_url: active.image_url,
+    image_source: (active.image_source as ImageSource | null) ?? null,
   };
 
   return (
@@ -191,7 +200,13 @@ function PostGroupCard({
           · {active.locale === "ar" ? t("campaignPage.localeAr") : t("campaignPage.localeEn")}
         </span>
       </div>
-      <PostPreview item={item} brand={brand} projectId={projectId ?? undefined} />
+      <PostPreview
+        item={item}
+        brand={brand}
+        projectId={projectId ?? undefined}
+        editable
+        onImageChange={(next) => onImageChange(active.id, next)}
+      />
       {active.rationale && (
         <p
           className="mt-2 text-[12px] leading-relaxed p-2"
@@ -336,7 +351,7 @@ function CampaignPage() {
         const { data: items, error: iErr } = await supabase
           .from("content_items")
           .select(
-            "id, platform, content_type, copy, media_brief, framework_applied, rationale, scheduled_date, locale, adapted_from_id",
+            "id, platform, content_type, copy, media_brief, image_url, image_source, framework_applied, rationale, scheduled_date, locale, adapted_from_id",
           )
           .eq("campaign_id", campaignId)
           .order("scheduled_date", { ascending: true });
@@ -375,6 +390,27 @@ function CampaignPage() {
     () => postGroups.filter((g) => g.original.copy || g.adaptation?.copy),
     [postGroups],
   );
+
+  async function handleImageChange(
+    contentItemId: string,
+    next: { image_url: string | null; image_source: ImageSource | null },
+  ) {
+    const { error: updErr } = await supabase
+      .from("content_items")
+      .update({ image_url: next.image_url, image_source: next.image_source })
+      .eq("id", contentItemId);
+    if (updErr) {
+      console.error(updErr);
+      return;
+    }
+    setContentItems((prev) =>
+      prev.map((row) =>
+        row.id === contentItemId
+          ? { ...row, image_url: next.image_url, image_source: next.image_source }
+          : row,
+      ),
+    );
+  }
 
   return (
     <AppShell>
@@ -452,6 +488,7 @@ function CampaignPage() {
                         group={group}
                         brand={brand}
                         projectId={projectId}
+                        onImageChange={handleImageChange}
                       />
                     ))}
                 </div>

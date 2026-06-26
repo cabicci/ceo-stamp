@@ -15,6 +15,10 @@ import {
   renderFrameworkKnowledgeForPrompt,
   resolveFrameworkIds,
 } from "@/lib/marketing-frameworks";
+import {
+  autoGenerateImagesForContentItems,
+  type ContentItemForAutoImage,
+} from "@/lib/post-image.server";
 
 const GENERATION_CHANNELS = ["instagram", "facebook", "tiktok", "linkedin", "x"] as const;
 type GenerationChannel = (typeof GENERATION_CHANNELS)[number];
@@ -408,7 +412,7 @@ export const generateCampaign = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => InputSchema.parse(data))
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const contentLanguage: ContentLanguage = data.contentLanguage;
     const imageTextLanguage: ImageTextLanguage = data.imageTextLanguage;
 
@@ -570,6 +574,7 @@ export const generateCampaign = createServerFn({ method: "POST" })
 
       let totalContent = 0;
       let totalAds = 0;
+      const insertedForImages: ContentItemForAutoImage[] = [];
 
       if (contentLanguage === "both") {
         const arContent = applyImageBrief(orderedPrimary);
@@ -590,11 +595,12 @@ export const generateCampaign = createServerFn({ method: "POST" })
         const { data: insertedCi, error: ciErr } = await supabase
           .from("content_items")
           .insert(arCiRows)
-          .select("id");
+          .select("id, platform, media_brief, copy");
         if (ciErr) throw new Error(`content_items insert: ${ciErr.message}`);
         if (!insertedCi || insertedCi.length !== arCiRows.length) {
           throw new Error("content_items insert: missing ids");
         }
+        insertedForImages.push(...insertedCi);
 
         const arAdRows = primaryAds.map((ad) => ({
           campaign_id: data.campaignId,
@@ -667,8 +673,12 @@ Produce culturally adapted English versions. Same counts and structure.`;
           scheduled_date: ci.scheduled_date ?? null,
           status: "draft",
         }));
-        const { error: enCiErr } = await supabase.from("content_items").insert(enCiRows);
+        const { data: insertedEnCi, error: enCiErr } = await supabase
+          .from("content_items")
+          .insert(enCiRows)
+          .select("id, platform, media_brief, copy");
         if (enCiErr) throw new Error(`content_items en insert: ${enCiErr.message}`);
+        if (insertedEnCi) insertedForImages.push(...insertedEnCi);
 
         const adKey = (platform: string, variant: string | null | undefined) =>
           `${platform}:${variant ?? ""}`;
@@ -717,8 +727,12 @@ Produce culturally adapted English versions. Same counts and structure.`;
           scheduled_date: ci.scheduled_date ?? null,
           status: "draft",
         }));
-        const { error: ciErr } = await supabase.from("content_items").insert(ciRows);
+        const { data: insertedCi, error: ciErr } = await supabase
+          .from("content_items")
+          .insert(ciRows)
+          .select("id, platform, media_brief, copy");
         if (ciErr) throw new Error(`content_items insert: ${ciErr.message}`);
+        if (insertedCi) insertedForImages.push(...insertedCi);
 
         const adRows = primaryAds.map((ad) => ({
           campaign_id: data.campaignId,
@@ -740,6 +754,19 @@ Produce culturally adapted English versions. Same counts and structure.`;
         totalAds = adRows.length;
       }
 
+      const imageStats = await autoGenerateImagesForContentItems({
+        supabase,
+        projectId: campaign.project_id,
+        projectName: project.name,
+        ownerId: userId,
+        imageTextLanguage,
+        brand: brand
+          ? { tone_of_voice: brand.tone_of_voice, brand_colors: brand.brand_colors }
+          : null,
+        items: insertedForImages,
+      });
+      console.log("[campaign-gen] auto images:", imageStats);
+
       const { error: readyErr } = await supabase
         .from("campaigns")
         .update({
@@ -759,6 +786,9 @@ Produce culturally adapted English versions. Same counts and structure.`;
         ad_copies_count: totalAds,
         content_language: contentLanguage,
         image_text_language: imageTextLanguage,
+        images_generated: imageStats.generated,
+        images_failed: imageStats.failed,
+        images_skipped_quota: imageStats.skippedQuota,
       };
     } catch (err) {
       await supabase
