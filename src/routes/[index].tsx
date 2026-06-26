@@ -2,6 +2,24 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+const PREVIEW_AUTH_TIMEOUT_MS = 3_500;
+
+function withTimeout<T>(promise: PromiseLike<T>, timeoutMs: number): Promise<T | null> {
+  return new Promise((resolve) => {
+    const timer = window.setTimeout(() => resolve(null), timeoutMs);
+    Promise.resolve(promise).then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      () => {
+        window.clearTimeout(timer);
+        resolve(null);
+      },
+    );
+  });
+}
+
 export const Route = createFileRoute("/index")({
   component: PreviewEntryRedirect,
 });
@@ -12,16 +30,25 @@ function PreviewEntryRedirect() {
   useEffect(() => {
     let active = true;
 
-    supabase.auth
-      .getUser()
-      .then(({ data }) => {
-        if (!active) return;
-        navigate({ to: data.user ? "/" : "/auth", replace: true });
-      })
-      .catch(() => {
-        if (!active) return;
-        navigate({ to: "/auth", replace: true });
-      });
+    async function openPreview() {
+      const sessionResult = await withTimeout(
+        supabase.auth.getSession(),
+        PREVIEW_AUTH_TIMEOUT_MS,
+      );
+      if (!active) return;
+
+      if (sessionResult?.data.session?.user) {
+        navigate({ to: "/", replace: true });
+        return;
+      }
+
+      const userResult = await withTimeout(supabase.auth.getUser(), PREVIEW_AUTH_TIMEOUT_MS);
+      if (!active) return;
+
+      navigate({ to: userResult?.data.user ? "/" : "/auth", replace: true });
+    }
+
+    void openPreview();
 
     return () => {
       active = false;
