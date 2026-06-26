@@ -41,6 +41,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
+    document.getElementById("app-boot-fallback")?.remove();
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
@@ -117,7 +118,7 @@ function RootShell({ children }: { children: ReactNode }) {
           style={{
             position: "fixed",
             inset: 0,
-            zIndex: 2147483647,
+            zIndex: 100,
             display: "grid",
             placeItems: "center",
             padding: "24px",
