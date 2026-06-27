@@ -135,7 +135,7 @@ RLS pattern: **owner read/write** on project-scoped data; **`is_admin()` read-on
 - **Connected Sites i18n errors** — `connected_sites.error_message` keys (`connectedSites.errors.*`) resolved via `translateConnectedSitesError()` in row UI + connect/capture banners (no raw keys shown).
 - **Definitive Browserbase connect lifecycle** — `browserbase_session_id` + `connect_started_at` on `connected_sites`; before every connect, release all RUNNING orphan sessions except actively-tracked connects (<2 min). On 429: release all, wait 1s, retry once; clear Arabic capacity message. `captureSession` persists encrypted contextId immediately after flush (before any further cleanup); always-close via `try/finally` on start/capture/abandon. Success banner: `connectedSites.connectSuccess`.
 - **Preview stability hardening** — `/index` preview entry and the protected-route auth gate no longer wait indefinitely on the auth `/user` check; they prefer the local session and fall back/redirect after short timeouts. The boot fallback now sits below real app/error UI and is explicitly removed by the root error boundary, preventing hidden blank/error screens.
-- **AI JSON parsing hardening** — `callAI(..., jsonMode: true)` now tolerates malformed markdown fences such as `'''json` and extracts the first balanced JSON object/array, preventing campaign generation from failing when models wrap otherwise-valid JSON incorrectly.
+- **AI JSON parsing/output hardening** — `callAI(..., jsonMode: true)` now tolerates malformed markdown fences such as `'''json` and extracts the first balanced JSON object/array. Content generation also uses a larger provider output budget to avoid truncated campaign JSON (`Unterminated string`).
 
 ### Routes (implemented)
 
@@ -198,6 +198,7 @@ Nav links for `/analysis`, `/campaigns`, `/review` exist in sidebar but **routes
 | 2026-06-26 | Hardened Lovable preview boot/auth routing: `/index` and `_authenticated` gate now use session-first auth with short timeouts to avoid blank screens when auth verification is slow. |
 | 2026-06-26 | Hardened root boot fallback: lower z-index + error-boundary cleanup so real errors are visible instead of being hidden behind the loading screen. |
 | 2026-06-27 | Hardened `callAI` JSON parsing for malformed model fences (`'''json`/extra prose) so campaign generation can continue when the model returns valid JSON wrapped incorrectly. |
+| 2026-06-27 | Increased text-generation output budgets per AI task, especially campaign generation, to prevent truncated JSON causing `Unterminated string` parse failures. |
 | 2026-06-22 | Auto AI image generation per post during campaign generation (`post-image.server.ts`); resilient per-item failures (60s timeout), quota-aware via `plan-limits` + `usage_counters`; campaign view loads `image_url`/`image_source`. |
 | 2026-06-22 | Campaign view: copyable post text (نسخ / تم النسخ) + manual per-platform publish buttons (composer URL, clipboard hint, image download link). |
 | 2026-06-22 | Full campaign PDF export — overview + posts + ad copies sections (`CAMPAIGN_REPORT_SECTIONS`), reuses `composeReportDocument` + Cairo RTL; **تصدير الحملة PDF** on campaign page. |

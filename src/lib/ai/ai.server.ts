@@ -14,6 +14,8 @@ export interface ProviderRequest {
   model: string;
   systemPrompt: string;
   userContent: string;
+  /** Provider output budget. Keep generation tasks high enough to avoid truncated JSON. */
+  maxTokens?: number;
   /** Abort the provider HTTP call after this many milliseconds. */
   timeoutMs?: number;
 }
@@ -31,12 +33,13 @@ export type TaskName = "website_analysis" | "content_generation" | "campaign_str
 interface TaskRoute {
   provider: ProviderName;
   model: string;
+  maxTokens?: number;
 }
 
 const TASK_ROUTING: Record<TaskName, TaskRoute> = {
-  website_analysis: { provider: "anthropic", model: "claude-sonnet-4-6" },
-  content_generation: { provider: "anthropic", model: "claude-sonnet-4-6" },
-  campaign_strategy: { provider: "anthropic", model: "claude-sonnet-4-6" },
+  website_analysis: { provider: "anthropic", model: "claude-sonnet-4-6", maxTokens: 4096 },
+  content_generation: { provider: "anthropic", model: "claude-sonnet-4-6", maxTokens: 16000 },
+  campaign_strategy: { provider: "anthropic", model: "claude-sonnet-4-6", maxTokens: 8192 },
 };
 
 // ---------------------------------------------------------------------------
@@ -45,7 +48,7 @@ const TASK_ROUTING: Record<TaskName, TaskRoute> = {
 
 const anthropicProvider: Provider = {
   name: "anthropic",
-  async call({ model, systemPrompt, userContent, timeoutMs }) {
+  async call({ model, systemPrompt, userContent, maxTokens, timeoutMs }) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
 
@@ -62,7 +65,7 @@ const anthropicProvider: Provider = {
         },
         body: JSON.stringify({
           model,
-          max_tokens: 4096,
+          max_tokens: maxTokens ?? 4096,
           system: systemPrompt,
           messages: [{ role: "user", content: userContent }],
         }),
@@ -98,7 +101,7 @@ const anthropicProvider: Provider = {
 
 const openaiProvider: Provider = {
   name: "openai",
-  async call({ model, systemPrompt, userContent }) {
+  async call({ model, systemPrompt, userContent, maxTokens }) {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) throw new Error("OPENAI_API_KEY is not set");
 
@@ -110,6 +113,7 @@ const openaiProvider: Provider = {
       },
       body: JSON.stringify({
         model,
+        ...(maxTokens ? { max_completion_tokens: maxTokens } : {}),
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },
@@ -132,7 +136,7 @@ const openaiProvider: Provider = {
 
 const geminiProvider: Provider = {
   name: "gemini",
-  async call({ model, systemPrompt, userContent }) {
+  async call({ model, systemPrompt, userContent, maxTokens }) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
 
@@ -146,6 +150,7 @@ const geminiProvider: Provider = {
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemPrompt }] },
         contents: [{ role: "user", parts: [{ text: userContent }] }],
+        ...(maxTokens ? { generationConfig: { maxOutputTokens: maxTokens } } : {}),
       }),
     });
 
@@ -289,6 +294,7 @@ export async function callAI(args: CallAIArgs): Promise<unknown> {
     model: route.model,
     systemPrompt: args.systemPrompt,
     userContent: args.userContent,
+    maxTokens: route.maxTokens,
     timeoutMs: args.timeoutMs,
   });
 
@@ -309,7 +315,8 @@ export async function callAI(args: CallAIArgs): Promise<unknown> {
   } catch (err) {
     throw new Error(
       `callAI jsonMode: failed to parse JSON from ${route.provider}/${route.model}. ` +
-        `Parse error: ${(err as Error).message}. Raw (first 500 chars): ${cleaned.slice(0, 500)}`,
+        `Parse error: ${(err as Error).message}. Raw length: ${cleaned.length}. ` +
+        `Raw (first 500 chars): ${cleaned.slice(0, 500)}`,
     );
   }
 }
@@ -413,7 +420,7 @@ export async function callAIChat(args: CallAIChatArgs): Promise<unknown> {
     },
     body: JSON.stringify({
       model: route.model,
-      max_tokens: 4096,
+      max_tokens: route.maxTokens ?? 4096,
       system: args.systemPrompt,
       messages: args.messages.map((m) => ({ role: m.role, content: m.content })),
     }),
@@ -449,7 +456,7 @@ export async function callAIChat(args: CallAIChatArgs): Promise<unknown> {
   } catch (err) {
     throw new Error(
       `callAIChat jsonMode: failed to parse JSON. Parse error: ${(err as Error).message}. ` +
-        `Raw (first 500 chars): ${cleaned.slice(0, 500)}`,
+        `Raw length: ${cleaned.length}. Raw (first 500 chars): ${cleaned.slice(0, 500)}`,
     );
   }
 }
