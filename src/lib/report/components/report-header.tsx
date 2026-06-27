@@ -8,6 +8,7 @@ export function ReportHeader({ ctx }: { ctx: ReportBuildContext }) {
 
   return (
     <View style={styles.header} fixed>
+      <View style={styles.headerRule} />
       <View style={styles.headerBrandBlock}>
         <View style={styles.headerAccent} />
         <Text style={styles.projectName}>{project.name}</Text>
