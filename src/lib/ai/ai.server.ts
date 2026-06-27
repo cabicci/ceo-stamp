@@ -219,11 +219,62 @@ async function writeAILog(args: {
   }
 }
 
-function stripJsonFences(raw: string): string {
-  const trimmed = raw.trim();
-  // ```json ... ``` or ``` ... ```
-  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
-  return fenced ? fenced[1].trim() : trimmed;
+function findMatchingJsonEnd(text: string, startIndex: number): number | null {
+  const opener = text[startIndex];
+  const closer = opener === "{" ? "}" : opener === "[" ? "]" : null;
+  if (!closer) return null;
+
+  const stack: string[] = [closer];
+  let inString = false;
+  let escaped = false;
+
+  for (let i = startIndex + 1; i < text.length; i += 1) {
+    const char = text[i];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === "\\") {
+        escaped = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+    if (char === "{" || char === "[") {
+      stack.push(char === "{" ? "}" : "]");
+      continue;
+    }
+    if (char === "}" || char === "]") {
+      if (stack.pop() !== char) return null;
+      if (stack.length === 0) return i + 1;
+    }
+  }
+
+  return null;
+}
+
+export function stripJsonFences(raw: string): string {
+  let trimmed = raw.trim();
+
+  // Accept common model mistakes: ```json, '''json, """json, or ~~~json fences.
+  trimmed = trimmed
+    .replace(/^(?:`{3,}|'{3,}|"{3,}|~{3,})\s*(?:json|javascript|js)?\s*/i, "")
+    .replace(/\s*(?:`{3,}|'{3,}|"{3,}|~{3,})\s*$/i, "")
+    .trim();
+
+  const firstObject = trimmed.search(/[\[{]/);
+  if (firstObject === -1) return trimmed;
+
+  const end = findMatchingJsonEnd(trimmed, firstObject);
+  if (end === null) return trimmed;
+
+  return trimmed.slice(firstObject, end).trim();
 }
 
 export async function callAI(args: CallAIArgs & { jsonMode: true }): Promise<unknown>;
