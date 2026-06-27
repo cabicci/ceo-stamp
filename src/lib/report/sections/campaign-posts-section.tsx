@@ -51,7 +51,7 @@ export function CampaignPostsSectionContent({ ctx }: { ctx: ReportBuildContext }
             .join(" · ");
 
           return (
-            <View key={`post-${i}`} style={styles.postCard} wrap={false}>
+            <View key={`post-${i}`} style={styles.postCard}>
               <Text style={styles.postMeta}>{meta}</Text>
               <Field ctx={ctx} label={f.copy} value={post.copy} />
               <Field ctx={ctx} label={f.frameworkApplied} value={post.frameworkApplied} />
@@ -80,7 +80,7 @@ export function CampaignPostsSectionContent({ ctx }: { ctx: ReportBuildContext }
               .join(" · ");
 
             return (
-              <View key={`ad-${i}`} style={styles.adCard} wrap={false}>
+              <View key={`ad-${i}`} style={styles.adCard}>
                 <Text style={styles.postMeta}>{meta}</Text>
                 <Field ctx={ctx} label={f.headline} value={ad.headline} />
                 <Field ctx={ctx} label={f.body} value={ad.body} />

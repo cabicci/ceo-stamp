@@ -1,7 +1,7 @@
 import { Text, View } from "@react-pdf/renderer";
 import type { ReportBuildContext } from "../types";
 import { createReportStyles } from "../styles";
-import { formatPageOf, formatReportDate } from "../labels";
+import { formatReportDate } from "../labels";
 
 export function ReportFooter({ ctx }: { ctx: ReportBuildContext }) {
   const styles = createReportStyles(ctx);
@@ -13,11 +13,7 @@ export function ReportFooter({ ctx }: { ctx: ReportBuildContext }) {
       <Text>
         {ctx.labels.generatedOn}: {dateStr}
       </Text>
-      <Text
-        render={({ pageNumber, totalPages }) =>
-          formatPageOf(ctx.labels, pageNumber, totalPages)
-        }
-      />
+      <Text>{ctx.documentTitle}</Text>
     </View>
   );
 }
