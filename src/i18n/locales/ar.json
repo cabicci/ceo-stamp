@@ -337,7 +337,13 @@
     "viewOriginal": "الأصل",
     "viewAdaptation": "التكييف",
     "pairedPost": "بوست مزدوج",
-    "pairedAd": "إعلان مزدوج"
+    "pairedAd": "إعلان مزدوج",
+    "copyTextLabel": "نص البوست",
+    "copy": "نسخ",
+    "copied": "تم النسخ",
+    "publishOn": "انشر على {platform}",
+    "manualPublishHint": "نسخنا النص لك — الصقه وانشر.",
+    "downloadImage": "تحميل الصورة"
   },
   "postPreview": {
     "imagePlaceholder": "مكان الصورة — لسه ما تم اختيار صورة",

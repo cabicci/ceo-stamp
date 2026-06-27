@@ -337,7 +337,13 @@
     "viewOriginal": "Original",
     "viewAdaptation": "Adaptation",
     "pairedPost": "Bilingual post",
-    "pairedAd": "Bilingual ad"
+    "pairedAd": "Bilingual ad",
+    "copyTextLabel": "Post text",
+    "copy": "Copy",
+    "copied": "Copied",
+    "publishOn": "Publish on {platform}",
+    "manualPublishHint": "We copied the text for you — paste and publish.",
+    "downloadImage": "Download image"
   },
   "postPreview": {
     "imagePlaceholder": "Image slot — no image selected yet",

@@ -8,6 +8,7 @@ import { CHANNEL_LABEL, localizedPackageName, localizedPackageDescription, type 
 import type { ContentLanguage } from "@/lib/campaign-generation.types";
 import { formatFrameworksDisplay } from "@/lib/marketing-frameworks";
 import { useTranslation } from "@/i18n/I18nProvider";
+import { PostCopyPublishBar } from "@/components/campaign/PostCopyPublishBar";
 
 export const Route = createFileRoute("/_authenticated/campaigns/$campaignId")({
   head: () => ({ meta: [{ title: "Marketing CEO — Campaign" }] }),
@@ -206,6 +207,12 @@ function PostGroupCard({
         projectId={projectId ?? undefined}
         editable
         onImageChange={(next) => onImageChange(active.id, next)}
+      />
+      <PostCopyPublishBar
+        copy={active.copy}
+        platform={active.platform}
+        imageUrl={active.image_url}
+        copyLocale={active.locale}
       />
       {active.rationale && (
         <p

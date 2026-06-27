@@ -120,7 +120,7 @@ RLS pattern: **owner read/write** on project-scoped data; **`is_admin()` read-on
 - **Campaign packages** — 6 packages in `campaign-packages.ts` with channel adaptation.
 - **AI strategist chat** — multi-turn planning → `AdaptedPlan` → approve.
 - **Marketing science layer** — `marketing-frameworks.ts` wired into strategist + generation prompts.
-- **Approved-plan → generation** — `CampaignGeneratePanel` + `generate-campaign.functions.ts`; campaign view at `/campaigns/$campaignId`.
+- **Approved-plan → generation** — `CampaignGeneratePanel` + `generate-campaign.functions.ts`; campaign view at `/campaigns/$campaignId` with **copyable post text** (نسخ + تم النسخ) and **manual per-platform publish** buttons (clipboard + composer URL + image download).
 - **Post previews** — realistic mocks for **5 platforms** (Facebook, Instagram, TikTok, LinkedIn, X/Twitter); **3 image sources** (AI generate / upload / paste URL) via `ImageSlot`. **Auto AI images on campaign generation:** each `content_item` gets an Imagen image from `media_brief` + `image_text_language` during `generateCampaign` (60s timeout per image, per-item failure resilient, quota-aware via `plan-limits` + `usage_counters`).
 - **URL auto-normalize** — `normalizeWebsiteUrl()` + `projectSchema`; project edit form on detail page.
 - **Full i18n pass** — ~160 UI strings moved to locale files (commit `a17b7bc`).
@@ -197,3 +197,4 @@ Nav links for `/analysis`, `/campaigns`, `/review` exist in sidebar but **routes
 | 2026-06-26 | Hardened Lovable preview boot/auth routing: `/index` and `_authenticated` gate now use session-first auth with short timeouts to avoid blank screens when auth verification is slow. |
 | 2026-06-26 | Hardened root boot fallback: lower z-index + error-boundary cleanup so real errors are visible instead of being hidden behind the loading screen. |
 | 2026-06-22 | Auto AI image generation per post during campaign generation (`post-image.server.ts`); resilient per-item failures (60s timeout), quota-aware via `plan-limits` + `usage_counters`; campaign view loads `image_url`/`image_source`. |
+| 2026-06-22 | Campaign view: copyable post text (نسخ / تم النسخ) + manual per-platform publish buttons (composer URL, clipboard hint, image download link). |
