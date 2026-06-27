@@ -151,9 +151,6 @@ export function createReportStyles(ctx: ReportBuildContext) {
     },
     postCard: {
       backgroundColor: LEDGER.surface,
-      borderWidth: 1,
-      borderColor: LEDGER.hairline,
-      borderRadius: 0,
       padding: 10,
       marginBottom: 12,
     },
@@ -173,9 +170,6 @@ export function createReportStyles(ctx: ReportBuildContext) {
     },
     adCard: {
       backgroundColor: LEDGER.surface,
-      borderWidth: 1,
-      borderColor: LEDGER.hairline,
-      borderRadius: 0,
       padding: 10,
       marginBottom: 10,
     },
