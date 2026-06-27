@@ -56,7 +56,10 @@ export function AnalysisSectionContent({ ctx }: { ctx: ReportBuildContext }) {
 
   return (
     <View>
-      <Text style={styles.sectionTitle}>{labels.sections.analysis}</Text>
+      <View style={styles.sectionHeading}>
+        <Text style={styles.sectionTitle}>{labels.sections.analysis}</Text>
+        <View style={styles.sectionTitleRule} />
+      </View>
 
       <TextField ctx={ctx} label={labels.fields.businessModel} value={analysis.business_model} />
       <TextField ctx={ctx} label={labels.fields.targetAudience} value={analysis.target_audience} />

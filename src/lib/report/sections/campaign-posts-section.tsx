@@ -32,7 +32,10 @@ export function CampaignPostsSectionContent({ ctx }: { ctx: ReportBuildContext }
 
   return (
     <View>
-      <Text style={styles.sectionTitle}>{ctx.labels.sections.posts}</Text>
+      <View style={styles.sectionHeading}>
+        <Text style={styles.sectionTitle}>{ctx.labels.sections.posts}</Text>
+        <View style={styles.sectionTitleRule} />
+      </View>
 
       {posts.length === 0 ? (
         <Text style={styles.emptyNote}>{f.noPosts}</Text>
@@ -63,7 +66,10 @@ export function CampaignPostsSectionContent({ ctx }: { ctx: ReportBuildContext }
 
       {ads.length > 0 && (
         <View style={{ marginTop: 16 }}>
-          <Text style={styles.sectionTitle}>{ctx.labels.sections.ads}</Text>
+          <View style={styles.sectionHeading}>
+            <Text style={styles.sectionTitle}>{ctx.labels.sections.ads}</Text>
+            <View style={styles.sectionTitleRule} />
+          </View>
           {ads.map((ad, i) => {
             const meta = [
               `${f.platform}: ${ad.platformLabel}`,

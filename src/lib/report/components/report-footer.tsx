@@ -9,6 +9,7 @@ export function ReportFooter({ ctx }: { ctx: ReportBuildContext }) {
 
   return (
     <View style={styles.footer} fixed>
+      <View style={styles.footerRule} />
       <Text>
         {ctx.labels.generatedOn}: {dateStr}
       </Text>
