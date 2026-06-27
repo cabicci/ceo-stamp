@@ -165,7 +165,7 @@ export function createReportStyles(ctx: ReportBuildContext) {
     },
     postImage: {
       width: 220,
-      maxHeight: 220,
+      height: 220,
       objectFit: "contain",
       marginTop: 8,
       marginBottom: 4,
