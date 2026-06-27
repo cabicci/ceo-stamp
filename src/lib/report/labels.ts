@@ -21,6 +21,9 @@ export function getReportLabels(locale: ReportLocale): ReportLabels {
     pageOf: t("report.pageOf"),
     sections: {
       analysis: t("report.sections.analysis"),
+      campaign: t("report.sections.campaign"),
+      posts: t("report.sections.posts"),
+      ads: t("report.sections.ads"),
     },
     fields: {
       businessModel: t("report.fields.businessModel"),
@@ -36,8 +39,40 @@ export function getReportLabels(locale: ReportLocale): ReportLabels {
       contentPillars: t("report.fields.contentPillars"),
       website: t("report.fields.website"),
     },
+    campaignFields: {
+      packageName: t("report.campaignFields.packageName"),
+      description: t("report.campaignFields.description"),
+      objective: t("report.campaignFields.objective"),
+      channels: t("report.campaignFields.channels"),
+      startDate: t("report.campaignFields.startDate"),
+      endDate: t("report.campaignFields.endDate"),
+      dateRange: t("report.campaignFields.dateRange"),
+      funnelFocus: t("report.campaignFields.funnelFocus"),
+      frameworks: t("report.campaignFields.frameworks"),
+      totalPosts: t("report.campaignFields.totalPosts"),
+      adaptationNote: t("report.campaignFields.adaptationNote"),
+      platform: t("report.campaignFields.platform"),
+      scheduledDate: t("report.campaignFields.scheduledDate"),
+      locale: t("report.campaignFields.locale"),
+      contentType: t("report.campaignFields.contentType"),
+      copy: t("report.campaignFields.copy"),
+      frameworkApplied: t("report.campaignFields.frameworkApplied"),
+      rationale: t("report.campaignFields.rationale"),
+      headline: t("report.campaignFields.headline"),
+      body: t("report.campaignFields.body"),
+      cta: t("report.campaignFields.cta"),
+      variant: t("report.campaignFields.variant"),
+      noPosts: t("report.campaignFields.noPosts"),
+      noAds: t("report.campaignFields.noAds"),
+    },
     emptyList: t("report.emptyList"),
   };
+}
+
+export function getCampaignDocumentTitle(locale: ReportLocale): string {
+  const dict = (locale === "ar" ? ar : en) as Dict;
+  const value = resolvePath(dict, "report.campaignDocumentTitle");
+  return typeof value === "string" ? value : "Campaign report";
 }
 
 export function formatReportDate(date: Date, locale: ReportLocale): string {

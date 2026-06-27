@@ -149,5 +149,35 @@ export function createReportStyles(ctx: ReportBuildContext) {
       fontStyle: "italic",
       textAlign: rtl ? "right" : "left",
     },
+    postCard: {
+      backgroundColor: LEDGER.surface,
+      borderWidth: 1,
+      borderColor: LEDGER.hairline,
+      borderRadius: 3,
+      padding: 10,
+      marginBottom: 12,
+    },
+    postMeta: {
+      fontSize: 8,
+      color: LEDGER.muted,
+      marginBottom: 6,
+      textAlign: rtl ? "right" : "left",
+    },
+    postImage: {
+      width: 220,
+      maxHeight: 220,
+      objectFit: "contain",
+      marginTop: 8,
+      marginBottom: 4,
+      alignSelf: rtl ? "flex-end" : "flex-start",
+    },
+    adCard: {
+      backgroundColor: LEDGER.surface,
+      borderWidth: 1,
+      borderColor: LEDGER.hairline,
+      borderRadius: 3,
+      padding: 10,
+      marginBottom: 10,
+    },
   });
 }

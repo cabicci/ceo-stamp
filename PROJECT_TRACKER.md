@@ -115,7 +115,7 @@ RLS pattern: **owner read/write** on project-scoped data; **`is_admin()` read-on
 - **Auth** — Supabase email/password; protected `_authenticated` routes.
 - **Admin dashboard** — `/admin`: user/project/campaign/content totals (RLS-gated).
 - **Website intelligence** — public scrape + **Browserbase** authenticated scrape; shared `analysis-pipeline.server.ts`; marketing-focused analysis output (Egyptian Arabic): USPs, audience pain points, content opportunities, marketing angles — no generic business audit; editable on project page Step 2. **Timeouts + zombie cleanup:** 30s homepage fetch, 90s AI call, stale `scraping`/`analyzing` rows (>5 min) marked `error` on server start and before each run. **Client watchdog:** 2.5 min polling timeout marks stuck runs `error` via `failAnalysisWatchdog`.
-- **Marketing report PDF (extensible)** — `src/lib/report/` modular section builder (`ReportSectionModule` + `composeReportDocument`); first section **التحليل التسويقي** exported via server fn (`@react-pdf/renderer` + embedded Cairo woff2 for Arabic RTL shaping); Step 2 **تصدير التقرير PDF** button.
+- **Marketing report PDF (extensible)** — `src/lib/report/` modular section builder (`ReportSectionModule` + `composeReportDocument`); first section **التحليل التسويقي** exported via server fn (`@react-pdf/renderer` + embedded Cairo woff2 for Arabic RTL shaping); Step 2 **تصدير التقرير PDF** button. **Full campaign PDF** — overview + posts + ad copies sections via `CAMPAIGN_REPORT_SECTIONS`; **تصدير الحملة PDF** on `/campaigns/$campaignId`.
 - **Brand profile** — auto-upserted from analysis into `brand_profiles`; channel settings UI.
 - **Campaign packages** — 6 packages in `campaign-packages.ts` with channel adaptation.
 - **AI strategist chat** — multi-turn planning → `AdaptedPlan` → approve.
@@ -166,7 +166,7 @@ Nav links for `/analysis`, `/campaigns`, `/review` exist in sidebar but **routes
 | History / clone / templates | `cloned_from_id`, `is_template`, `archived` columns exist |
 | Social publishing | `social_connections`, `publish_jobs` schema only |
 | Billing | `subscriptions` + `usage_counters` — **last priority** |
-| Full strategy PDF (campaign + posts sections) | Analysis section shipped; extend `src/lib/report/` with campaign + posts modules |
+| Full strategy PDF (campaign + posts sections) | Campaign PDF shipped (`generate-campaign-report.functions.ts`); extend with review workflow sections later |
 
 ---
 
@@ -198,3 +198,4 @@ Nav links for `/analysis`, `/campaigns`, `/review` exist in sidebar but **routes
 | 2026-06-26 | Hardened root boot fallback: lower z-index + error-boundary cleanup so real errors are visible instead of being hidden behind the loading screen. |
 | 2026-06-22 | Auto AI image generation per post during campaign generation (`post-image.server.ts`); resilient per-item failures (60s timeout), quota-aware via `plan-limits` + `usage_counters`; campaign view loads `image_url`/`image_source`. |
 | 2026-06-22 | Campaign view: copyable post text (نسخ / تم النسخ) + manual per-platform publish buttons (composer URL, clipboard hint, image download link). |
+| 2026-06-22 | Full campaign PDF export — overview + posts + ad copies sections (`CAMPAIGN_REPORT_SECTIONS`), reuses `composeReportDocument` + Cairo RTL; **تصدير الحملة PDF** on campaign page. |

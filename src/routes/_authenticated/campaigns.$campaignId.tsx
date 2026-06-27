@@ -9,6 +9,7 @@ import type { ContentLanguage } from "@/lib/campaign-generation.types";
 import { formatFrameworksDisplay } from "@/lib/marketing-frameworks";
 import { useTranslation } from "@/i18n/I18nProvider";
 import { PostCopyPublishBar } from "@/components/campaign/PostCopyPublishBar";
+import { ExportCampaignReportButton } from "@/components/ExportCampaignReportButton";
 
 export const Route = createFileRoute("/_authenticated/campaigns/$campaignId")({
   head: () => ({ meta: [{ title: "Marketing CEO — Campaign" }] }),
@@ -470,12 +471,13 @@ function CampaignPage() {
                 </p>
               )}
               {plan?.frameworks && plan.frameworks.length > 0 && (
-                <p className="text-sm" style={{ color: "var(--muted-text)" }}>
+                <p className="text-sm mb-4" style={{ color: "var(--muted-text)" }}>
                   {t("campaignPage.frameworks", {
                     frameworks: formatFrameworksDisplay(plan.frameworks, locale),
                   })}
                 </p>
               )}
+              <ExportCampaignReportButton campaignId={campaignId} />
             </div>
 
             <section className="mb-12">

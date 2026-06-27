@@ -165,14 +165,52 @@
   },
   "report": {
     "exportPdf": "Export report (PDF)",
+    "exportCampaignPdf": "Export campaign PDF",
     "exporting": "Preparing report…",
+    "campaignExporting": "Preparing campaign report…",
     "exportFailed": "Could not export the report.",
+    "campaignExportFailed": "Could not export the campaign report.",
     "documentTitle": "Marketing strategy report",
+    "campaignDocumentTitle": "Campaign report",
     "generatedOn": "Generated",
     "pageOf": "Page {current} of {total}",
     "emptyList": "—",
     "sections": {
-      "analysis": "Marketing analysis"
+      "analysis": "Marketing analysis",
+      "campaign": "Campaign overview",
+      "posts": "Posts",
+      "ads": "Ad copies"
+    },
+    "objectives": {
+      "awareness": "Brand awareness",
+      "leads": "Lead generation",
+      "sales": "Sales"
+    },
+    "campaignFields": {
+      "packageName": "Package",
+      "description": "Campaign description",
+      "objective": "Objective",
+      "channels": "Channels",
+      "startDate": "Period",
+      "endDate": "End date",
+      "dateRange": "{start} — {end}",
+      "funnelFocus": "Funnel focus",
+      "frameworks": "Marketing frameworks",
+      "totalPosts": "Total posts",
+      "adaptationNote": "Adaptation note",
+      "platform": "Platform",
+      "scheduledDate": "Scheduled",
+      "locale": "Language",
+      "contentType": "Content type",
+      "copy": "Post copy",
+      "frameworkApplied": "Framework applied",
+      "rationale": "Rationale",
+      "headline": "Headline",
+      "body": "Body",
+      "cta": "Call to action",
+      "variant": "Variant",
+      "noPosts": "No posts in this report.",
+      "noAds": "No ads."
     },
     "fields": {
       "businessModel": "Business model",

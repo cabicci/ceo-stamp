@@ -52,6 +52,7 @@ function BulletList({
 export function AnalysisSectionContent({ ctx }: { ctx: ReportBuildContext }) {
   const styles = createReportStyles(ctx);
   const { analysis, labels } = ctx;
+  if (!analysis) return null;
 
   return (
     <View>

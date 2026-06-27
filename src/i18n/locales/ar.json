@@ -165,14 +165,52 @@
   },
   "report": {
     "exportPdf": "تصدير التقرير PDF",
+    "exportCampaignPdf": "تصدير الحملة PDF",
     "exporting": "جارٍ تجهيز التقرير…",
+    "campaignExporting": "جارٍ تجهيز تقرير الحملة…",
     "exportFailed": "فشل تصدير التقرير.",
+    "campaignExportFailed": "فشل تصدير تقرير الحملة.",
     "documentTitle": "تقرير الاستراتيجية التسويقية",
+    "campaignDocumentTitle": "تقرير الحملة",
     "generatedOn": "تاريخ الإصدار",
     "pageOf": "صفحة {current} من {total}",
     "emptyList": "—",
     "sections": {
-      "analysis": "التحليل التسويقي"
+      "analysis": "التحليل التسويقي",
+      "campaign": "نظرة على الحملة",
+      "posts": "البوستات",
+      "ads": "الإعلانات"
+    },
+    "objectives": {
+      "awareness": "وعي بالعلامة",
+      "leads": "جمع عملاء محتملين",
+      "sales": "مبيعات"
+    },
+    "campaignFields": {
+      "packageName": "الباقة",
+      "description": "وصف الحملة",
+      "objective": "الهدف",
+      "channels": "القنوات",
+      "startDate": "الفترة",
+      "endDate": "تاريخ النهاية",
+      "dateRange": "{start} — {end}",
+      "funnelFocus": "تركيز القمع",
+      "frameworks": "الأطر التسويقية",
+      "totalPosts": "عدد البوستات",
+      "adaptationNote": "ملاحظة التكييف",
+      "platform": "القناة",
+      "scheduledDate": "الموعد",
+      "locale": "اللغة",
+      "contentType": "نوع المحتوى",
+      "copy": "نص البوست",
+      "frameworkApplied": "الإطار المطبّق",
+      "rationale": "التبرير",
+      "headline": "العنوان",
+      "body": "النص",
+      "cta": "دعوة للإجراء",
+      "variant": "النسخة",
+      "noPosts": "مفيش بوستات في التقرير.",
+      "noAds": "مفيش إعلانات."
     },
     "fields": {
       "businessModel": "نموذج العمل",
