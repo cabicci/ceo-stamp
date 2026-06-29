@@ -137,6 +137,7 @@ RLS pattern: **owner read/write** on project-scoped data; **`is_admin()` read-on
 - **Preview stability hardening** — `/index` preview entry and the protected-route auth gate no longer wait indefinitely on the auth `/user` check; they prefer the local session and fall back/redirect after short timeouts. The boot fallback now sits below real app/error UI and is explicitly removed by the root error boundary, preventing hidden blank/error screens.
 - **AI JSON parsing/output hardening** — `callAI(..., jsonMode: true)` now tolerates malformed markdown fences such as `'''json` and extracts the first balanced JSON object/array. Content generation also uses a larger provider output budget to avoid truncated campaign JSON (`Unterminated string`).
 - **PDF render hardening** — campaign/analysis PDF report styles avoid React-PDF crash paths: no border primitives, no oversized `wrap={false}` cards, and no dynamic total-pages footer render; separators use filled bars instead.
+- **My Campaigns workspace** — `/campaigns` lists all saved campaigns (RLS-scoped); project Step 4 embeds the same list. Per row: objective/package name, channels, dates, status, post count. Actions: open, clone (`cloned_from_id` + full `content_items`/`ad_copies` copy with ` (نسخة)` suffix), archive/unarchive with archived filter. Sidebar **الحملات** links to the list — campaigns persist and are reachable after reload.
 
 ### Routes (implemented)
 
@@ -145,11 +146,12 @@ RLS pattern: **owner read/write** on project-scoped data; **`is_admin()` read-on
 | `/auth` | Login / signup |
 | `/` | Projects list + create |
 | `/projects/$id` | Project hub: settings + gated 4-step wizard (analyze → brand → channels → campaigns) |
+| `/campaigns` | **My Campaigns** — all saved campaigns (open, clone, archive); sidebar link |
 | `/campaigns/$campaignId` | Generated content + ad copies preview |
 | `/post-previews` | Platform preview gallery (dev/demo) |
 | `/admin` | Admin dashboard |
 
-Nav links for `/analysis`, `/campaigns`, `/review` exist in sidebar but **routes are not implemented** (placeholders).
+Nav links for `/analysis`, `/review` exist in sidebar but **routes are not implemented** (placeholders).
 
 ---
 
@@ -165,7 +167,7 @@ Nav links for `/analysis`, `/campaigns`, `/review` exist in sidebar but **routes
 | Review / approve workflow for generated content | Nav stub only; `content_items.status` exists |
 | Campaign strategy visualization page | Plan → calendar / funnel view |
 | Performance metrics UI | `post_metrics` table ready |
-| History / clone / templates | `cloned_from_id`, `is_template`, `archived` columns exist |
+| History / clone / templates | `cloned_from_id`, `is_template`, `archived` columns exist; **clone + archive UI shipped** on `/campaigns` |
 | Social publishing | `social_connections`, `publish_jobs` schema only |
 | Billing | `subscriptions` + `usage_counters` — **last priority** |
 | Full strategy PDF (campaign + posts sections) | Campaign PDF shipped (`generate-campaign-report.functions.ts`); extend with review workflow sections later |
@@ -204,4 +206,4 @@ Nav links for `/analysis`, `/campaigns`, `/review` exist in sidebar but **routes
 | 2026-06-27 | Removed unbreakable post/ad PDF cards and dynamic total-pages footer render to stop React-PDF `translate unsupported number` crashes on long campaign reports. |
 | 2026-06-22 | Auto AI image generation per post during campaign generation (`post-image.server.ts`); resilient per-item failures (60s timeout), quota-aware via `plan-limits` + `usage_counters`; campaign view loads `image_url`/`image_source`. |
 | 2026-06-22 | Campaign view: copyable post text (نسخ / تم النسخ) + manual per-platform publish buttons (composer URL, clipboard hint, image download link). |
-| 2026-06-22 | Full campaign PDF export — overview + posts + ad copies sections (`CAMPAIGN_REPORT_SECTIONS`), reuses `composeReportDocument` + Cairo RTL; **تصدير الحملة PDF** on campaign page. |
+| 2026-06-29 | **My Campaigns workspace** — `/campaigns` list (open, clone, archive), project Step 4 embed, sidebar link; campaigns reachable after reload. |

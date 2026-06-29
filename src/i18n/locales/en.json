@@ -357,6 +357,34 @@
     "newPlan": "Start a new plan",
     "approveFailed": "Could not approve plan"
   },
+  "campaignList": {
+    "eyebrow": "Workspace · Campaigns",
+    "title": "My campaigns",
+    "subtitle": "All your saved campaigns in one place — open, clone, or archive.",
+    "projectSectionTitle": "Project campaigns",
+    "projectLabel": "Project: {name}",
+    "posts": "{count} posts",
+    "created": "Created {date}",
+    "noDateRange": "No date range set",
+    "noChannels": "No channels",
+    "open": "Open",
+    "clone": "Clone",
+    "archive": "Archive",
+    "unarchive": "Unarchive",
+    "showArchived": "Archived",
+    "hideArchived": "Hide archived",
+    "empty": "No campaigns yet — approve a plan and start generation below.",
+    "emptyArchived": "No archived campaigns.",
+    "backToProjects": "Back to projects",
+    "footerHint": "Campaigns are saved automatically — come back here after any reload.",
+    "cloneFailed": "Could not clone campaign",
+    "archiveFailed": "Could not update archive status",
+    "status": {
+      "draft": "Draft",
+      "generating": "Generating",
+      "ready": "Ready"
+    }
+  },
   "campaignPage": {
     "notFound": "Campaign not found.",
     "defaultName": "Campaign",

@@ -6,12 +6,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 
-const primaryNav = [{ key: "projects", to: "/", icon: Folder }] as const;
+const primaryNav = [
+  { key: "projects", to: "/", icon: Folder },
+  { key: "campaigns", to: "/campaigns", icon: Megaphone },
+] as const;
 
 /** Sidebar placeholders — routes not implemented yet (see PROJECT_TRACKER). */
 const comingSoonNav = [
   { key: "analysis", icon: ChartLine },
-  { key: "campaigns", icon: Megaphone },
   { key: "review", icon: SealCheck },
 ] as const;
 
@@ -72,7 +74,10 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
       <nav className="flex-1 px-3 overflow-y-auto">
         <ul className="space-y-1">
           {primaryNav.map((item) => {
-            const active = pathname === item.to;
+            const active =
+              item.to === "/"
+                ? pathname === "/"
+                : pathname === item.to || pathname.startsWith(`${item.to}/`);
             const Icon = item.icon;
             return (
               <li key={item.to}>
