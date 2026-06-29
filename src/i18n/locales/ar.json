@@ -305,6 +305,23 @@
       "generating": "بيتم توليد المحتوى…",
       "start": "ابدأ التوليد"
     },
+    "imageDiagnostics": {
+      "title": "تشخيص توليد الصور (مؤقت)",
+      "summary": "محاولات: {attempted} · نجح: {succeeded} · فشل: {failed} · تخطّى (حصة): {skipped}",
+      "hasGeminiKey": "GEMINI_API_KEY موجود: {value}",
+      "yes": "نعم",
+      "no": "لا",
+      "firstFailure": "أول سبب فشل: {reason}",
+      "firstFailureWithStage": "أول فشل ({stage}): {reason}",
+      "stageMissingApiKey": "مفتاح API مفقود",
+      "stageImagenApi": "خطأ Imagen API",
+      "stageTimeout": "انتهاء المهلة (60ث)",
+      "stageStorageUpload": "فشل رفع التخزين",
+      "stageSignedUrl": "فشل رابط موقّع",
+      "stageDbUpdate": "فشل تحديث قاعدة البيانات",
+      "stageUnknown": "سبب غير معروف",
+      "dismiss": "إخفاء"
+    },
     "packages": {
       "enableChannelsFirst": "فعّل القنوات المتاحة من فوق الأول علشان نقدر نكيّف الباكدچات على قنواتك.",
       "postsCount": "{count} بوست",

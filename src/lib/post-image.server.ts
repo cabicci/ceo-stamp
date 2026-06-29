@@ -7,6 +7,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { generateImage, type ImageAspectRatio } from "./ai/ai.server";
 import type { ImageTextLanguage } from "./campaign-generation.types";
 import { get_plan_limits } from "./plan-limits";
+import type { ImageGenerationStage } from "./post-image.types";
+export type {
+  CampaignImageDiagnostics,
+  ImageGenerationStage,
+} from "./post-image.types";
+export { CAMPAIGN_IMAGE_DIAGNOSTICS_KEY } from "./post-image.types";
 
 export const POST_IMAGE_GEN_TIMEOUT_MS = 60_000;
 
@@ -162,6 +168,57 @@ export type GeneratePostImageResult = {
   storagePath: string;
 };
 
+export class PostImageGenerationError extends Error {
+  readonly stage: ImageGenerationStage;
+
+  constructor(stage: ImageGenerationStage, message: string) {
+    super(message);
+    this.name = "PostImageGenerationError";
+    this.stage = stage;
+  }
+}
+
+export function hasGeminiApiKey(): boolean {
+  return Boolean(process.env.GEMINI_API_KEY?.trim());
+}
+
+function truncateDiagnosticMessage(message: string, max = 200): string {
+  const stripped = message.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  return stripped.length > max ? `${stripped.slice(0, max)}…` : stripped;
+}
+
+export function classifyImageGenerationError(err: unknown): {
+  stage: ImageGenerationStage;
+  reason: string;
+} {
+  const message =
+    err instanceof Error ? err.message : typeof err === "string" ? err : String(err);
+  const reason = truncateDiagnosticMessage(message);
+
+  if (err instanceof PostImageGenerationError) {
+    return { stage: err.stage, reason };
+  }
+  if (message.includes("GEMINI_API_KEY is not set")) {
+    return { stage: "missing_api_key", reason };
+  }
+  if (message.includes("timed out after")) {
+    return { stage: "timeout", reason };
+  }
+  if (/^Imagen \d{3}:/.test(message)) {
+    return { stage: "imagen_api", reason };
+  }
+  if (message.startsWith("فشل رفع الصورة:")) {
+    return { stage: "storage_upload", reason };
+  }
+  if (message.includes("تعذّر إنشاء رابط الصورة")) {
+    return { stage: "signed_url", reason };
+  }
+  if (message.includes("Imagen returned no image data")) {
+    return { stage: "imagen_api", reason };
+  }
+  return { stage: "unknown", reason };
+}
+
 /** Generate via Imagen, upload to campaign-media, update content_items. */
 export async function generateAndStorePostImage(args: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -190,11 +247,42 @@ export async function generateAndStorePostImage(args: {
   });
   const aspectRatio = aspectRatioForPlatform(args.platform);
 
-  const img = await withTimeout(
-    generateImage({ prompt, aspectRatio }),
-    POST_IMAGE_GEN_TIMEOUT_MS,
-    "Imagen generateImage",
-  );
+  if (!hasGeminiApiKey()) {
+    throw new PostImageGenerationError("missing_api_key", "GEMINI_API_KEY is not set");
+  }
+
+  console.log("[post-image] generateImage start", {
+    contentItemId: args.contentItemId,
+    platform: args.platform,
+    aspectRatio,
+  });
+
+  let img: Awaited<ReturnType<typeof generateImage>>;
+  try {
+    img = await withTimeout(
+      generateImage({ prompt, aspectRatio }),
+      POST_IMAGE_GEN_TIMEOUT_MS,
+      "Imagen generateImage",
+    );
+  } catch (err) {
+    const { stage, reason } = classifyImageGenerationError(err);
+    console.error("[post-image] generateImage failed", {
+      contentItemId: args.contentItemId,
+      stage,
+      reason,
+    });
+    throw new PostImageGenerationError(stage, reason);
+  }
+
+  if (!img.base64) {
+    throw new PostImageGenerationError("imagen_api", "Imagen returned no image data");
+  }
+
+  console.log("[post-image] generateImage ok", {
+    contentItemId: args.contentItemId,
+    mimeType: img.mimeType,
+    base64Length: img.base64.length,
+  });
 
   const ext = img.mimeType === "image/jpeg" ? "jpg" : "png";
   const path = `${args.projectId}/ai/${crypto.randomUUID()}.${ext}`;
@@ -207,20 +295,53 @@ export async function generateAndStorePostImage(args: {
       upsert: false,
       contentType: img.mimeType,
     });
-  if (upErr) throw new Error(`فشل رفع الصورة: ${upErr.message}`);
+  if (upErr) {
+    const reason = truncateDiagnosticMessage(`فشل رفع الصورة: ${upErr.message}`);
+    console.error("[post-image] storage upload failed", {
+      contentItemId: args.contentItemId,
+      path,
+      reason,
+    });
+    throw new PostImageGenerationError("storage_upload", reason);
+  }
+
+  console.log("[post-image] storage upload ok", {
+    contentItemId: args.contentItemId,
+    path,
+  });
 
   const { data: signed, error: signErr } = await args.supabase.storage
     .from("campaign-media")
     .createSignedUrl(path, 60 * 60 * 24 * 7);
   if (signErr || !signed?.signedUrl) {
-    throw new Error("تعذّر إنشاء رابط الصورة");
+    const reason = truncateDiagnosticMessage(
+      signErr?.message ?? "تعذّر إنشاء رابط الصورة",
+    );
+    console.error("[post-image] signed url failed", {
+      contentItemId: args.contentItemId,
+      path,
+      reason,
+    });
+    throw new PostImageGenerationError("signed_url", reason);
   }
 
   const { error: updErr } = await args.supabase
     .from("content_items")
     .update({ image_url: signed.signedUrl, image_source: "ai" })
     .eq("id", args.contentItemId);
-  if (updErr) throw new Error(updErr.message);
+  if (updErr) {
+    const reason = truncateDiagnosticMessage(updErr.message);
+    console.error("[post-image] db update failed", {
+      contentItemId: args.contentItemId,
+      reason,
+    });
+    throw new PostImageGenerationError("db_update", reason);
+  }
+
+  console.log("[post-image] db update ok", {
+    contentItemId: args.contentItemId,
+    imageUrlLength: signed.signedUrl.length,
+  });
 
   if (args.ownerId) {
     await incrementImagesGenerated(args.supabase, args.ownerId).catch((err) => {
@@ -239,8 +360,18 @@ export type ContentItemForAutoImage = {
 };
 
 export type AutoImageGenerationStats = {
+  imagesAttempted: number;
+  imagesSucceeded: number;
+  imagesFailed: number;
+  imagesSkippedQuota: number;
+  hasGeminiKey: boolean;
+  firstFailureReason: string | null;
+  firstFailureStage: ImageGenerationStage | null;
+  /** @deprecated use imagesSucceeded */
   generated: number;
+  /** @deprecated use imagesFailed */
   failed: number;
+  /** @deprecated use imagesSkippedQuota */
   skippedQuota: number;
 };
 
@@ -258,19 +389,44 @@ export async function autoGenerateImagesForContentItems(args: {
   brand: { tone_of_voice?: string | null; brand_colors?: unknown } | null;
   items: ContentItemForAutoImage[];
 }): Promise<AutoImageGenerationStats> {
-  const stats: AutoImageGenerationStats = { generated: 0, failed: 0, skippedQuota: 0 };
+  const hasGeminiKey = hasGeminiApiKey();
+  const stats: AutoImageGenerationStats = {
+    imagesAttempted: 0,
+    imagesSucceeded: 0,
+    imagesFailed: 0,
+    imagesSkippedQuota: 0,
+    hasGeminiKey,
+    firstFailureReason: null,
+    firstFailureStage: null,
+    generated: 0,
+    failed: 0,
+    skippedQuota: 0,
+  };
   if (args.items.length === 0) return stats;
 
   let remaining = await getRemainingImageQuota(args.supabase, args.ownerId);
 
+  console.log("[campaign-gen] auto images: starting", {
+    itemCount: args.items.length,
+    hasGeminiKey,
+    remainingQuota: remaining,
+  });
+
   for (const item of args.items) {
     if (remaining !== null && remaining <= 0) {
+      stats.imagesSkippedQuota += 1;
       stats.skippedQuota += 1;
+      if (!stats.firstFailureReason) {
+        stats.firstFailureStage = "unknown";
+        stats.firstFailureReason = "Image quota exhausted for this month";
+      }
       console.warn(
         `[campaign-gen] image skipped (quota): content_item=${item.id} platform=${item.platform}`,
       );
       continue;
     }
+
+    stats.imagesAttempted += 1;
 
     try {
       await generateAndStorePostImage({
@@ -286,13 +442,19 @@ export async function autoGenerateImagesForContentItems(args: {
         imageTextLanguage: args.imageTextLanguage,
         ownerId: args.ownerId,
       });
+      stats.imagesSucceeded += 1;
       stats.generated += 1;
       if (remaining !== null) remaining -= 1;
     } catch (err) {
+      stats.imagesFailed += 1;
       stats.failed += 1;
-      const detail = err instanceof Error ? err.message : String(err);
+      const { stage, reason } = classifyImageGenerationError(err);
+      if (!stats.firstFailureReason) {
+        stats.firstFailureStage = stage;
+        stats.firstFailureReason = reason;
+      }
       console.error(
-        `[campaign-gen] image failed: content_item=${item.id} platform=${item.platform} — ${detail.slice(0, 200)}`,
+        `[campaign-gen] image failed: content_item=${item.id} platform=${item.platform} stage=${stage} — ${reason}`,
       );
       await args.supabase
         .from("content_items")
@@ -301,5 +463,6 @@ export async function autoGenerateImagesForContentItems(args: {
     }
   }
 
+  console.log("[campaign-gen] auto images: finished", stats);
   return stats;
 }
