@@ -4,6 +4,10 @@ import { useServerFn } from "@tanstack/react-start";
 import { CircleNotch, Play, ArrowCounterClockwise } from "@phosphor-icons/react";
 import { generateCampaign } from "@/lib/generate-campaign.functions";
 import {
+  CAMPAIGN_IMAGE_DIAGNOSTICS_KEY,
+  type CampaignImageDiagnostics,
+} from "@/lib/post-image.types";
+import {
   CONTENT_LANGUAGES,
   IMAGE_TEXT_LANGUAGES,
   type ContentLanguage,
@@ -112,9 +116,16 @@ export function CampaignGeneratePanel({ campaignId, className }: Props) {
     setGenerating(true);
     setError(null);
     try {
-      await generateFn({
+      const result = await generateFn({
         data: { campaignId, startDate, endDate, contentLanguage, imageTextLanguage },
       });
+      const diagnostics = result?.image_diagnostics as CampaignImageDiagnostics | undefined;
+      if (diagnostics) {
+        sessionStorage.setItem(
+          CAMPAIGN_IMAGE_DIAGNOSTICS_KEY(campaignId),
+          JSON.stringify(diagnostics),
+        );
+      }
       navigate({ to: "/campaigns/$campaignId", params: { campaignId } });
     } catch (e) {
       setError(e instanceof Error ? e.message : t("campaign.generate.generateFailed"));

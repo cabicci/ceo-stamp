@@ -10,6 +10,11 @@ import { formatFrameworksDisplay } from "@/lib/marketing-frameworks";
 import { useTranslation } from "@/i18n/I18nProvider";
 import { PostCopyPublishBar } from "@/components/campaign/PostCopyPublishBar";
 import { ExportCampaignReportButton } from "@/components/ExportCampaignReportButton";
+import { CampaignImageDiagnosticsBanner } from "@/components/CampaignImageDiagnosticsBanner";
+import {
+  CAMPAIGN_IMAGE_DIAGNOSTICS_KEY,
+  type CampaignImageDiagnostics,
+} from "@/lib/post-image.types";
 
 export const Route = createFileRoute("/_authenticated/campaigns/$campaignId")({
   head: () => ({ meta: [{ title: "Marketing CEO — Campaign" }] }),
@@ -316,6 +321,19 @@ function CampaignPage() {
   const [contentItems, setContentItems] = useState<ContentRow[]>([]);
   const [adCopies, setAdCopies] = useState<AdRow[]>([]);
   const [brand, setBrand] = useState<BrandIdentity | null>(null);
+  const [imageDiagnostics, setImageDiagnostics] = useState<CampaignImageDiagnostics | null>(null);
+
+  useEffect(() => {
+    const key = CAMPAIGN_IMAGE_DIAGNOSTICS_KEY(campaignId);
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return;
+    sessionStorage.removeItem(key);
+    try {
+      setImageDiagnostics(JSON.parse(raw) as CampaignImageDiagnostics);
+    } catch {
+      // ignore malformed diagnostics payload
+    }
+  }, [campaignId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -448,6 +466,13 @@ function CampaignPage() {
           >
             {error}
           </div>
+        )}
+
+        {imageDiagnostics && (
+          <CampaignImageDiagnosticsBanner
+            diagnostics={imageDiagnostics}
+            onDismiss={() => setImageDiagnostics(null)}
+          />
         )}
 
         {!loading && !error && (

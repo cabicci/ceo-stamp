@@ -305,6 +305,23 @@
       "generating": "Generating content…",
       "start": "Start generation"
     },
+    "imageDiagnostics": {
+      "title": "Image generation diagnostics (temporary)",
+      "summary": "Attempted: {attempted} · Succeeded: {succeeded} · Failed: {failed} · Skipped (quota): {skipped}",
+      "hasGeminiKey": "GEMINI_API_KEY present: {value}",
+      "yes": "yes",
+      "no": "no",
+      "firstFailure": "First failure: {reason}",
+      "firstFailureWithStage": "First failure ({stage}): {reason}",
+      "stageMissingApiKey": "missing API key",
+      "stageImagenApi": "Imagen API error",
+      "stageTimeout": "timeout (60s)",
+      "stageStorageUpload": "storage upload failed",
+      "stageSignedUrl": "signed URL failed",
+      "stageDbUpdate": "database update failed",
+      "stageUnknown": "unknown",
+      "dismiss": "Dismiss"
+    },
     "packages": {
       "enableChannelsFirst": "Enable your available channels above first so we can tailor packages to your platforms.",
       "postsCount": "{count} posts",

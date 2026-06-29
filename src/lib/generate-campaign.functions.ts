@@ -754,6 +754,11 @@ Produce culturally adapted English versions. Same counts and structure.`;
         totalAds = adRows.length;
       }
 
+      console.log("[campaign-gen] auto images: invoking", {
+        campaignId: data.campaignId,
+        itemCount: insertedForImages.length,
+      });
+
       const imageStats = await autoGenerateImagesForContentItems({
         supabase,
         projectId: campaign.project_id,
@@ -786,9 +791,18 @@ Produce culturally adapted English versions. Same counts and structure.`;
         ad_copies_count: totalAds,
         content_language: contentLanguage,
         image_text_language: imageTextLanguage,
-        images_generated: imageStats.generated,
-        images_failed: imageStats.failed,
-        images_skipped_quota: imageStats.skippedQuota,
+        images_generated: imageStats.imagesSucceeded,
+        images_failed: imageStats.imagesFailed,
+        images_skipped_quota: imageStats.imagesSkippedQuota,
+        image_diagnostics: {
+          imagesAttempted: imageStats.imagesAttempted,
+          imagesSucceeded: imageStats.imagesSucceeded,
+          imagesFailed: imageStats.imagesFailed,
+          imagesSkippedQuota: imageStats.imagesSkippedQuota,
+          hasGeminiKey: imageStats.hasGeminiKey,
+          firstFailureReason: imageStats.firstFailureReason,
+          firstFailureStage: imageStats.firstFailureStage,
+        },
       };
     } catch (err) {
       await supabase
