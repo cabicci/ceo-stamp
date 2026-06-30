@@ -56,7 +56,7 @@ export const cloneCampaign = createServerFn({ method: "POST" })
         start_date: source.start_date,
         end_date: source.end_date,
         status,
-        campaign_plan: clonedPlan as unknown as Json,
+        campaign_plan: clonedPlan as never,
         cloned_from_id: source.id,
         is_template: false,
         archived: false,
