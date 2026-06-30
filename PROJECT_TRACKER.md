@@ -157,20 +157,33 @@ Nav links for `/analysis`, `/review` exist in sidebar but **routes are not imple
 
 ## 6. Current Status / Next Steps
 
-**Now:** About to run first **end-to-end real generation test** on masaarat.ai (analyze → plan → approve → generate → preview).
+**Now:** First end-to-end real run on **masaarat.ai** confirmed working: analyze → plan → approve → generate → AI images per post → copy/publish → PDF export → My Campaigns persistence.
 
-### Pending (not yet built)
+### Confirmed Working (tested on masaarat.ai)
+
+- Website analysis end-to-end (Egyptian Arabic marketing intelligence + PDF export).
+- Campaign generation end-to-end (copy + `framework_applied` + rationale per post).
+- AI image generation per post (campaign-media storage RLS fixed); posts show Imagen images.
+- Copyable post text + manual per-platform publish buttons (نسخ + انشر على {platform}) under each post.
+- Full campaign PDF export (overview + posts + ad copies).
+- **My Campaigns** workspace: `/campaigns` list + sidebar link + clone + archive; campaigns persist after reload.
+- Post count formula: `content_items = post slots × channels × languages`. Each post is its own card labelled "بوست {n} · {channel} · {language}", ordered post → language (ar then en) → channel.
+
+### Pending (not yet built / open issues)
 
 | Item | Notes |
 |------|-------|
-| AI image generation (production-ready) | Auto-generate on campaign gen shipped; manual regen via ImageSlot; needs end-to-end test on masaarat.ai |
+| **Arabic text inside AI-generated images is garbled** | Imagen can't render Arabic reliably. Needs strategy decision: generate images without embedded text, or overlay Arabic text as a separate layer post-generation. |
+| **Prompt/media-brief leakage into post copy** | Instructions sometimes leak into visible post text — needs prompt hardening + output sanitization. |
+| **PDF Arabic letter shaping still broken** | Cairo ligatures in `@react-pdf/renderer` don't shape Arabic correctly — affects both analysis and campaign reports. |
+| Manual image flow verification | `توليد صورة` / `رفع صورة` in `ImageSlot` — verify end-to-end after the storage RLS fix. |
+| **Browserbase authenticated login (deferred)** | Code-complete but blocked at runtime after account upgrade: connect fails with `fetch failed` / `hasWebSocket:false` in Lovable's workerd runtime. Likely needs a real `ws` client or Playwright `connectOverCDP` instead of the hand-rolled fetch-upgrade. Deferred. |
 | Review / approve workflow for generated content | Nav stub only; `content_items.status` exists |
 | Campaign strategy visualization page | Plan → calendar / funnel view |
 | Performance metrics UI | `post_metrics` table ready |
-| History / clone / templates | `cloned_from_id`, `is_template`, `archived` columns exist; **clone + archive UI shipped** on `/campaigns` |
 | Social publishing | `social_connections`, `publish_jobs` schema only |
 | Billing | `subscriptions` + `usage_counters` — **last priority** |
-| Full strategy PDF (campaign + posts sections) | Campaign PDF shipped (`generate-campaign-report.functions.ts`); extend with review workflow sections later |
+| Full strategy PDF (campaign + posts sections) | Campaign PDF shipped; extend with review workflow sections later |
 
 ---
 
@@ -208,3 +221,4 @@ Nav links for `/analysis`, `/review` exist in sidebar but **routes are not imple
 | 2026-06-22 | Campaign view: copyable post text (نسخ / تم النسخ) + manual per-platform publish buttons (composer URL, clipboard hint, image download link). |
 | 2026-06-29 | **Post count = slots × channels × languages** — packages use post count per channel (not divided); generation validates `total_posts × languageCount`; campaign view shows each channel+language variant separately (ordered slot → lang → channel). |
 | 2026-06-29 | **My Campaigns workspace** — `/campaigns` list (open, clone, archive), project Step 4 embed, sidebar link; campaigns reachable after reload. |
+| 2026-06-30 | End-to-end run on masaarat.ai confirmed: analyze → plan → generate → AI images → copy/publish → PDF → My Campaigns persistence. Tracker updated with confirmed-working list and open issues (Arabic-in-image garbled, prompt leakage in copy, PDF Arabic shaping, Browserbase connect deferred on workerd). |
