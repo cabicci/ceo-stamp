@@ -4,12 +4,17 @@ import { ArrowLeft } from "@phosphor-icons/react";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { PostPreview, type BrandIdentity, type ContentItemPreview, type ImageSource, type Platform } from "@/components/post-preview";
-import { CHANNEL_LABEL, localizedPackageName, localizedPackageDescription, type Channel } from "@/lib/campaign-packages";
+import { CHANNEL_LABEL, localizedPackageName, localizedPackageDescription, type Channel, ALL_CHANNELS } from "@/lib/campaign-packages";
 import type { ContentLanguage } from "@/lib/campaign-generation.types";
 import { formatFrameworksDisplay } from "@/lib/marketing-frameworks";
 import { useTranslation } from "@/i18n/I18nProvider";
 import { PostCopyPublishBar } from "@/components/campaign/PostCopyPublishBar";
 import { ExportCampaignReportButton } from "@/components/ExportCampaignReportButton";
+import {
+  buildPostSlotIndexMap,
+  orderContentItemsForDisplay,
+  postSlotLabel,
+} from "@/lib/campaign-content-order";
 
 export const Route = createFileRoute("/_authenticated/campaigns/$campaignId")({
   head: () => ({ meta: [{ title: "Marketing CEO — Campaign" }] }),
@@ -24,6 +29,9 @@ type CampaignPlan = {
   frameworks?: string[];
   funnel_focus?: string;
   total_posts?: number;
+  channels?: string[];
+  post_slot_count?: number;
+  content_items_expected?: number;
   content_language?: ContentLanguage;
   image_text_language?: string;
 };
@@ -56,8 +64,27 @@ type AdRow = {
   adapted_from_id: string | null;
 };
 
-type PostGroup = { original: ContentRow; adaptation: ContentRow | null };
 type AdGroup = { original: AdRow; adaptation: AdRow | null };
+
+function resolvePlanChannels(
+  plan: CampaignPlan | null,
+  items: ContentRow[],
+): Channel[] {
+  const fromPlan = plan?.channels?.filter((c): c is Channel =>
+    ALL_CHANNELS.includes(c as Channel),
+  );
+  if (fromPlan && fromPlan.length > 0) return fromPlan;
+  const seen = new Set<Channel>();
+  const out: Channel[] = [];
+  for (const item of items) {
+    const c = item.platform as Channel;
+    if (ALL_CHANNELS.includes(c) && !seen.has(c)) {
+      seen.add(c);
+      out.push(c);
+    }
+  }
+  return out;
+}
 
 function toPreviewPlatform(platform: string): Platform {
   if (platform === "x") return "twitter";
@@ -78,18 +105,6 @@ function resolvePackageDescription(
 ): string | null {
   if (!plan?.package_id) return plan?.description_ar ?? null;
   return localizedPackageDescription(plan.package_id, plan.description_ar ?? "", t) || null;
-}
-
-function buildPostGroups(items: ContentRow[]): PostGroup[] {
-  const originals = items.filter((i) => !i.adapted_from_id);
-  const adaptationsByParent = new Map<string, ContentRow>();
-  for (const i of items) {
-    if (i.adapted_from_id) adaptationsByParent.set(i.adapted_from_id, i);
-  }
-  return originals.map((original) => ({
-    original,
-    adaptation: adaptationsByParent.get(original.id) ?? null,
-  }));
 }
 
 function buildAdGroups(ads: AdRow[]): AdGroup[] {
@@ -145,13 +160,15 @@ function LocaleToggle({
   );
 }
 
-function PostGroupCard({
-  group,
+function PostCard({
+  row,
+  slotNumber,
   brand,
   projectId,
   onImageChange,
 }: {
-  group: PostGroup;
+  row: ContentRow;
+  slotNumber: number;
   brand: BrandIdentity;
   projectId: string | null;
   onImageChange: (
@@ -160,62 +177,62 @@ function PostGroupCard({
   ) => void;
 }) {
   const { t } = useTranslation();
-  const hasPair = !!group.adaptation;
-  const defaultView: "ar" | "en" =
-    group.original.locale === "en" && !hasPair ? "en" : "ar";
-  const [view, setView] = useState<"ar" | "en">(defaultView);
+  if (!row.copy) return null;
 
-  const active = view === "en" && group.adaptation ? group.adaptation : group.original;
-  if (!active.copy) return null;
+  const channelLabel = CHANNEL_LABEL[row.platform as Channel] ?? row.platform;
+  const languageLabel =
+    row.locale === "ar" ? t("campaignPage.localeAr") : t("campaignPage.localeEn");
 
   const item: ContentItemPreview = {
-    id: active.id,
-    platform: toPreviewPlatform(active.platform),
-    copy: active.copy,
-    media_brief: active.media_brief,
-    content_type: active.content_type,
-    image_url: active.image_url,
-    image_source: (active.image_source as ImageSource | null) ?? null,
+    id: row.id,
+    platform: toPreviewPlatform(row.platform),
+    copy: row.copy,
+    media_brief: row.media_brief,
+    content_type: row.content_type,
+    image_url: row.image_url,
+    image_source: (row.image_source as ImageSource | null) ?? null,
   };
 
   return (
     <div>
-      {hasPair && (
-        <LocaleToggle
-          view={view}
-          onChange={setView}
-          hasArabic
-          hasEnglish={!!group.adaptation}
-        />
-      )}
       <div
-        className="font-mono text-[9px] uppercase tracking-[0.18em] mb-2 flex flex-wrap gap-2"
+        className="font-mono text-[10px] uppercase tracking-[0.18em] mb-2 flex flex-wrap gap-x-2 gap-y-1"
+        style={{ color: "var(--ink-text)" }}
+      >
+        <span style={{ fontWeight: 600 }}>
+          {t("campaignPage.postSlot", { number: slotNumber })}
+        </span>
+        <span style={{ color: "var(--muted-text)" }}>·</span>
+        <span>{channelLabel}</span>
+        <span style={{ color: "var(--muted-text)" }}>·</span>
+        <span>{languageLabel}</span>
+      </div>
+      <div
+        className="font-mono text-[9px] uppercase tracking-[0.16em] mb-2 flex flex-wrap gap-2"
         style={{ color: "var(--muted-text)" }}
       >
-        <span>{CHANNEL_LABEL[active.platform as Channel] ?? active.platform}</span>
-        {hasPair && (
-          <span>· {t("campaignPage.pairedPost")}</span>
+        {row.scheduled_date && <span>{row.scheduled_date}</span>}
+        {row.framework_applied && (
+          <span>
+            {row.scheduled_date ? "· " : ""}
+            {row.framework_applied}
+          </span>
         )}
-        {active.scheduled_date && <span>· {active.scheduled_date}</span>}
-        {active.framework_applied && <span>· {active.framework_applied}</span>}
-        <span>
-          · {active.locale === "ar" ? t("campaignPage.localeAr") : t("campaignPage.localeEn")}
-        </span>
       </div>
       <PostPreview
         item={item}
         brand={brand}
         projectId={projectId ?? undefined}
         editable
-        onImageChange={(next) => onImageChange(active.id, next)}
+        onImageChange={(next) => onImageChange(row.id, next)}
       />
       <PostCopyPublishBar
-        copy={active.copy}
-        platform={active.platform}
-        imageUrl={active.image_url}
-        copyLocale={active.locale}
+        copy={row.copy}
+        platform={row.platform}
+        imageUrl={row.image_url}
+        copyLocale={row.locale}
       />
-      {active.rationale && (
+      {row.rationale && (
         <p
           className="mt-2 text-[12px] leading-relaxed p-2"
           style={{
@@ -224,7 +241,7 @@ function PostGroupCard({
             borderRadius: "3px",
           }}
         >
-          {active.rationale}
+          {row.rationale}
         </p>
       )}
     </div>
@@ -392,12 +409,19 @@ function CampaignPage() {
 
   const planDescription = useMemo(() => resolvePackageDescription(t, plan), [t, plan]);
   const displayName = useMemo(() => resolvePackageName(t, plan), [t, plan]);
-  const postGroups = useMemo(() => buildPostGroups(contentItems), [contentItems]);
-  const adGroups = useMemo(() => buildAdGroups(adCopies), [adCopies]);
-  const visiblePostGroups = useMemo(
-    () => postGroups.filter((g) => g.original.copy || g.adaptation?.copy),
-    [postGroups],
+  const planChannels = useMemo(
+    () => resolvePlanChannels(plan, contentItems),
+    [plan, contentItems],
   );
+  const orderedPosts = useMemo(
+    () => orderContentItemsForDisplay(contentItems, planChannels).filter((p) => p.copy),
+    [contentItems, planChannels],
+  );
+  const postSlotMap = useMemo(
+    () => buildPostSlotIndexMap(contentItems, planChannels),
+    [contentItems, planChannels],
+  );
+  const adGroups = useMemo(() => buildAdGroups(adCopies), [adCopies]);
 
   async function handleImageChange(
     contentItemId: string,
@@ -482,24 +506,28 @@ function CampaignPage() {
 
             <section className="mb-12">
               <SectionLabel>
-                {t("campaignPage.posts", { count: visiblePostGroups.length })}
+                {t("campaignPage.posts", { count: orderedPosts.length })}
               </SectionLabel>
-              {visiblePostGroups.length === 0 ? (
+              {orderedPosts.length === 0 ? (
                 <p className="text-sm" style={{ color: "var(--muted-text)" }}>
                   {t("campaignPage.noPosts")}
                 </p>
               ) : (
                 <div className="grid gap-8 lg:grid-cols-2">
                   {brand &&
-                    visiblePostGroups.map((group) => (
-                      <PostGroupCard
-                        key={group.original.id}
-                        group={group}
-                        brand={brand}
-                        projectId={projectId}
-                        onImageChange={handleImageChange}
-                      />
-                    ))}
+                    orderedPosts.map((row) => {
+                      const slotIdx = postSlotMap.get(row.id) ?? 0;
+                      return (
+                        <PostCard
+                          key={row.id}
+                          row={row}
+                          slotNumber={postSlotLabel(slotIdx)}
+                          brand={brand}
+                          projectId={projectId}
+                          onImageChange={handleImageChange}
+                        />
+                      );
+                    })}
                 </div>
               )}
             </section>

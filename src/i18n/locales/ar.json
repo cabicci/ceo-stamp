@@ -390,6 +390,7 @@
     "defaultName": "حملة",
     "defaultBrand": "البراند",
     "loadFailed": "فشل تحميل الحملة",
+    "postSlot": "بوست {number}",
     "backToProject": "رجوع للمشروع",
     "generatedContent": "المحتوى المولّد",
     "frameworks": "الأطر: {frameworks}",

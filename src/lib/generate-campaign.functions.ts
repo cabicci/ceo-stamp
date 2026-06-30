@@ -10,6 +10,11 @@ import {
 } from "@/lib/campaign-packages";
 import type { ContentLanguage, ImageTextLanguage } from "@/lib/campaign-generation.types";
 import {
+  expectedContentItemTotal,
+  languageCount,
+  postSlotCountFromPlan,
+} from "@/lib/campaign-generation.types";
+import {
   getFrameworkAppliedLabel,
   getFrameworkVocabularyForPrompt,
   renderFrameworkKnowledgeForPrompt,
@@ -124,7 +129,8 @@ const SYSTEM_PROMPT_AR = `أنت استراتيجي تسويق سينيور بت
 4) لكل قناة: استخدم الشكل المناسب — Facebook (post اجتماعي)، Instagram (caption أو reel script)، LinkedIn (post طويل احترافي)، TikTok (script قصير hook-driven)، X (post قصير tweet-style).
 5) scheduled_date للـ content_items لازم تبقى بين start_date و end_date موزّعة على المدة.
 6) ad_copies: 2 variants لكل قناة (variant_label: "A" و "B") — headline + body + cta.
-7) لازم تلتزم بعدد البوستات لكل قناة بالظبط زي ما هو محدد في البرّيف.
+7) لكل قناة: ولّد بالظبط عدد البوستات المحدد ليها — كل بوست متكيّف على شكل القناة (مش نسخة واحدة لكل القنوات).
+8) المجموع = (عدد البوستات لكل قناة) × (عدد القنوات). كل تركيبة قناة × بوست = content_item منفصل.
 
 قاموس الأطر المعتمد (استخدم applied_label في framework_applied):
 ${getFrameworkVocabularyForPrompt()}
@@ -144,7 +150,8 @@ Rules:
 4) Per platform: Facebook (social post), Instagram (caption or reel script), LinkedIn (professional long-form), TikTok (short hook-driven script), X (concise tweet-style).
 5) scheduled_date for content_items must fall between start_date and end_date, spread across the period.
 6) ad_copies: 2 variants per channel (variant_label: "A" and "B") — headline + body + cta.
-7) Match the exact post counts per channel in the brief.
+7) Per channel: generate exactly the post count specified — each post adapted to that channel's format (not one generic post copied everywhere).
+8) Total items = (posts per channel) × (number of channels). Each channel × post slot = a separate content_item.
 
 Approved framework vocabulary (use applied_label in framework_applied):
 ${getFrameworkVocabularyForPrompt()}
@@ -234,6 +241,8 @@ function buildUserContent(args: {
   channels: Channel[];
   frameworkIds: string[];
   expectedContentTotal: number;
+  postSlotCount: number;
+  channelCount: number;
   expectedAdsPerChannel: number;
   locale: "ar" | "en";
 }): string {
@@ -245,6 +254,8 @@ function buildUserContent(args: {
     channels,
     frameworkIds,
     expectedContentTotal,
+    postSlotCount,
+    channelCount,
     expectedAdsPerChannel,
     locale,
   } = args;
@@ -273,9 +284,11 @@ ${briefIntro}
 - funnel_focus: ${plan.funnel_focus}
 - start_date: ${startDate}
 - end_date: ${endDate}
-- posts_per_channel (exact counts):
+- posts_per_channel (exact counts — each channel gets its own adapted posts):
 ${buildPostsPerChannelBrief(channels, plan.posts_per_channel)}
-- total content_items required: ${expectedContentTotal}
+- post slots per channel: ${postSlotCount}
+- channels: ${channelCount}
+- total content_items in THIS language batch: ${expectedContentTotal} (= ${postSlotCount} × ${channelCount})
 - per channel: ${expectedAdsPerChannel} ads (variants A and B)
 ${frameworkIds.length > 0 ? `- frameworks: ${frameworkIds.map((id) => getFrameworkAppliedLabel(id)).join(locale === "ar" ? "، " : ", ")}` : ""}
 ${plan.adaptation_note_ar ? `- adaptation note: ${plan.adaptation_note_ar}` : ""}
@@ -494,7 +507,12 @@ export const generateCampaign = createServerFn({ method: "POST" })
     const plan = constrainPlanToAvailableChannels(rawPlan, available);
     const channels = plan.channels;
     const frameworkIds = resolveFrameworkIds(plan.frameworks);
+    const postSlotCount = postSlotCountFromPlan(plan);
     const expectedContentTotal = plan.total_posts;
+    const expectedFinalContentTotal = expectedContentItemTotal(
+      expectedContentTotal,
+      contentLanguage,
+    );
     const expectedAdsPerChannel = 2;
 
     const brandContext = {
@@ -515,6 +533,8 @@ export const generateCampaign = createServerFn({ method: "POST" })
       ...plan,
       content_language: contentLanguage,
       image_text_language: imageTextLanguage,
+      post_slot_count: postSlotCount,
+      content_items_expected: expectedFinalContentTotal,
     };
 
     const { error: planPersistErr } = await supabase
@@ -542,6 +562,8 @@ export const generateCampaign = createServerFn({ method: "POST" })
         channels,
         frameworkIds,
         expectedContentTotal,
+        postSlotCount,
+        channelCount: channels.length,
         expectedAdsPerChannel,
         locale: generateLocale,
       });
@@ -752,6 +774,12 @@ Produce culturally adapted English versions. Same counts and structure.`;
 
         totalContent = ciRows.length;
         totalAds = adRows.length;
+      }
+
+      if (totalContent !== expectedFinalContentTotal) {
+        throw new Error(
+          `عدد البوستات (${totalContent}) مش مطابق للمتوقع (${expectedFinalContentTotal} = ${postSlotCount} × ${channels.length} × ${languageCount(contentLanguage)}).`,
+        );
       }
 
       const imageStats = await autoGenerateImagesForContentItems({

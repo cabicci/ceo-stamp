@@ -390,6 +390,7 @@
     "defaultName": "Campaign",
     "defaultBrand": "Brand",
     "loadFailed": "Could not load campaign",
+    "postSlot": "Post {number}",
     "backToProject": "Back to project",
     "generatedContent": "Generated content",
     "frameworks": "Frameworks: {frameworks}",
