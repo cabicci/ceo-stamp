@@ -56,6 +56,7 @@ type RawContentItem = {
   content_type?: string;
   copy?: string;
   media_brief?: string;
+  image_text?: string;
   framework_applied?: string;
   rationale?: string;
   scheduled_date?: string;
@@ -76,6 +77,7 @@ type NormalizedContent = {
   content_type?: string;
   copy?: string;
   media_brief?: string;
+  image_text?: string;
   framework_applied?: string;
   rationale?: string;
   scheduled_date?: string;
@@ -102,6 +104,7 @@ const JSON_OUTPUT_SHAPE = `{
     "content_type": string,
     "copy": string,
     "media_brief": string,
+    "image_text": string,
     "framework_applied": string,
     "rationale": string,
     "scheduled_date": "YYYY-MM-DD"
@@ -131,6 +134,7 @@ const SYSTEM_PROMPT_AR = `أنت استراتيجي تسويق سينيور بت
 6) ad_copies: 2 variants لكل قناة (variant_label: "A" و "B") — headline + body + cta.
 7) لكل قناة: ولّد بالظبط عدد البوستات المحدد ليها — كل بوست متكيّف على شكل القناة (مش نسخة واحدة لكل القنوات).
 8) المجموع = (عدد البوستات لكل قناة) × (عدد القنوات). كل تركيبة قناة × بوست = content_item منفصل.
+9) image_text لكل content_item: هوك قصير وقوي (٣–٦ كلمات كحد أقصى) مخصّص يتكتب على صورة البوست — مش نسخة من الـ copy الكامل. اكتبه بالعامية المصرية ويتطابق مع لغة البوست.
 
 قاموس الأطر المعتمد (استخدم applied_label في framework_applied):
 ${getFrameworkVocabularyForPrompt()}
@@ -152,6 +156,7 @@ Rules:
 6) ad_copies: 2 variants per channel (variant_label: "A" and "B") — headline + body + cta.
 7) Per channel: generate exactly the post count specified — each post adapted to that channel's format (not one generic post copied everywhere).
 8) Total items = (posts per channel) × (number of channels). Each channel × post slot = a separate content_item.
+9) image_text per content_item: a very short punchy hook (3–6 words max) meant to be overlaid on the post image — NOT the full copy. Write it in English and match the post's language.
 
 Approved framework vocabulary (use applied_label in framework_applied):
 ${getFrameworkVocabularyForPrompt()}
@@ -171,6 +176,7 @@ Rules:
 3) Match platform, scheduled_date, and variant_label exactly to the Arabic source item you are adapting.
 4) Return the same number of content_items and ad_copies as the Arabic source.
 5) media_brief: adapt the visual direction for an English context; keep image-text language instructions if present.
+6) image_text: adapt to a short English hook (3–6 words) for each paired item — not a literal translation of the Arabic hook.
 
 Approved framework vocabulary:
 ${getFrameworkVocabularyForPrompt()}
@@ -374,6 +380,8 @@ function normalizeBatch(
       if (ci.rationale.trim().length < rationaleMinLen) {
         throw new Error("rationale قصير جداً — لازم يشرح إزاي الإطار اتطبّق في النص ده.");
       }
+      const trimmedImageText = ci.image_text?.trim();
+      ci.image_text = trimmedImageText || undefined;
       const aiDate = ci.scheduled_date?.trim();
       ci.scheduled_date =
         aiDate && isDateInRange(aiDate, startDate, endDate)
@@ -606,6 +614,7 @@ export const generateCampaign = createServerFn({ method: "POST" })
           content_type: ci.content_type ?? null,
           copy: ci.copy ?? null,
           media_brief: ci.media_brief ?? null,
+          image_text: ci.image_text?.trim() || null,
           framework_applied: ci.framework_applied ?? null,
           rationale: ci.rationale ?? null,
           locale: "ar",
@@ -688,6 +697,7 @@ Produce culturally adapted English versions. Same counts and structure.`;
           content_type: ci.content_type ?? null,
           copy: ci.copy ?? null,
           media_brief: ci.media_brief ?? null,
+          image_text: ci.image_text?.trim() || null,
           framework_applied: ci.framework_applied ?? null,
           rationale: ci.rationale ?? null,
           locale: "en",
@@ -742,6 +752,7 @@ Produce culturally adapted English versions. Same counts and structure.`;
           content_type: ci.content_type ?? null,
           copy: ci.copy ?? null,
           media_brief: ci.media_brief ?? null,
+          image_text: ci.image_text?.trim() || null,
           framework_applied: ci.framework_applied ?? null,
           rationale: ci.rationale ?? null,
           locale,

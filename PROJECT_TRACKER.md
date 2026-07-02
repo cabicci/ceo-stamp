@@ -98,7 +98,7 @@ RLS pattern: **owner read/write** on project-scoped data; **`is_admin()` read-on
 | `brand_profiles` | Per-project brand: `tone_of_voice`, `brand_colors`, `personas`, `usps`, `content_pillars`, **`available_channels`** |
 | `connected_sites` | Login-gated sites: `label`, `login_url`, encrypted session, `status`, expiry |
 | `campaigns` | Campaign run: `objective`, `channels`, dates, `status`, **`campaign_plan`** (jsonb `AdaptedPlan`), `cloned_from_id`, `is_template`, `archived` |
-| `content_items` | Generated posts: `platform`, `copy`, `media_brief`, `framework_applied`, `rationale`, `scheduled_date`, `image_url`, `image_source`, publish fields |
+| `content_items` | Generated posts: `platform`, `copy`, `media_brief`, `image_text` (short hook for on-image overlay; generation only — burning pending), `framework_applied`, `rationale`, `scheduled_date`, `image_url`, `image_source`, publish fields |
 | `ad_copies` | Generated ads: per-platform variants (`headline`, `body`, `cta`, framework + rationale) |
 | `post_metrics` | Performance snapshots per content item (reach, engagement, spend, etc.) |
 | `social_connections` | OAuth/manual platform connections per project (schema ready; UI not built) |
@@ -138,6 +138,7 @@ RLS pattern: **owner read/write** on project-scoped data; **`is_admin()` read-on
 - **AI JSON parsing/output hardening** — `callAI(..., jsonMode: true)` now tolerates malformed markdown fences such as `'''json` and extracts the first balanced JSON object/array. Content generation also uses a larger provider output budget to avoid truncated campaign JSON (`Unterminated string`).
 - **PDF render hardening** — campaign/analysis PDF report styles avoid React-PDF crash paths: no border primitives, no oversized `wrap={false}` cards, and no dynamic total-pages footer render; separators use filled bars instead.
 - **My Campaigns workspace** — `/campaigns` lists all saved campaigns (RLS-scoped); project Step 4 embeds the same list. Per row: objective/package name, channels, dates, status, post count. Actions: open, clone (`cloned_from_id` + full `content_items`/`ad_copies` copy with ` (نسخة)` suffix), archive/unarchive with archived filter. Sidebar **الحملات** links to the list — campaigns persist and are reachable after reload.
+- **`image_text` on campaign generation** — AI now returns a short punchy hook (3–6 words) per `content_item`, stored in `content_items.image_text` (nullable). Arabic/English prompts + EN adaptation rules wired; persisted on insert. **Image burning / overlay not built yet** — `post-image.server.ts` unchanged.
 
 ### Routes (implemented)
 
@@ -173,7 +174,7 @@ Nav links for `/analysis`, `/review` exist in sidebar but **routes are not imple
 
 | Item | Notes |
 |------|-------|
-| **Arabic text inside AI-generated images is garbled** | Imagen can't render Arabic reliably. Needs strategy decision: generate images without embedded text, or overlay Arabic text as a separate layer post-generation. |
+| **Arabic text inside AI-generated images is garbled** | Imagen can't render Arabic reliably. **`image_text` field now generated and stored** — next step: burn/overlay hook onto image (resvg or similar) instead of relying on Imagen typography. |
 | **Prompt/media-brief leakage into post copy** | Instructions sometimes leak into visible post text — needs prompt hardening + output sanitization. |
 | **PDF Arabic letter shaping still broken** | Cairo ligatures in `@react-pdf/renderer` don't shape Arabic correctly — affects both analysis and campaign reports. |
 | Manual image flow verification | `توليد صورة` / `رفع صورة` in `ImageSlot` — verify end-to-end after the storage RLS fix. |
@@ -221,4 +222,5 @@ Nav links for `/analysis`, `/review` exist in sidebar but **routes are not imple
 | 2026-06-22 | Campaign view: copyable post text (نسخ / تم النسخ) + manual per-platform publish buttons (composer URL, clipboard hint, image download link). |
 | 2026-06-29 | **Post count = slots × channels × languages** — packages use post count per channel (not divided); generation validates `total_posts × languageCount`; campaign view shows each channel+language variant separately (ordered slot → lang → channel). |
 | 2026-06-29 | **My Campaigns workspace** — `/campaigns` list (open, clone, archive), project Step 4 embed, sidebar link; campaigns reachable after reload. |
+| 2026-06-30 | **`image_text` field** — campaign generation prompts + JSON schema now produce a short on-image hook per post; `content_items.image_text` column (nullable migration). Burning text onto images still pending. |
 | 2026-06-30 | End-to-end run on masaarat.ai confirmed: analyze → plan → generate → AI images → copy/publish → PDF → My Campaigns persistence. Tracker updated with confirmed-working list and open issues (Arabic-in-image garbled, prompt leakage in copy, PDF Arabic shaping, Browserbase connect deferred on workerd). |

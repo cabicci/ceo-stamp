@@ -292,6 +292,7 @@ export type Database = {
           framework_applied: string | null
           id: string
           image_source: string | null
+          image_text: string | null
           image_url: string | null
           locale: string
           media_brief: string | null
@@ -312,6 +313,7 @@ export type Database = {
           framework_applied?: string | null
           id?: string
           image_source?: string | null
+          image_text?: string | null
           image_url?: string | null
           locale?: string
           media_brief?: string | null
@@ -332,6 +334,7 @@ export type Database = {
           framework_applied?: string | null
           id?: string
           image_source?: string | null
+          image_text?: string | null
           image_url?: string | null
           locale?: string
           media_brief?: string | null
