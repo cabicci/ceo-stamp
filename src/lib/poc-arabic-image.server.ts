@@ -1,19 +1,53 @@
 /**
  * POC — burn Arabic text onto a PNG via @resvg/resvg-wasm (workerd / Cloudflare).
  * ISOLATED: not wired into production flows.
+ *
+ * Wasm + font are bundled as Vite URL assets (?url) and fetched at runtime —
+ * no node:fs / createRequire (unavailable on Cloudflare Workers).
  */
 
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { initWasm, Resvg } from "@resvg/resvg-wasm";
+import RESVG_WASM_URL from "@resvg/resvg-wasm/index_bg.wasm?url";
+import CAIRO_FONT_URL from "./report/fonts/Cairo-Regular.ttf?url";
 
 let wasmInit: Promise<void> | null = null;
 
-function loadCairoFontBase64(): string {
-  const dir = path.dirname(fileURLToPath(import.meta.url));
-  const ttf = path.join(dir, "report", "fonts", "Cairo-Regular.ttf");
-  return readFileSync(ttf).toString("base64");
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+async function loadCairoFontBytes(): Promise<Uint8Array> {
+  const res = await fetch(CAIRO_FONT_URL);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch Cairo font (${res.status})`);
+  }
+  return new Uint8Array(await res.arrayBuffer());
+}
+
+async function ensureResvgWasm(): Promise<void> {
+  if (!wasmInit) {
+    wasmInit = (async () => {
+      const res = await fetch(RESVG_WASM_URL);
+      if (!res.ok) {
+        throw new Error(`Failed to fetch resvg wasm (${res.status})`);
+      }
+      const wasmBytes = await res.arrayBuffer();
+      try {
+        await initWasm(wasmBytes);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (!msg.toLowerCase().includes("already initialized")) {
+          throw err;
+        }
+      }
+    })();
+  }
+  await wasmInit;
 }
 
 function buildArabicPocSvg(cairoBase64: string): string {
@@ -37,51 +71,11 @@ function buildArabicPocSvg(cairoBase64: string): string {
 </svg>`;
 }
 
-function uint8ToBase64(bytes: Uint8Array): string {
-  if (typeof Buffer !== "undefined") {
-    return Buffer.from(bytes).toString("base64");
-  }
-  let binary = "";
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-  }
-  return btoa(binary);
-}
-
-async function loadResvgWasmBytes(): Promise<Uint8Array> {
-  try {
-    const { createRequire } = await import("node:module");
-    const require = createRequire(import.meta.url);
-    const wasmPath = require.resolve("@resvg/resvg-wasm/index_bg.wasm");
-    return readFileSync(wasmPath);
-  } catch {
-    // workerd / Cloudflare: no node_modules on disk — fetch published wasm bytes.
-    const res = await fetch("https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm");
-    if (!res.ok) {
-      throw new Error(`Failed to fetch resvg wasm (${res.status})`);
-    }
-    return new Uint8Array(await res.arrayBuffer());
-  }
-}
-
-async function ensureResvgWasm(): Promise<void> {
-  if (!wasmInit) {
-    wasmInit = (async () => {
-      const wasmBytes = await loadResvgWasmBytes();
-      await initWasm(wasmBytes);
-    })();
-  }
-  await wasmInit;
-}
-
 /** Render 800×800 Arabic text PNG; returns raw base64 (no data: prefix). */
 export async function runArabicImagePoc(): Promise<string> {
-  const cairoBase64 = loadCairoFontBase64();
+  const fontBytes = await loadCairoFontBytes();
+  const cairoBase64 = bytesToBase64(fontBytes);
   const svg = buildArabicPocSvg(cairoBase64);
-  const fontBytes = readFileSync(
-    path.join(path.dirname(fileURLToPath(import.meta.url)), "report", "fonts", "Cairo-Regular.ttf"),
-  );
 
   await ensureResvgWasm();
 
@@ -98,7 +92,7 @@ export async function runArabicImagePoc(): Promise<string> {
     const rendered = resvg.render();
     try {
       const png = rendered.asPng();
-      return uint8ToBase64(png);
+      return bytesToBase64(png);
     } finally {
       rendered.free();
     }
