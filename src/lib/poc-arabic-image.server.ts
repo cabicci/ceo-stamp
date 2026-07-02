@@ -9,7 +9,7 @@
  */
 
 import { initWasm, Resvg } from "@resvg/resvg-wasm";
-import { getWebRequest } from "@tanstack/react-start/server";
+import { getRequest } from "@tanstack/react-start/server";
 
 const WASM_PATH = "/poc/resvg_bg.wasm";
 const FONT_PATH = "/poc/Cairo-Regular.ttf";
