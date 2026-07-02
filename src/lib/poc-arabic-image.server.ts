@@ -26,7 +26,7 @@ function bytesToBase64(bytes: Uint8Array): string {
 }
 
 function assetUrl(path: string): string {
-  const req = getWebRequest();
+  const req = getRequest();
   const origin = req ? new URL(req.url).origin : "http://localhost:8080";
   return new URL(path, origin).toString();
 }
