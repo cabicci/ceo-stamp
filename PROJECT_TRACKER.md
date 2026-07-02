@@ -98,7 +98,7 @@ RLS pattern: **owner read/write** on project-scoped data; **`is_admin()` read-on
 | `brand_profiles` | Per-project brand: `tone_of_voice`, `brand_colors`, `personas`, `usps`, `content_pillars`, **`available_channels`** |
 | `connected_sites` | Login-gated sites: `label`, `login_url`, encrypted session, `status`, expiry |
 | `campaigns` | Campaign run: `objective`, `channels`, dates, `status`, **`campaign_plan`** (jsonb `AdaptedPlan`), `cloned_from_id`, `is_template`, `archived` |
-| `content_items` | Generated posts: `platform`, `copy`, `media_brief`, `image_text` (short hook for on-image overlay; generation only — burning pending), `framework_applied`, `rationale`, `scheduled_date`, `image_url`, `image_source`, publish fields |
+| `content_items` | Generated posts: `platform`, `copy`, `media_brief`, `image_text` (short hook burned onto image via resvg when `image_text_language` ≠ none), `framework_applied`, `rationale`, `scheduled_date`, `image_url`, `image_source`, publish fields |
 | `ad_copies` | Generated ads: per-platform variants (`headline`, `body`, `cta`, framework + rationale) |
 | `post_metrics` | Performance snapshots per content item (reach, engagement, spend, etc.) |
 | `social_connections` | OAuth/manual platform connections per project (schema ready; UI not built) |
@@ -121,7 +121,7 @@ RLS pattern: **owner read/write** on project-scoped data; **`is_admin()` read-on
 - **AI strategist chat** — multi-turn planning → `AdaptedPlan` → approve.
 - **Marketing science layer** — `marketing-frameworks.ts` wired into strategist + generation prompts.
 - **Approved-plan → generation** — `CampaignGeneratePanel` + `generate-campaign.functions.ts`; campaign view at `/campaigns/$campaignId` with **copyable post text** (نسخ + تم النسخ) and **manual per-platform publish** buttons (clipboard + composer URL + image download).
-- **Post previews** — realistic mocks for **5 platforms** (Facebook, Instagram, TikTok, LinkedIn, X/Twitter); **3 image sources** (AI generate / upload / paste URL) via `ImageSlot`. **Auto AI images on campaign generation:** each `content_item` gets an Imagen image from `media_brief` + `image_text_language` during `generateCampaign` (60s timeout per image, per-item failure resilient, quota-aware via `plan-limits` + `usage_counters`).
+- **Post previews** — realistic mocks for **5 platforms** (Facebook, Instagram, TikTok, LinkedIn, X/Twitter); **3 image sources** (AI generate / upload / paste URL) via `ImageSlot`. **Auto AI images on campaign generation:** Imagen generates a **text-free** image from `media_brief`; when `image_text_language` is `ar` or `en`, `image_text` is burned onto the image server-side via resvg + Cairo (`burn-text-on-image.server.ts`) before upload. 60s timeout per image step, per-item failure resilient, quota-aware via `plan-limits` + `usage_counters`.
 - **URL auto-normalize** — `normalizeWebsiteUrl()` + `projectSchema`; project edit form on detail page.
 - **Full i18n pass** — ~160 UI strings moved to locale files (commit `a17b7bc`).
 - **Content language + image text-language** — `content_language` and `image_text_language` stored on `campaign_plan` (jsonb). User picks both in `CampaignGeneratePanel` before generate: content **ar** / **en** / **both**; image text **none** / **ar** / **en** (independent). **Both:** Arabic originals first (`locale='ar'`, `adapted_from_id=null`), then culturally-adapted English versions (`locale='en'`, `adapted_from_id` → Arabic row) — not literal translation. **Post count formula:** `content_items` = post slots per channel × channels × languages (e.g. 1 post × 2 langs × 2 channels = 4 rows). Campaign view lists each locale × channel variant separately (ordered: slot → language → channel). `media_brief` carries image-text direction; `generate-post-image` reads `image_text_language` from the plan.
@@ -139,7 +139,7 @@ RLS pattern: **owner read/write** on project-scoped data; **`is_admin()` read-on
 - **AI JSON parsing/output hardening** — `callAI(..., jsonMode: true)` now tolerates malformed markdown fences such as `'''json` and extracts the first balanced JSON object/array. Content generation also uses a larger provider output budget to avoid truncated campaign JSON (`Unterminated string`).
 - **PDF render hardening** — campaign/analysis PDF report styles avoid React-PDF crash paths: no border primitives, no oversized `wrap={false}` cards, and no dynamic total-pages footer render; separators use filled bars instead.
 - **My Campaigns workspace** — `/campaigns` lists all saved campaigns (RLS-scoped); project Step 4 embeds the same list. Per row: objective/package name, channels, dates, status, post count. Actions: open, clone (`cloned_from_id` + full `content_items`/`ad_copies` copy with ` (نسخة)` suffix), archive/unarchive with archived filter. Sidebar **الحملات** links to the list — campaigns persist and are reachable after reload.
-- **`image_text` on campaign generation** — AI must return a short punchy hook (3–6 words) per `content_item` (prompt-level mandatory, same tier as `framework_applied`). `normalizeBatch` warns + falls back to first ~5 words of `copy` if missing so the column is never null. **Image burning / overlay not built yet** — `post-image.server.ts` unchanged.
+- **`image_text` on campaign generation** — AI must return a short punchy hook (3–6 words) per `content_item`; `ensureImageText()` guarantees non-null on insert. **Burning wired:** Imagen prompt is always text-free; `burnTextOnImage()` overlays hook via resvg + Cairo when `image_text_language` is `ar` or `en`.
 
 ### Routes (implemented)
 
@@ -175,7 +175,7 @@ Nav links for `/analysis`, `/review` exist in sidebar but **routes are not imple
 
 | Item | Notes |
 |------|-------|
-| **Arabic text inside AI-generated images is garbled** | Imagen can't render Arabic reliably. **`image_text` field now generated and stored** — next step: burn/overlay hook onto image (resvg or similar) instead of relying on Imagen typography. |
+| **Arabic text inside AI-generated images** | **Resolved for new images:** Imagen generates text-free; Arabic/English `image_text` burned server-side via resvg + Cairo. POC at `/poc-arabic-image` retained for isolated testing. |
 | **Prompt/media-brief leakage into post copy** | Instructions sometimes leak into visible post text — needs prompt hardening + output sanitization. |
 | **PDF Arabic letter shaping still broken** | Cairo ligatures in `@react-pdf/renderer` don't shape Arabic correctly — affects both analysis and campaign reports. |
 | Manual image flow verification | `توليد صورة` / `رفع صورة` in `ImageSlot` — verify end-to-end after the storage RLS fix. |
@@ -223,6 +223,7 @@ Nav links for `/analysis`, `/review` exist in sidebar but **routes are not imple
 | 2026-06-22 | Campaign view: copyable post text (نسخ / تم النسخ) + manual per-platform publish buttons (composer URL, clipboard hint, image download link). |
 | 2026-06-29 | **Post count = slots × channels × languages** — packages use post count per channel (not divided); generation validates `total_posts × languageCount`; campaign view shows each channel+language variant separately (ordered slot → lang → channel). |
 | 2026-06-29 | **My Campaigns workspace** — `/campaigns` list (open, clone, archive), project Step 4 embed, sidebar link; campaigns reachable after reload. |
+| 2026-07-03 | **Image text burning in production pipeline** — Imagen always text-free; `burn-text-on-image.server.ts` overlays `image_text` via resvg + Cairo (shared `resvg-cairo.server.ts`); wired in `generateAndStorePostImage` for auto + manual image gen. |
 | 2026-07-03 | **`image_text` insert coverage** — centralized `ensureImageText()` + `mapContentItemForInsert()` so every `content_items` insert path (AR primary, EN adaptation, single-locale) guarantees non-null `image_text` via copy fallback. |
 | 2026-07-02 | **Lovable preview boot stability** — removed the blocking SSR boot fallback that caused hydration mismatch/double-mount blank preview states in Lovable. |
 | 2026-07-02 | **`image_text` mandatory** — prompts treat `image_text` as required (same tier as `framework_applied`); `normalizeBatch` warns and falls back to first ~5 words of `copy` when AI omits it. Burning still pending. |

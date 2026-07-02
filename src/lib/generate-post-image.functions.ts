@@ -27,7 +27,7 @@ export const generatePostImage = createServerFn({ method: "POST" })
     const { data: item, error: itemErr } = await sb
       .from("content_items")
       .select(
-        "id, platform, copy, media_brief, campaigns!inner(project_id, campaign_plan, projects!inner(id, name, owner_id))",
+        "id, platform, copy, media_brief, image_text, campaigns!inner(project_id, campaign_plan, projects!inner(id, name, owner_id))",
       )
       .eq("id", data.contentItemId)
       .maybeSingle();
@@ -58,6 +58,7 @@ export const generatePostImage = createServerFn({ method: "POST" })
       platform: item.platform,
       mediaBrief: item.media_brief,
       copy: item.copy,
+      imageText: item.image_text,
       toneOfVoice: brand?.tone_of_voice,
       brandColors: brand?.brand_colors,
       imageTextLanguage: imageTextPref,

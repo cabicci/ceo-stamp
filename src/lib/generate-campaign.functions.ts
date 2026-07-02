@@ -659,7 +659,7 @@ export const generateCampaign = createServerFn({ method: "POST" })
         const { data: insertedCi, error: ciErr } = await supabase
           .from("content_items")
           .insert(arCiRows)
-          .select("id, platform, media_brief, copy");
+          .select("id, platform, media_brief, copy, image_text");
         if (ciErr) throw new Error(`content_items insert: ${ciErr.message}`);
         if (!insertedCi || insertedCi.length !== arCiRows.length) {
           throw new Error("content_items insert: missing ids");
@@ -734,7 +734,7 @@ Produce culturally adapted English versions. Same counts and structure.`;
         const { data: insertedEnCi, error: enCiErr } = await supabase
           .from("content_items")
           .insert(enCiRows)
-          .select("id, platform, media_brief, copy");
+          .select("id, platform, media_brief, copy, image_text");
         if (enCiErr) throw new Error(`content_items en insert: ${enCiErr.message}`);
         if (insertedEnCi) insertedForImages.push(...insertedEnCi);
 
@@ -782,7 +782,7 @@ Produce culturally adapted English versions. Same counts and structure.`;
         const { data: insertedCi, error: ciErr } = await supabase
           .from("content_items")
           .insert(ciRows)
-          .select("id, platform, media_brief, copy");
+          .select("id, platform, media_brief, copy, image_text");
         if (ciErr) throw new Error(`content_items insert: ${ciErr.message}`);
         if (insertedCi) insertedForImages.push(...insertedCi);
 

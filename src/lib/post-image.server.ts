@@ -5,6 +5,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { generateImage, type ImageAspectRatio } from "./ai/ai.server";
+import { burnTextOnImage } from "./burn-text-on-image.server";
 import type { ImageTextLanguage } from "./campaign-generation.types";
 import { get_plan_limits } from "./plan-limits";
 
@@ -31,15 +32,8 @@ function normalizePlatform(platform: string): Platform {
   return platform as Platform;
 }
 
-export function imageTextPromptLine(imageText: ImageTextLanguage | undefined): string {
-  switch (imageText) {
-    case "ar":
-      return "If any text appears on the image, it must be in Arabic.";
-    case "en":
-      return "If any text appears on the image, it must be in English.";
-    default:
-      return "No embedded text, words, typography, logos, or watermarks on the image.";
-  }
+export function imageTextPromptLine(_imageText?: ImageTextLanguage): string {
+  return "No text, no words, no letters, no typography, no logos, and no watermarks anywhere in the image — purely visual.";
 }
 
 export function buildPostImagePrompt(args: {
@@ -58,7 +52,7 @@ export function buildPostImagePrompt(args: {
   const tone = args.toneOfVoice ? `Tone: ${args.toneOfVoice}.` : "";
   const palette = colors.length ? `Brand color palette: ${colors.join(", ")}.` : "";
   const extra = args.extraStyle ? ` Additional direction: ${args.extraStyle}.` : "";
-  const textRule = imageTextPromptLine(args.imageTextLanguage);
+  const textRule = imageTextPromptLine();
 
   return [
     `High-quality social media image for ${platform}.`,
@@ -75,6 +69,22 @@ export function buildPostImagePrompt(args: {
 
 function aspectRatioForPlatform(platform: string): ImageAspectRatio {
   return PLATFORM_RATIO[platform] ?? PLATFORM_RATIO[normalizePlatform(platform)] ?? "1:1";
+}
+
+export function pixelSizeForAspectRatio(ratio: ImageAspectRatio): { width: number; height: number } {
+  switch (ratio) {
+    case "16:9":
+      return { width: 1920, height: 1080 };
+    case "9:16":
+      return { width: 1080, height: 1920 };
+    case "4:3":
+      return { width: 1440, height: 1080 };
+    case "3:4":
+      return { width: 1080, height: 1440 };
+    case "1:1":
+    default:
+      return { width: 1080, height: 1080 };
+  }
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
@@ -172,6 +182,7 @@ export async function generateAndStorePostImage(args: {
   platform: string;
   mediaBrief: string | null;
   copy: string | null;
+  imageText?: string | null;
   toneOfVoice?: string | null;
   brandColors?: unknown;
   imageTextLanguage?: ImageTextLanguage;
@@ -196,16 +207,40 @@ export async function generateAndStorePostImage(args: {
     "Imagen generateImage",
   );
 
-  const ext = img.mimeType === "image/jpeg" ? "jpg" : "png";
+  const shouldBurn =
+    args.imageTextLanguage &&
+    args.imageTextLanguage !== "none" &&
+    Boolean(args.imageText?.trim());
+
+  let finalBase64 = img.base64;
+  let finalMime = img.mimeType;
+
+  if (shouldBurn) {
+    const { width, height } = pixelSizeForAspectRatio(aspectRatio);
+    finalBase64 = await withTimeout(
+      burnTextOnImage({
+        imageBase64: img.base64,
+        text: args.imageText!.trim(),
+        language: args.imageTextLanguage as "ar" | "en",
+        width,
+        height,
+      }),
+      POST_IMAGE_GEN_TIMEOUT_MS,
+      "burnTextOnImage",
+    );
+    finalMime = "image/png";
+  }
+
+  const ext = finalMime === "image/jpeg" ? "jpg" : "png";
   const path = `${args.projectId}/ai/${crypto.randomUUID()}.${ext}`;
-  const bytes = Uint8Array.from(atob(img.base64), (c) => c.charCodeAt(0));
+  const bytes = Uint8Array.from(atob(finalBase64), (c) => c.charCodeAt(0));
 
   const { error: upErr } = await args.supabase.storage
     .from("campaign-media")
     .upload(path, bytes, {
       cacheControl: "3600",
       upsert: false,
-      contentType: img.mimeType,
+      contentType: finalMime,
     });
   if (upErr) throw new Error(`فشل رفع الصورة: ${upErr.message}`);
 
@@ -236,6 +271,7 @@ export type ContentItemForAutoImage = {
   platform: string;
   media_brief: string | null;
   copy: string | null;
+  image_text: string | null;
 };
 
 export type AutoImageGenerationStats = {
@@ -281,6 +317,7 @@ export async function autoGenerateImagesForContentItems(args: {
         platform: item.platform,
         mediaBrief: item.media_brief,
         copy: item.copy,
+        imageText: item.image_text,
         toneOfVoice: args.brand?.tone_of_voice,
         brandColors: args.brand?.brand_colors,
         imageTextLanguage: args.imageTextLanguage,
