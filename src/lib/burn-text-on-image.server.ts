@@ -10,6 +10,12 @@ import {
   getCairoFontBase64,
 } from "./resvg-cairo.server";
 
+const MAX_LINES = 3;
+const LINE_HEIGHT_FACTOR = 1.35;
+const HORIZONTAL_PADDING_RATIO = 0.8;
+const VERTICAL_MARGIN_RATIO = 0.75;
+const CHAR_WIDTH_FACTOR = 0.55;
+
 function escapeXml(text: string): string {
   return text
     .replace(/&/g, "&amp;")
@@ -29,32 +35,100 @@ function mimeFromImageBase64(b64: string): "image/png" | "image/jpeg" {
   return "image/png";
 }
 
-function wrapTextLines(text: string, maxLines: number, maxCharsPerLine: number): string[] {
+/** Guard against AI returning a full sentence instead of a short hook. */
+function sanitizeHookText(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) return "";
+  if (trimmed.length <= 40) return trimmed;
+  const words = trimmed.split(/\s+/).filter(Boolean);
+  return words.slice(0, 6).join(" ");
+}
+
+function truncateWithEllipsis(line: string, maxChars: number): string {
+  if (line.length <= maxChars) return line;
+  if (maxChars <= 1) return "…";
+  return `${line.slice(0, maxChars - 1).trimEnd()}…`;
+}
+
+function maxCharsPerLine(imageWidth: number, fontSize: number): number {
+  const usableWidth = imageWidth * HORIZONTAL_PADDING_RATIO;
+  return Math.max(4, Math.floor(usableWidth / (fontSize * CHAR_WIDTH_FACTOR)));
+}
+
+/** Word-boundary wrap into at most maxLines rows. */
+function wrapTextLines(text: string, maxLines: number, charsPerLine: number): string[] {
   const words = text.trim().split(/\s+/).filter(Boolean);
   if (words.length === 0) return [""];
 
   const lines: string[] = [];
-  let current = "";
   let i = 0;
 
-  while (i < words.length) {
-    const word = words[i];
-    const candidate = current ? `${current} ${word}` : word;
-    if (candidate.length <= maxCharsPerLine || !current) {
-      current = candidate;
-      i += 1;
-      continue;
+  while (i < words.length && lines.length < maxLines - 1) {
+    let line = "";
+    while (i < words.length) {
+      const candidate = line ? `${line} ${words[i]}` : words[i];
+      if (candidate.length <= charsPerLine || !line) {
+        line = candidate;
+        i += 1;
+      } else {
+        break;
+      }
     }
-    lines.push(current);
-    current = "";
-    if (lines.length >= maxLines - 1) {
-      lines.push(words.slice(i).join(" "));
-      return lines.slice(0, maxLines);
+    if (line) lines.push(line);
+    else break;
+  }
+
+  if (i < words.length) {
+    lines.push(truncateWithEllipsis(words.slice(i).join(" "), charsPerLine));
+  }
+
+  return lines.slice(0, maxLines);
+}
+
+function blockHeight(lineCount: number, fontSize: number, lineHeight: number): number {
+  if (lineCount <= 0) return 0;
+  return (lineCount - 1) * lineHeight + fontSize;
+}
+
+function layoutBurnText(
+  text: string,
+  width: number,
+  height: number,
+): {
+  lines: string[];
+  fontSize: number;
+  lineHeight: number;
+  firstBaselineY: number;
+  cx: number;
+} {
+  let fontSize = Math.max(16, Math.round(width / 14));
+
+  const measure = (fs: number) => {
+    const lineHeight = fs * LINE_HEIGHT_FACTOR;
+    const charsPerLine = maxCharsPerLine(width, fs);
+    const lines = wrapTextLines(text, MAX_LINES, charsPerLine);
+    const heightUsed = blockHeight(lines.length, fs, lineHeight);
+    return { lines, fontSize: fs, lineHeight, heightUsed, charsPerLine };
+  };
+
+  let layout = measure(fontSize);
+  if (layout.heightUsed > height * VERTICAL_MARGIN_RATIO) {
+    const smaller = Math.max(14, Math.round(fontSize * 0.85));
+    const retry = measure(smaller);
+    if (retry.heightUsed <= layout.heightUsed) {
+      layout = retry;
     }
   }
 
-  if (current) lines.push(current);
-  return lines.slice(0, maxLines);
+  const firstBaselineY = (height - layout.heightUsed) / 2 + layout.fontSize * 0.85;
+
+  return {
+    lines: layout.lines,
+    fontSize: layout.fontSize,
+    lineHeight: layout.lineHeight,
+    firstBaselineY,
+    cx: width / 2,
+  };
 }
 
 function buildBurnSvg(args: {
@@ -66,24 +140,31 @@ function buildBurnSvg(args: {
   height: number;
   cairoBase64: string;
 }): string {
-  const { width, height, language, text, imageBase64, imageMime, cairoBase64 } = args;
+  const { width, height, language, imageBase64, imageMime, cairoBase64 } = args;
   const fontData = `data:font/truetype;base64,${cairoBase64}`;
-  const fontSize = Math.max(18, Math.round(width / 12));
-  const lineHeight = Math.round(fontSize * 1.25);
-  const maxCharsPerLine = Math.max(8, Math.floor(width / (fontSize * 0.5)));
-  const lines = wrapTextLines(text, 3, maxCharsPerLine);
-  const blockHeight = lines.length * lineHeight;
-  const startY = Math.round((height - blockHeight) / 2 + lineHeight * 0.85);
+  const safeText = sanitizeHookText(args.text);
+  const { lines, fontSize, lineHeight, firstBaselineY, cx } = layoutBurnText(
+    safeText,
+    width,
+    height,
+  );
   const direction = language === "ar" ? "rtl" : "ltr";
   const langAttr = language === "ar" ? ' xml:lang="ar"' : ' xml:lang="en"';
-  const cx = width / 2;
 
-  const tspans = lines
-    .map((line, i) => {
-      const y = startY + i * lineHeight;
-      return `<tspan x="${cx}" y="${y}">${escapeXml(line)}</tspan>`;
+  const textElements = lines
+    .map((line, index) => {
+      const y = Math.round(firstBaselineY + index * lineHeight);
+      return `<text
+    x="${cx}"
+    y="${y}"
+    direction="${direction}"
+    text-anchor="middle"
+    font-family="Cairo"
+    font-size="${fontSize}"
+    fill="#ffffff"
+    filter="url(#textShadow)"${langAttr}>${escapeXml(line)}</text>`;
     })
-    .join("\n    ");
+    .join("\n  ");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
@@ -101,15 +182,7 @@ function buildBurnSvg(args: {
     ]]></style>
   </defs>
   <image href="data:${imageMime};base64,${imageBase64}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid slice"/>
-  <text
-    direction="${direction}"
-    text-anchor="middle"
-    font-family="Cairo"
-    font-size="${fontSize}"
-    fill="#ffffff"
-    filter="url(#textShadow)"${langAttr}>
-    ${tspans}
-  </text>
+  ${textElements}
 </svg>`;
 }
 
