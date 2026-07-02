@@ -235,6 +235,40 @@ function deriveImageTextFromCopy(copy: string | undefined | null): string {
   return excerpt || "—";
 }
 
+/** Guaranteed non-empty image_text — warn + fall back to first ~5 words of copy. */
+function ensureImageText(ci: Pick<NormalizedContent, "platform" | "copy" | "image_text">): string {
+  const trimmed = ci.image_text?.trim();
+  if (trimmed) return trimmed;
+  console.warn(
+    `[generateCampaign] content_item missing image_text (platform=${ci.platform}); falling back to copy excerpt`,
+  );
+  return deriveImageTextFromCopy(ci.copy);
+}
+
+function mapContentItemForInsert(
+  ci: NormalizedContent,
+  args: {
+    campaignId: string;
+    locale: string;
+    adaptedFromId: string | null;
+  },
+) {
+  return {
+    campaign_id: args.campaignId,
+    platform: ci.platform,
+    content_type: ci.content_type ?? null,
+    copy: ci.copy ?? null,
+    media_brief: ci.media_brief ?? null,
+    image_text: ensureImageText(ci),
+    framework_applied: ci.framework_applied ?? null,
+    rationale: ci.rationale ?? null,
+    locale: args.locale,
+    adapted_from_id: args.adaptedFromId,
+    scheduled_date: ci.scheduled_date ?? null,
+    status: "draft" as const,
+  };
+}
+
 function enrichMediaBrief(brief: string | undefined | null, imageText: ImageTextLanguage): string {
   const base = (brief ?? "").trim();
   const suffix =
@@ -387,15 +421,7 @@ function normalizeBatch(
       if (ci.rationale.trim().length < rationaleMinLen) {
         throw new Error("rationale قصير جداً — لازم يشرح إزاي الإطار اتطبّق في النص ده.");
       }
-      const trimmedImageText = ci.image_text?.trim();
-      if (!trimmedImageText) {
-        console.warn(
-          `[generateCampaign] content_item missing image_text (platform=${ci.platform}); falling back to copy excerpt`,
-        );
-        ci.image_text = deriveImageTextFromCopy(ci.copy);
-      } else {
-        ci.image_text = trimmedImageText;
-      }
+      ci.image_text = ensureImageText(ci);
       const aiDate = ci.scheduled_date?.trim();
       ci.scheduled_date =
         aiDate && isDateInRange(aiDate, startDate, endDate)
@@ -622,20 +648,13 @@ export const generateCampaign = createServerFn({ method: "POST" })
 
       if (contentLanguage === "both") {
         const arContent = applyImageBrief(orderedPrimary);
-        const arCiRows = arContent.map((ci) => ({
-          campaign_id: data.campaignId,
-          platform: ci.platform,
-          content_type: ci.content_type ?? null,
-          copy: ci.copy ?? null,
-          media_brief: ci.media_brief ?? null,
-          image_text: ci.image_text?.trim() || null,
-          framework_applied: ci.framework_applied ?? null,
-          rationale: ci.rationale ?? null,
-          locale: "ar",
-          adapted_from_id: null,
-          scheduled_date: ci.scheduled_date ?? null,
-          status: "draft",
-        }));
+        const arCiRows = arContent.map((ci) =>
+          mapContentItemForInsert(ci, {
+            campaignId: data.campaignId,
+            locale: "ar",
+            adaptedFromId: null,
+          }),
+        );
 
         const { data: insertedCi, error: ciErr } = await supabase
           .from("content_items")
@@ -705,20 +724,13 @@ Produce culturally adapted English versions. Same counts and structure.`;
           throw new Error("English adaptation count mismatch for content_items.");
         }
 
-        const enCiRows = enWithBrief.map((ci, idx) => ({
-          campaign_id: data.campaignId,
-          platform: ci.platform,
-          content_type: ci.content_type ?? null,
-          copy: ci.copy ?? null,
-          media_brief: ci.media_brief ?? null,
-          image_text: ci.image_text?.trim() || null,
-          framework_applied: ci.framework_applied ?? null,
-          rationale: ci.rationale ?? null,
-          locale: "en",
-          adapted_from_id: insertedCi[idx].id,
-          scheduled_date: ci.scheduled_date ?? null,
-          status: "draft",
-        }));
+        const enCiRows = enWithBrief.map((ci, idx) =>
+          mapContentItemForInsert(ci, {
+            campaignId: data.campaignId,
+            locale: "en",
+            adaptedFromId: insertedCi[idx].id,
+          }),
+        );
         const { data: insertedEnCi, error: enCiErr } = await supabase
           .from("content_items")
           .insert(enCiRows)
@@ -760,20 +772,13 @@ Produce culturally adapted English versions. Same counts and structure.`;
         const locale = contentLanguage;
         const withBrief = applyImageBrief(orderedPrimary);
 
-        const ciRows = withBrief.map((ci) => ({
-          campaign_id: data.campaignId,
-          platform: ci.platform,
-          content_type: ci.content_type ?? null,
-          copy: ci.copy ?? null,
-          media_brief: ci.media_brief ?? null,
-          image_text: ci.image_text?.trim() || null,
-          framework_applied: ci.framework_applied ?? null,
-          rationale: ci.rationale ?? null,
-          locale,
-          adapted_from_id: null,
-          scheduled_date: ci.scheduled_date ?? null,
-          status: "draft",
-        }));
+        const ciRows = withBrief.map((ci) =>
+          mapContentItemForInsert(ci, {
+            campaignId: data.campaignId,
+            locale,
+            adaptedFromId: null,
+          }),
+        );
         const { data: insertedCi, error: ciErr } = await supabase
           .from("content_items")
           .insert(ciRows)
