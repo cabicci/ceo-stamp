@@ -296,14 +296,22 @@
       "contentLanguageAr": "العربي",
       "contentLanguageEn": "English",
       "contentLanguageBoth": "الاتنين",
-      "imageTextLanguageTitle": "نص داخل الصورة (توليد AI)",
-      "imageTextNone": "بدون نص في الصورة",
-      "imageTextAr": "نص بالعربي",
-      "imageTextEn": "نص بالإنجليزي",
+      "imageTextEnabledTitle": "نص على الصورة؟",
+      "imageTextOn": "بنص",
+      "imageTextOff": "من غير نص",
+      "summary": {
+        "line": "{count} بوست على {channels} · لغة المحتوى: {language} · الأطر: {frameworks}"
+      },
       "endBeforeStart": "تاريخ النهاية لازم يكون بعد تاريخ البداية.",
       "generateFailed": "فشل توليد المحتوى",
       "generating": "بيتم توليد المحتوى…",
       "start": "ابدأ التوليد"
+    },
+    "results": {
+      "frameworkLabel": "الإطار المستخدم",
+      "rationaleLabel": "ليه الإطار ده؟",
+      "postsSection": "البوستات ({count})",
+      "adsSection": "الإعلانات ({count})"
     },
     "packages": {
       "enableChannelsFirst": "فعّل القنوات المتاحة من فوق الأول علشان نقدر نكيّف الباكدچات على قنواتك.",

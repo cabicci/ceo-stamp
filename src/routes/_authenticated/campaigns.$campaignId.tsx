@@ -33,6 +33,7 @@ type CampaignPlan = {
   post_slot_count?: number;
   content_items_expected?: number;
   content_language?: ContentLanguage;
+  image_text_enabled?: boolean;
   image_text_language?: string;
 };
 
@@ -208,17 +209,26 @@ function PostCard({
         <span>{languageLabel}</span>
       </div>
       <div
-        className="font-mono text-[9px] uppercase tracking-[0.16em] mb-2 flex flex-wrap gap-2"
+        className="font-mono text-[9px] uppercase tracking-[0.16em] mb-2 flex flex-wrap gap-2 items-center"
         style={{ color: "var(--muted-text)" }}
       >
         {row.scheduled_date && <span>{row.scheduled_date}</span>}
-        {row.framework_applied && (
-          <span>
-            {row.scheduled_date ? "· " : ""}
-            {row.framework_applied}
-          </span>
-        )}
       </div>
+      {row.framework_applied && (
+        <div className="mb-2">
+          <span
+            className="inline-block px-2 py-1 text-[10px] font-mono uppercase tracking-[0.14em]"
+            style={{
+              color: "var(--ink-text)",
+              backgroundColor: "var(--accent)",
+              border: "1px solid var(--accent-strong)",
+              borderRadius: "3px",
+            }}
+          >
+            {t("campaign.results.frameworkLabel")}: {row.framework_applied}
+          </span>
+        </div>
+      )}
       <PostPreview
         item={item}
         brand={brand}
@@ -233,16 +243,24 @@ function PostCard({
         copyLocale={row.locale}
       />
       {row.rationale && (
-        <p
-          className="mt-2 text-[12px] leading-relaxed p-2"
+        <div
+          className="mt-2 p-3"
           style={{
-            color: "var(--muted-text)",
             backgroundColor: "var(--surface)",
+            border: "1px solid var(--hairline)",
             borderRadius: "3px",
           }}
         >
-          {row.rationale}
-        </p>
+          <div
+            className="font-mono text-[10px] uppercase tracking-[0.16em] mb-1.5"
+            style={{ color: "var(--muted-text)" }}
+          >
+            {t("campaign.results.rationaleLabel")}
+          </div>
+          <p className="text-[12px] leading-relaxed" style={{ color: "var(--ink-text)" }}>
+            {row.rationale}
+          </p>
+        </div>
       )}
     </div>
   );
@@ -283,12 +301,26 @@ function AdGroupCard({ group }: { group: AdGroup }) {
           ? ` · ${t("campaignPage.variant", { label: active.variant_label })}`
           : ""}
         {hasPair ? ` · ${t("campaignPage.pairedAd")}` : ""}
-        {active.framework_applied ? ` · ${active.framework_applied}` : ""}
         <span>
           {" "}
           · {active.locale === "ar" ? t("campaignPage.localeAr") : t("campaignPage.localeEn")}
         </span>
       </div>
+      {active.framework_applied && (
+        <div className="mb-2">
+          <span
+            className="inline-block px-2 py-1 text-[10px] font-mono uppercase tracking-[0.14em]"
+            style={{
+              color: "var(--ink-text)",
+              backgroundColor: "var(--accent)",
+              border: "1px solid var(--accent-strong)",
+              borderRadius: "3px",
+            }}
+          >
+            {t("campaign.results.frameworkLabel")}: {active.framework_applied}
+          </span>
+        </div>
+      )}
       {active.headline && (
         <div
           className="font-display text-[16px] mb-1"
@@ -315,9 +347,24 @@ function AdGroupCard({ group }: { group: AdGroup }) {
         </div>
       )}
       {active.rationale && (
-        <p className="mt-2 text-[12px]" style={{ color: "var(--muted-text)" }}>
-          {active.rationale}
-        </p>
+        <div
+          className="mt-3 p-3"
+          style={{
+            backgroundColor: "var(--surface)",
+            border: "1px solid var(--hairline)",
+            borderRadius: "3px",
+          }}
+        >
+          <div
+            className="font-mono text-[10px] uppercase tracking-[0.16em] mb-1.5"
+            style={{ color: "var(--muted-text)" }}
+          >
+            {t("campaign.results.rationaleLabel")}
+          </div>
+          <p className="text-[12px] leading-relaxed" style={{ color: "var(--ink-text)" }}>
+            {active.rationale}
+          </p>
+        </div>
       )}
     </div>
   );
@@ -504,9 +551,9 @@ function CampaignPage() {
               <ExportCampaignReportButton campaignId={campaignId} />
             </div>
 
-            <section className="mb-12">
+            <section className="mb-12 pb-10" style={{ borderBottom: "2px solid var(--hairline)" }}>
               <SectionLabel>
-                {t("campaignPage.posts", { count: orderedPosts.length })}
+                {t("campaign.results.postsSection", { count: orderedPosts.length })}
               </SectionLabel>
               {orderedPosts.length === 0 ? (
                 <p className="text-sm" style={{ color: "var(--muted-text)" }}>
@@ -532,9 +579,9 @@ function CampaignPage() {
               )}
             </section>
 
-            <section>
+            <section className="pt-2">
               <SectionLabel>
-                {t("campaignPage.ads", { count: adGroups.length })}
+                {t("campaign.results.adsSection", { count: adGroups.length })}
               </SectionLabel>
               {adGroups.length === 0 ? (
                 <p className="text-sm" style={{ color: "var(--muted-text)" }}>

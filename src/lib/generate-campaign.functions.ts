@@ -33,7 +33,7 @@ const InputSchema = z.object({
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   contentLanguage: z.enum(["ar", "en", "both"]).default("ar"),
-  imageTextLanguage: z.enum(["none", "ar", "en"]).default("none"),
+  imageTextEnabled: z.boolean().default(false),
 });
 
 const AdaptedPlanSchema = z.object({
@@ -48,6 +48,7 @@ const AdaptedPlanSchema = z.object({
   total_posts: z.number(),
   adaptation_note_ar: z.string().nullable(),
   content_language: z.enum(["ar", "en", "both"]).optional(),
+  image_text_enabled: z.boolean().optional(),
   image_text_language: z.enum(["none", "ar", "en"]).optional(),
 });
 
@@ -472,7 +473,7 @@ export const generateCampaign = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const contentLanguage: ContentLanguage = data.contentLanguage;
-    const imageTextLanguage: ImageTextLanguage = data.imageTextLanguage;
+    const imageTextEnabled = data.imageTextEnabled;
 
     if (data.endDate < data.startDate) {
       throw new Error("تاريخ النهاية لازم يكون بعد تاريخ البداية.");
@@ -508,6 +509,7 @@ export const generateCampaign = createServerFn({ method: "POST" })
 
     const rawPlan = AdaptedPlanSchema.parse(campaign.campaign_plan) as AdaptedPlan & {
       content_language?: ContentLanguage;
+      image_text_enabled?: boolean;
       image_text_language?: ImageTextLanguage;
     };
 
@@ -577,7 +579,8 @@ export const generateCampaign = createServerFn({ method: "POST" })
     const planWithPrefs = {
       ...plan,
       content_language: contentLanguage,
-      image_text_language: imageTextLanguage,
+      image_text_enabled: imageTextEnabled,
+      image_text_language: imageTextEnabled ? undefined : ("none" as const),
       post_slot_count: postSlotCount,
       content_items_expected: expectedFinalContentTotal,
     };
@@ -656,7 +659,7 @@ export const generateCampaign = createServerFn({ method: "POST" })
         const { data: insertedCi, error: ciErr } = await supabase
           .from("content_items")
           .insert(arCiRows)
-          .select("id, platform, media_brief, copy, image_text");
+          .select("id, platform, media_brief, copy, image_text, locale");
         if (ciErr) throw new Error(`content_items insert: ${ciErr.message}`);
         if (!insertedCi || insertedCi.length !== arCiRows.length) {
           throw new Error("content_items insert: missing ids");
@@ -731,7 +734,7 @@ Produce culturally adapted English versions. Same counts and structure.`;
         const { data: insertedEnCi, error: enCiErr } = await supabase
           .from("content_items")
           .insert(enCiRows)
-          .select("id, platform, media_brief, copy, image_text");
+          .select("id, platform, media_brief, copy, image_text, locale");
         if (enCiErr) throw new Error(`content_items en insert: ${enCiErr.message}`);
         if (insertedEnCi) insertedForImages.push(...insertedEnCi);
 
@@ -779,7 +782,7 @@ Produce culturally adapted English versions. Same counts and structure.`;
         const { data: insertedCi, error: ciErr } = await supabase
           .from("content_items")
           .insert(ciRows)
-          .select("id, platform, media_brief, copy, image_text");
+          .select("id, platform, media_brief, copy, image_text, locale");
         if (ciErr) throw new Error(`content_items insert: ${ciErr.message}`);
         if (insertedCi) insertedForImages.push(...insertedCi);
 
@@ -814,7 +817,7 @@ Produce culturally adapted English versions. Same counts and structure.`;
         projectId: campaign.project_id,
         projectName: project.name,
         ownerId: userId,
-        imageTextLanguage,
+        imageTextEnabled,
         brand: brand
           ? { tone_of_voice: brand.tone_of_voice, brand_colors: brand.brand_colors }
           : null,
@@ -840,7 +843,7 @@ Produce culturally adapted English versions. Same counts and structure.`;
         content_items_count: totalContent,
         ad_copies_count: totalAds,
         content_language: contentLanguage,
-        image_text_language: imageTextLanguage,
+        image_text_enabled: imageTextEnabled,
         images_generated: imageStats.generated,
         images_failed: imageStats.failed,
         images_skipped_quota: imageStats.skippedQuota,

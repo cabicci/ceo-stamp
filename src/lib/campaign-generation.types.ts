@@ -1,11 +1,14 @@
 /** Content language choice at generation time (stored on campaign_plan). */
 export type ContentLanguage = "ar" | "en" | "both";
 
-/** On-image text preference for AI-generated images (stored on campaign_plan). */
+/** On-image text preference for AI-generated images (legacy; prefer image_text_enabled). */
 export type ImageTextLanguage = "none" | "ar" | "en";
 
 export const CONTENT_LANGUAGES: ContentLanguage[] = ["ar", "en", "both"];
 export const IMAGE_TEXT_LANGUAGES: ImageTextLanguage[] = ["none", "ar", "en"];
+
+/** Burn image_text hook when true; language follows each content_item.locale. */
+export type ImageTextEnabled = boolean;
 
 /** Number of locale variants produced at generation time. */
 export function languageCount(contentLanguage: ContentLanguage): number {

@@ -27,7 +27,7 @@ export const generatePostImage = createServerFn({ method: "POST" })
     const { data: item, error: itemErr } = await sb
       .from("content_items")
       .select(
-        "id, platform, copy, media_brief, image_text, campaigns!inner(project_id, campaign_plan, projects!inner(id, name, owner_id))",
+        "id, platform, copy, media_brief, image_text, locale, campaigns!inner(project_id, campaign_plan, projects!inner(id, name, owner_id))",
       )
       .eq("id", data.contentItemId)
       .maybeSingle();
@@ -45,10 +45,14 @@ export const generatePostImage = createServerFn({ method: "POST" })
       .maybeSingle();
 
     const campaignPlan = item.campaigns?.campaign_plan as
-      | { image_text_language?: ImageTextLanguage }
+      | { image_text_enabled?: boolean; image_text_language?: ImageTextLanguage }
       | null
       | undefined;
-    const imageTextPref = campaignPlan?.image_text_language;
+    const imageTextEnabled =
+      campaignPlan?.image_text_enabled ??
+      (campaignPlan?.image_text_language !== undefined &&
+        campaignPlan.image_text_language !== "none");
+    const burnLocale = item.locale === "en" ? "en" : "ar";
 
     const { imageUrl } = await generateAndStorePostImage({
       supabase: sb,
@@ -61,7 +65,8 @@ export const generatePostImage = createServerFn({ method: "POST" })
       imageText: item.image_text,
       toneOfVoice: brand?.tone_of_voice,
       brandColors: brand?.brand_colors,
-      imageTextLanguage: imageTextPref,
+      imageTextEnabled,
+      burnLocale,
       extraStyle: data.extraStyle,
       ownerId: userId,
     });

@@ -58,7 +58,6 @@ export function buildPostImagePrompt(args: {
   copy: string | null;
   toneOfVoice?: string | null;
   brandColors?: unknown;
-  imageTextLanguage?: ImageTextLanguage;
   extraStyle?: string;
 }): string {
   const platform = normalizePlatform(args.platform);
@@ -206,7 +205,8 @@ export async function generateAndStorePostImage(args: {
   imageText?: string | null;
   toneOfVoice?: string | null;
   brandColors?: unknown;
-  imageTextLanguage?: ImageTextLanguage;
+  imageTextEnabled?: boolean;
+  burnLocale?: "ar" | "en";
   extraStyle?: string;
   ownerId?: string;
 }): Promise<GeneratePostImageResult> {
@@ -217,7 +217,6 @@ export async function generateAndStorePostImage(args: {
     copy: args.copy,
     toneOfVoice: args.toneOfVoice,
     brandColors: args.brandColors,
-    imageTextLanguage: args.imageTextLanguage,
     extraStyle: args.extraStyle,
   });
   const aspectRatio = aspectRatioForPlatform(args.platform);
@@ -229,8 +228,8 @@ export async function generateAndStorePostImage(args: {
   );
 
   const shouldBurn =
-    args.imageTextLanguage &&
-    args.imageTextLanguage !== "none" &&
+    Boolean(args.imageTextEnabled) &&
+    Boolean(args.burnLocale) &&
     Boolean(args.imageText?.trim());
 
   let finalBase64 = img.base64;
@@ -242,7 +241,7 @@ export async function generateAndStorePostImage(args: {
       burnTextOnImage({
         imageBase64: img.base64,
         text: args.imageText!.trim(),
-        language: args.imageTextLanguage as "ar" | "en",
+        language: args.burnLocale!,
         width,
         height,
       }),
@@ -293,6 +292,7 @@ export type ContentItemForAutoImage = {
   media_brief: string | null;
   copy: string | null;
   image_text: string | null;
+  locale: string;
 };
 
 export type AutoImageGenerationStats = {
@@ -311,7 +311,7 @@ export async function autoGenerateImagesForContentItems(args: {
   projectId: string;
   projectName: string;
   ownerId: string;
-  imageTextLanguage: ImageTextLanguage;
+  imageTextEnabled: boolean;
   brand: { tone_of_voice?: string | null; brand_colors?: unknown } | null;
   items: ContentItemForAutoImage[];
 }): Promise<AutoImageGenerationStats> {
@@ -330,6 +330,7 @@ export async function autoGenerateImagesForContentItems(args: {
     }
 
     try {
+      const burnLocale = item.locale === "en" ? "en" : "ar";
       await generateAndStorePostImage({
         supabase: args.supabase,
         contentItemId: item.id,
@@ -341,7 +342,8 @@ export async function autoGenerateImagesForContentItems(args: {
         imageText: item.image_text,
         toneOfVoice: args.brand?.tone_of_voice,
         brandColors: args.brand?.brand_colors,
-        imageTextLanguage: args.imageTextLanguage,
+        imageTextEnabled: args.imageTextEnabled,
+        burnLocale,
         ownerId: args.ownerId,
       });
       stats.generated += 1;

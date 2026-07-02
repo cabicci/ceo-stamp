@@ -1,14 +1,22 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { CircleNotch, Play, ArrowCounterClockwise } from "@phosphor-icons/react";
 import { generateCampaign } from "@/lib/generate-campaign.functions";
 import {
   CONTENT_LANGUAGES,
-  IMAGE_TEXT_LANGUAGES,
+  expectedContentItemTotal,
   type ContentLanguage,
-  type ImageTextLanguage,
 } from "@/lib/campaign-generation.types";
+import {
+  ALL_CHANNELS,
+  CHANNEL_LABEL,
+  CHANNEL_LABEL_AR,
+  type AdaptedPlan,
+  type Channel,
+} from "@/lib/campaign-packages";
+import { formatFrameworksDisplay } from "@/lib/marketing-frameworks";
+import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "@/i18n/I18nProvider";
 
 function formatDateInput(d: Date): string {
@@ -36,11 +44,16 @@ const CONTENT_LANGUAGE_KEYS: Record<ContentLanguage, string> = {
   both: "campaign.generate.contentLanguageBoth",
 };
 
-const IMAGE_TEXT_KEYS: Record<ImageTextLanguage, string> = {
-  none: "campaign.generate.imageTextNone",
-  ar: "campaign.generate.imageTextAr",
-  en: "campaign.generate.imageTextEn",
-};
+const IMAGE_TEXT_TOGGLE = ["on", "off"] as const;
+type ImageTextToggle = (typeof IMAGE_TEXT_TOGGLE)[number];
+
+function formatChannelsList(channels: string[], uiLocale: "ar" | "en"): string {
+  const sep = uiLocale === "en" ? ", " : "، ";
+  return channels
+    .filter((c): c is Channel => ALL_CHANNELS.includes(c as Channel))
+    .map((c) => (uiLocale === "en" ? CHANNEL_LABEL[c] : CHANNEL_LABEL_AR[c]))
+    .join(sep);
+}
 
 function ChoiceGroup<T extends string>({
   label,
@@ -92,17 +105,44 @@ function ChoiceGroup<T extends string>({
 }
 
 export function CampaignGeneratePanel({ campaignId, className }: Props) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const defaults = defaultDateRange();
   const [startDate, setStartDate] = useState(defaults.start);
   const [endDate, setEndDate] = useState(defaults.end);
   const [contentLanguage, setContentLanguage] = useState<ContentLanguage>("ar");
-  const [imageTextLanguage, setImageTextLanguage] = useState<ImageTextLanguage>("none");
+  const [imageTextEnabled, setImageTextEnabled] = useState(false);
+  const [approvedPlan, setApprovedPlan] = useState<AdaptedPlan | null>(null);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const generateFn = useServerFn(generateCampaign);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("campaigns")
+        .select("campaign_plan")
+        .eq("id", campaignId)
+        .maybeSingle();
+      if (!cancelled && data?.campaign_plan) {
+        setApprovedPlan(data.campaign_plan as AdaptedPlan);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [campaignId]);
+
+  const summaryLine = useMemo(() => {
+    if (!approvedPlan) return null;
+    const count = expectedContentItemTotal(approvedPlan.total_posts, contentLanguage);
+    const channels = formatChannelsList(approvedPlan.channels, locale);
+    const language = t(CONTENT_LANGUAGE_KEYS[contentLanguage]);
+    const frameworks = formatFrameworksDisplay(approvedPlan.frameworks ?? [], locale);
+    return t("campaign.generate.summary.line", { count, channels, language, frameworks });
+  }, [approvedPlan, contentLanguage, locale, t]);
 
   async function startGeneration() {
     if (endDate < startDate) {
@@ -113,7 +153,7 @@ export function CampaignGeneratePanel({ campaignId, className }: Props) {
     setError(null);
     try {
       await generateFn({
-        data: { campaignId, startDate, endDate, contentLanguage, imageTextLanguage },
+        data: { campaignId, startDate, endDate, contentLanguage, imageTextEnabled },
       });
       navigate({ to: "/campaigns/$campaignId", params: { campaignId } });
     } catch (e) {
@@ -122,6 +162,8 @@ export function CampaignGeneratePanel({ campaignId, className }: Props) {
       setGenerating(false);
     }
   }
+
+  const imageTextToggle: ImageTextToggle = imageTextEnabled ? "on" : "off";
 
   return (
     <div className={className}>
@@ -180,13 +222,29 @@ export function CampaignGeneratePanel({ campaignId, className }: Props) {
       />
 
       <ChoiceGroup
-        label={t("campaign.generate.imageTextLanguageTitle")}
-        value={imageTextLanguage}
-        options={IMAGE_TEXT_LANGUAGES}
-        optionLabel={(opt) => t(IMAGE_TEXT_KEYS[opt])}
-        onChange={setImageTextLanguage}
+        label={t("campaign.generate.imageTextEnabledTitle")}
+        value={imageTextToggle}
+        options={IMAGE_TEXT_TOGGLE}
+        optionLabel={(opt) =>
+          opt === "on" ? t("campaign.generate.imageTextOn") : t("campaign.generate.imageTextOff")
+        }
+        onChange={(opt) => setImageTextEnabled(opt === "on")}
         disabled={generating}
       />
+
+      {summaryLine && (
+        <p
+          className="mb-4 text-sm leading-relaxed p-3"
+          style={{
+            color: "var(--ink-text)",
+            backgroundColor: "var(--surface)",
+            border: "1px solid var(--hairline)",
+            borderRadius: "3px",
+          }}
+        >
+          {summaryLine}
+        </p>
+      )}
 
       {error && (
         <div

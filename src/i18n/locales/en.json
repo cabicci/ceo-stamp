@@ -296,14 +296,22 @@
       "contentLanguageAr": "Arabic",
       "contentLanguageEn": "English",
       "contentLanguageBoth": "Both",
-      "imageTextLanguageTitle": "Text on AI-generated images",
-      "imageTextNone": "No text on image",
-      "imageTextAr": "Arabic text",
-      "imageTextEn": "English text",
+      "imageTextEnabledTitle": "Text on image?",
+      "imageTextOn": "With text",
+      "imageTextOff": "No text",
+      "summary": {
+        "line": "{count} posts across {channels} · Content: {language} · Frameworks: {frameworks}"
+      },
       "endBeforeStart": "End date must be after start date.",
       "generateFailed": "Content generation failed",
       "generating": "Generating content…",
       "start": "Start generation"
+    },
+    "results": {
+      "frameworkLabel": "Framework",
+      "rationaleLabel": "Why this framework?",
+      "postsSection": "Posts ({count})",
+      "adsSection": "Ads ({count})"
     },
     "packages": {
       "enableChannelsFirst": "Enable your available channels above first so we can tailor packages to your platforms.",
