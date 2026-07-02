@@ -32,7 +32,10 @@ export function CampaignPostsSectionContent({ ctx }: { ctx: ReportBuildContext }
 
   return (
     <View>
-      <Text style={styles.sectionTitle}>{ctx.labels.sections.posts}</Text>
+      <View style={styles.sectionHeading}>
+        <Text style={styles.sectionTitle}>{ctx.labels.sections.posts}</Text>
+        <View style={styles.sectionTitleRule} />
+      </View>
 
       {posts.length === 0 ? (
         <Text style={styles.emptyNote}>{f.noPosts}</Text>
@@ -48,7 +51,7 @@ export function CampaignPostsSectionContent({ ctx }: { ctx: ReportBuildContext }
             .join(" · ");
 
           return (
-            <View key={`post-${i}`} style={styles.postCard} wrap={false}>
+            <View key={`post-${i}`} style={styles.postCard}>
               <Text style={styles.postMeta}>{meta}</Text>
               <Field ctx={ctx} label={f.copy} value={post.copy} />
               <Field ctx={ctx} label={f.frameworkApplied} value={post.frameworkApplied} />
@@ -63,7 +66,10 @@ export function CampaignPostsSectionContent({ ctx }: { ctx: ReportBuildContext }
 
       {ads.length > 0 && (
         <View style={{ marginTop: 16 }}>
-          <Text style={styles.sectionTitle}>{ctx.labels.sections.ads}</Text>
+          <View style={styles.sectionHeading}>
+            <Text style={styles.sectionTitle}>{ctx.labels.sections.ads}</Text>
+            <View style={styles.sectionTitleRule} />
+          </View>
           {ads.map((ad, i) => {
             const meta = [
               `${f.platform}: ${ad.platformLabel}`,
@@ -74,7 +80,7 @@ export function CampaignPostsSectionContent({ ctx }: { ctx: ReportBuildContext }
               .join(" · ");
 
             return (
-              <View key={`ad-${i}`} style={styles.adCard} wrap={false}>
+              <View key={`ad-${i}`} style={styles.adCard}>
                 <Text style={styles.postMeta}>{meta}</Text>
                 <Field ctx={ctx} label={f.headline} value={ad.headline} />
                 <Field ctx={ctx} label={f.body} value={ad.body} />

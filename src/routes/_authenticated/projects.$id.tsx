@@ -15,6 +15,7 @@ import { formatFrameworksDisplay } from "@/lib/marketing-frameworks";
 import { StrategistChat } from "@/components/StrategistChat";
 import { approveCampaignPlan } from "@/lib/strategist-chat.functions";
 import { CampaignGeneratePanel } from "@/components/CampaignGeneratePanel";
+import { CampaignList } from "@/components/CampaignList";
 import { ExportAnalysisReportButton } from "@/components/ExportAnalysisReportButton";
 import { projectSchema } from "@/lib/project-schema";
 import { translateAnalysisError } from "@/lib/translate-analysis-error";
@@ -456,6 +457,7 @@ function ProjectDetail() {
           >
             {t("projects.flow.step4.repeatableNote")}
           </p>
+          <CampaignList projectId={project.id} compact />
           <CampaignSetup
             projectId={project.id}
             availableChannels={availableChannels}

@@ -16,6 +16,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedPostPreviewsRouteImport } from './routes/_authenticated/post-previews'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedCampaignsIndexRouteImport } from './routes/_authenticated/campaigns.index'
 import { Route as AuthenticatedProjectsIdRouteImport } from './routes/_authenticated/projects.$id'
 import { Route as AuthenticatedCampaignsCampaignIdRouteImport } from './routes/_authenticated/campaigns.$campaignId'
 
@@ -54,6 +55,12 @@ const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCampaignsIndexRoute =
+  AuthenticatedCampaignsIndexRouteImport.update({
+    id: '/campaigns/',
+    path: '/campaigns/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedProjectsIdRoute = AuthenticatedProjectsIdRouteImport.update({
   id: '/projects/$id',
   path: '/projects/$id',
@@ -75,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/post-previews': typeof AuthenticatedPostPreviewsRoute
   '/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
+  '/campaigns/': typeof AuthenticatedCampaignsIndexRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -85,6 +93,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
   '/projects/$id': typeof AuthenticatedProjectsIdRoute
+  '/campaigns': typeof AuthenticatedCampaignsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -97,6 +106,7 @@ export interface FileRoutesById {
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
   '/_authenticated/projects/$id': typeof AuthenticatedProjectsIdRoute
+  '/_authenticated/campaigns/': typeof AuthenticatedCampaignsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/post-previews'
     | '/campaigns/$campaignId'
     | '/projects/$id'
+    | '/campaigns/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/'
     | '/campaigns/$campaignId'
     | '/projects/$id'
+    | '/campaigns'
   id:
     | '__root__'
     | '/_authenticated'
@@ -130,6 +142,7 @@ export interface FileRouteTypes {
     | '/_authenticated/'
     | '/_authenticated/campaigns/$campaignId'
     | '/_authenticated/projects/$id'
+    | '/_authenticated/campaigns/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -190,6 +203,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/campaigns/': {
+      id: '/_authenticated/campaigns/'
+      path: '/campaigns'
+      fullPath: '/campaigns/'
+      preLoaderRoute: typeof AuthenticatedCampaignsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/projects/$id': {
       id: '/_authenticated/projects/$id'
       path: '/projects/$id'
@@ -213,6 +233,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
   AuthenticatedCampaignsCampaignIdRoute: typeof AuthenticatedCampaignsCampaignIdRoute
   AuthenticatedProjectsIdRoute: typeof AuthenticatedProjectsIdRoute
+  AuthenticatedCampaignsIndexRoute: typeof AuthenticatedCampaignsIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -221,6 +242,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
   AuthenticatedCampaignsCampaignIdRoute: AuthenticatedCampaignsCampaignIdRoute,
   AuthenticatedProjectsIdRoute: AuthenticatedProjectsIdRoute,
+  AuthenticatedCampaignsIndexRoute: AuthenticatedCampaignsIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

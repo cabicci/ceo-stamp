@@ -38,7 +38,10 @@ export function CampaignOverviewSectionContent({ ctx }: { ctx: ReportBuildContex
 
   return (
     <View>
-      <Text style={styles.sectionTitle}>{ctx.labels.sections.campaign}</Text>
+      <View style={styles.sectionHeading}>
+        <Text style={styles.sectionTitle}>{ctx.labels.sections.campaign}</Text>
+        <View style={styles.sectionTitleRule} />
+      </View>
 
       <Field ctx={ctx} label={f.packageName} value={plan.packageName} />
       <Field ctx={ctx} label={f.description} value={plan.description} />

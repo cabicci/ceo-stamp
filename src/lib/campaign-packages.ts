@@ -224,19 +224,17 @@ export function adaptPackageToAvailable(
     }
   }
 
-  // 2) Distribute posts, respecting max_per_channel cap.
-  const cap = pkg.max_per_channel ?? Math.ceil(pkg.default_post_count / 2);
-  const naive = Math.max(1, Math.round(pkg.default_post_count / chosen.length));
-  const perChannel = Math.min(naive, cap);
+  // 2) Posts per channel = package post count (capped), then × channels for one language.
+  const cap = pkg.max_per_channel ?? pkg.default_post_count;
+  const perChannel = Math.min(Math.max(1, pkg.default_post_count), cap);
   const total = perChannel * chosen.length;
 
-  // If we had to reduce the total because of caps, mention it.
-  if (total < pkg.default_post_count && pkg.default_post_count > 1) {
-    const reduceNote =
+  if (perChannel < pkg.default_post_count) {
+    const capNote =
       locale === "en"
-        ? `We reduced the total post count to ${total} to keep a balanced split across your available channels (instead of ${pkg.default_post_count}).`
-        : `قللنا عدد البوستات الإجمالي إلى ${total} علشان نحافظ على توازن التوزيع على القنوات المتاحة (بدل ${pkg.default_post_count}).`;
-    note = note ? `${note} ${reduceNote}` : reduceNote;
+        ? `Post count per channel was capped at ${perChannel} (package default is ${pkg.default_post_count}).`
+        : `عدد البوستات لكل قناة اتقفّ عند ${perChannel} (الافتراضي في الباكدچ ${pkg.default_post_count}).`;
+    note = note ? `${note} ${capNote}` : capNote;
   }
 
   const posts_per_channel: Record<string, number> = {};

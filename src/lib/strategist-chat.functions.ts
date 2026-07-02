@@ -59,7 +59,8 @@ ${getFrameworkVocabularyForPrompt()}
 قواعد الخطة:
 - channels لازم تكون subset من available_channels.
 - لو بتنصح بباكدچ، خلي package_id يساوي id الباكدچ، واتبع نفس framework ids بتاعته كأساس.
-- مجموع posts_per_channel = total_posts.
+- posts_per_channel: عدد البوستات لكل قناة (نفس الرقم لكل قناة عادةً) — كل بوست متكيّف على شكل القناة.
+- total_posts = مجموع posts_per_channel (= عدد البوستات لكل قناة × عدد القنوات). عند التوليد: الناتج النهائي = total_posts × عدد اللغات المختارة.
 - مفيش markdown، مفيش prose خارج JSON. JSON صالح بس.`;
 
 export const strategistChat = createServerFn({ method: "POST" })
