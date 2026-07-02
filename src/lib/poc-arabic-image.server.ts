@@ -71,10 +71,8 @@ async function loadResvgWasm(): Promise<WebAssembly.Module | ArrayBuffer | Uint8
     // when present, else fall back to the well-known node_modules path.
     let filePath: string | null = null;
     try {
-      // @ts-expect-error import.meta.resolve is available in Node 20+
-      const resolved: string | undefined = await import.meta.resolve?.(
-        "@resvg/resvg-wasm/index_bg.wasm",
-      );
+      const metaResolve = (import.meta as unknown as { resolve?: (s: string) => string | Promise<string> }).resolve;
+      const resolved: string | undefined = metaResolve ? await metaResolve("@resvg/resvg-wasm/index_bg.wasm") : undefined;
       if (resolved?.startsWith("file://")) {
         filePath = new URL(resolved).pathname;
       }
