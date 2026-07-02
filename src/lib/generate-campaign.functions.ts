@@ -124,17 +124,18 @@ const SYSTEM_PROMPT_AR = `أنت استراتيجي تسويق سينيور بت
 
 التزم بالقواعد دي:
 1) كل النصوص باللهجة المصرية الدارجة (عامية مصرية)، طبيعية ومش حرفية. ممنوع الفصحى وممنوع ترجمة من الإنجليزي.
-2) كل عنصر محتوى أو إعلان لازم يحتوي على:
+2) كل content_item لازم يحتوي على:
    - framework_applied: اسم الإطار بالظبط من القاموس المعتمد (مثلاً: "Cialdini — Scarcity"، "Eugene Schwartz — Problem Aware"، "StoryBrand"، "AIDA"، "PAS"، "Byron Sharp — Mental Availability")
    - rationale: جملة أو اتنين بالعربي توضّح إزاي طبّقت المبدأ في النص ده تحديداً — مش جملة عامة. لازم تذكر الحركة اللي عملتها.
-   أي عنصر من غير framework_applied + rationale تطبيقي يعتبر فشل.
+   - image_text: هوك قصير وقوي (٣–٦ كلمات كحد أقصى) مخصّص يتكتب على صورة البوست — مش نسخة من الـ copy الكامل. بالعامية المصرية ويتطابق مع لغة البوست.
+   أي content_item ناقص framework_applied أو rationale تطبيقي أو image_text غير فاضي يعتبر فشل — نفس مستوى الرفض.
+   كل إعلان (ad_copy) لازم يحتوي على framework_applied + rationale تطبيقي؛ ناقصهم يعتبر فشل.
 3) المحتوى لازم يستخدم tone_of_voice و usps و personas و content_pillars من بيانات البراند.
 4) لكل قناة: استخدم الشكل المناسب — Facebook (post اجتماعي)، Instagram (caption أو reel script)، LinkedIn (post طويل احترافي)، TikTok (script قصير hook-driven)، X (post قصير tweet-style).
 5) scheduled_date للـ content_items لازم تبقى بين start_date و end_date موزّعة على المدة.
 6) ad_copies: 2 variants لكل قناة (variant_label: "A" و "B") — headline + body + cta.
 7) لكل قناة: ولّد بالظبط عدد البوستات المحدد ليها — كل بوست متكيّف على شكل القناة (مش نسخة واحدة لكل القنوات).
 8) المجموع = (عدد البوستات لكل قناة) × (عدد القنوات). كل تركيبة قناة × بوست = content_item منفصل.
-9) image_text لكل content_item: هوك قصير وقوي (٣–٦ كلمات كحد أقصى) مخصّص يتكتب على صورة البوست — مش نسخة من الـ copy الكامل. اكتبه بالعامية المصرية ويتطابق مع لغة البوست.
 
 قاموس الأطر المعتمد (استخدم applied_label في framework_applied):
 ${getFrameworkVocabularyForPrompt()}
@@ -146,17 +147,18 @@ const SYSTEM_PROMPT_EN = `You are a senior marketing strategist writing for an E
 
 Rules:
 1) All copy in natural, idiomatic English marketing language (US/international neutral). Not a translation — write natively for English readers while honoring the brand's positioning.
-2) Every content item and ad MUST include:
+2) Every content_item MUST include:
    - framework_applied: exact label from the approved vocabulary (e.g. "Cialdini — Scarcity", "Eugene Schwartz — Problem Aware", "StoryBrand", "AIDA", "PAS", "Byron Sharp — Mental Availability")
    - rationale: one or two sentences in English explaining how you applied the framework in THIS specific copy — not generic. Name the concrete move you made.
-   Any item missing framework_applied + specific rationale is a failure.
+   - image_text: a very short punchy hook (3–6 words max) meant to be overlaid on the post image — NOT the full copy. Write it in English and match the post's language.
+   Any content_item missing framework_applied, specific rationale, or non-empty image_text is a failure — same enforcement level.
+   Every ad_copy MUST include framework_applied + specific rationale; missing either is a failure.
 3) Use tone_of_voice, usps, personas, and content_pillars from the brand data.
 4) Per platform: Facebook (social post), Instagram (caption or reel script), LinkedIn (professional long-form), TikTok (short hook-driven script), X (concise tweet-style).
 5) scheduled_date for content_items must fall between start_date and end_date, spread across the period.
 6) ad_copies: 2 variants per channel (variant_label: "A" and "B") — headline + body + cta.
 7) Per channel: generate exactly the post count specified — each post adapted to that channel's format (not one generic post copied everywhere).
 8) Total items = (posts per channel) × (number of channels). Each channel × post slot = a separate content_item.
-9) image_text per content_item: a very short punchy hook (3–6 words max) meant to be overlaid on the post image — NOT the full copy. Write it in English and match the post's language.
 
 Approved framework vocabulary (use applied_label in framework_applied):
 ${getFrameworkVocabularyForPrompt()}
@@ -172,11 +174,10 @@ CRITICAL: This is NOT literal translation. Same offer, intent, framework, and sc
 
 Rules:
 1) Keep the same framework_applied label on each paired item (from the vocabulary).
-2) Write rationale in English explaining how the framework shows up in the English copy specifically.
+2) Write rationale in English explaining how the framework shows up in the English copy specifically. Every adapted content_item MUST include a non-empty image_text — a short English hook (3–6 words), not a literal translation of the Arabic hook. Missing image_text is a failure (same as missing framework_applied).
 3) Match platform, scheduled_date, and variant_label exactly to the Arabic source item you are adapting.
 4) Return the same number of content_items and ad_copies as the Arabic source.
 5) media_brief: adapt the visual direction for an English context; keep image-text language instructions if present.
-6) image_text: adapt to a short English hook (3–6 words) for each paired item — not a literal translation of the Arabic hook.
 
 Approved framework vocabulary:
 ${getFrameworkVocabularyForPrompt()}
@@ -226,6 +227,12 @@ function buildPostsPerChannelBrief(
   return channels
     .map((c) => `- ${c} (${CHANNEL_LABEL_AR[c]}): ${postsPerChannel[c] ?? 1} بوست`)
     .join("\n");
+}
+
+function deriveImageTextFromCopy(copy: string | undefined | null): string {
+  const words = (copy ?? "").trim().split(/\s+/).filter(Boolean);
+  const excerpt = words.slice(0, 5).join(" ");
+  return excerpt || "—";
 }
 
 function enrichMediaBrief(brief: string | undefined | null, imageText: ImageTextLanguage): string {
@@ -381,7 +388,14 @@ function normalizeBatch(
         throw new Error("rationale قصير جداً — لازم يشرح إزاي الإطار اتطبّق في النص ده.");
       }
       const trimmedImageText = ci.image_text?.trim();
-      ci.image_text = trimmedImageText || undefined;
+      if (!trimmedImageText) {
+        console.warn(
+          `[generateCampaign] content_item missing image_text (platform=${ci.platform}); falling back to copy excerpt`,
+        );
+        ci.image_text = deriveImageTextFromCopy(ci.copy);
+      } else {
+        ci.image_text = trimmedImageText;
+      }
       const aiDate = ci.scheduled_date?.trim();
       ci.scheduled_date =
         aiDate && isDateInRange(aiDate, startDate, endDate)
