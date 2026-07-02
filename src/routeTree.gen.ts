@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as Char91indexChar93RouteImport } from './routes/[index]'
+import { Route as PocArabicImageRouteImport } from './routes/poc-arabic-image'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
@@ -21,6 +22,11 @@ import { Route as AuthenticatedCampaignsCampaignIdRouteImport } from './routes/_
 const Char91indexChar93Route = Char91indexChar93RouteImport.update({
   id: '/index',
   path: '/index',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PocArabicImageRoute = PocArabicImageRouteImport.update({
+  id: '/poc-arabic-image',
+  path: '/poc-arabic-image',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
   '/index': typeof Char91indexChar93Route
+  '/poc-arabic-image': typeof PocArabicImageRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/post-previews': typeof AuthenticatedPostPreviewsRoute
   '/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
@@ -72,6 +79,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/index': typeof Char91indexChar93Route
+  '/poc-arabic-image': typeof PocArabicImageRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/post-previews': typeof AuthenticatedPostPreviewsRoute
   '/': typeof AuthenticatedIndexRoute
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/index': typeof Char91indexChar93Route
+  '/poc-arabic-image': typeof PocArabicImageRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/post-previews': typeof AuthenticatedPostPreviewsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -95,6 +104,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/index'
+    | '/poc-arabic-image'
     | '/admin'
     | '/post-previews'
     | '/campaigns/$campaignId'
@@ -103,6 +113,7 @@ export interface FileRouteTypes {
   to:
     | '/auth'
     | '/index'
+    | '/poc-arabic-image'
     | '/admin'
     | '/post-previews'
     | '/'
@@ -113,6 +124,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/index'
+    | '/poc-arabic-image'
     | '/_authenticated/admin'
     | '/_authenticated/post-previews'
     | '/_authenticated/'
@@ -124,6 +136,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   Char91indexChar93Route: typeof Char91indexChar93Route
+  PocArabicImageRoute: typeof PocArabicImageRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -133,6 +146,13 @@ declare module '@tanstack/react-router' {
       path: '/index'
       fullPath: '/index'
       preLoaderRoute: typeof Char91indexChar93RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/poc-arabic-image': {
+      id: '/poc-arabic-image'
+      path: '/poc-arabic-image'
+      fullPath: '/poc-arabic-image'
+      preLoaderRoute: typeof PocArabicImageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -210,7 +230,18 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   Char91indexChar93Route: Char91indexChar93Route,
+  PocArabicImageRoute: PocArabicImageRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
