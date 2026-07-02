@@ -48,9 +48,8 @@ async function loadResvgWasm(): Promise<WebAssembly.Module | ArrayBuffer | Uint8
   // Strategy 1: direct wasm import. On workerd/nitro this returns a
   // real WebAssembly.Module compiled at build time.
   try {
-    const mod: unknown = await import(
-      /* @vite-ignore */ "@resvg/resvg-wasm/index_bg.wasm"
-    );
+    const wasmSpecifier = "@resvg/resvg-wasm/index_bg.wasm";
+    const mod: unknown = await import(/* @vite-ignore */ wasmSpecifier);
     const value = (mod as { default?: unknown })?.default ?? mod;
     if (value instanceof WebAssembly.Module) return value;
     if (value instanceof ArrayBuffer) return value;
