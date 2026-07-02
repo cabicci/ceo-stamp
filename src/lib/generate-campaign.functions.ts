@@ -269,15 +269,12 @@ function mapContentItemForInsert(
   };
 }
 
-function enrichMediaBrief(brief: string | undefined | null, imageText: ImageTextLanguage): string {
+const MEDIA_BRIEF_NO_TEXT_SUFFIX =
+  "[Image: purely visual scene — no text, words, letters, typography, logos, or watermarks anywhere.]";
+
+function enrichMediaBrief(brief: string | undefined | null): string {
   const base = (brief ?? "").trim();
-  const suffix =
-    imageText === "none"
-      ? "[Image: no text, words, or typography on the image.]"
-      : imageText === "ar"
-        ? "[Image: if any text appears on the image, it must be in Arabic.]"
-        : "[Image: if any text appears on the image, it must be in English.]";
-  return base ? `${base} ${suffix}` : suffix;
+  return base ? `${base} ${MEDIA_BRIEF_NO_TEXT_SUFFIX}` : MEDIA_BRIEF_NO_TEXT_SUFFIX;
 }
 
 function buildUserContent(args: {
@@ -639,7 +636,7 @@ export const generateCampaign = createServerFn({ method: "POST" })
       const applyImageBrief = (items: NormalizedContent[]) =>
         items.map((ci) => ({
           ...ci,
-          media_brief: enrichMediaBrief(ci.media_brief, imageTextLanguage),
+          media_brief: enrichMediaBrief(ci.media_brief),
         }));
 
       let totalContent = 0;

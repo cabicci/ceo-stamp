@@ -36,6 +36,21 @@ export function imageTextPromptLine(_imageText?: ImageTextLanguage): string {
   return "No text, no words, no letters, no typography, no logos, and no watermarks anywhere in the image — purely visual.";
 }
 
+const MIN_USEFUL_MEDIA_BRIEF_LEN = 20;
+
+function sceneSubjectForPrompt(args: {
+  mediaBrief: string | null;
+  platform: string;
+  projectName: string;
+}): string {
+  const brief = (args.mediaBrief ?? "").trim();
+  if (brief.length >= MIN_USEFUL_MEDIA_BRIEF_LEN) {
+    return brief.slice(0, 600);
+  }
+  const platform = normalizePlatform(args.platform);
+  return `On-brand lifestyle or product visual relevant to ${args.projectName} for ${platform}.`;
+}
+
 export function buildPostImagePrompt(args: {
   platform: string;
   projectName: string;
@@ -48,20 +63,26 @@ export function buildPostImagePrompt(args: {
 }): string {
   const platform = normalizePlatform(args.platform);
   const colors = asStringArray(args.brandColors).slice(0, 4);
-  const brief = (args.mediaBrief || args.copy || "").toString().slice(0, 600);
+  const scene = sceneSubjectForPrompt({
+    mediaBrief: args.mediaBrief,
+    platform: args.platform,
+    projectName: args.projectName,
+  });
   const tone = args.toneOfVoice ? `Tone: ${args.toneOfVoice}.` : "";
   const palette = colors.length ? `Brand color palette: ${colors.join(", ")}.` : "";
   const extra = args.extraStyle ? ` Additional direction: ${args.extraStyle}.` : "";
   const textRule = imageTextPromptLine();
 
   return [
+    textRule,
     `High-quality social media image for ${platform}.`,
     `Brand: ${args.projectName}.`,
     tone,
     palette,
-    `Scene / subject: ${brief}`,
+    `Scene / subject: ${scene}`,
     `Style: clean, modern, photographic where appropriate, on-brand. ${textRule}`,
     extra,
+    textRule,
   ]
     .filter(Boolean)
     .join(" ");
