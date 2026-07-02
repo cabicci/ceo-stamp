@@ -121,7 +121,7 @@ RLS pattern: **owner read/write** on project-scoped data; **`is_admin()` read-on
 - **AI strategist chat** — multi-turn planning → `AdaptedPlan` → approve.
 - **Marketing science layer** — `marketing-frameworks.ts` wired into strategist + generation prompts.
 - **Approved-plan → generation** — `CampaignGeneratePanel` + `generate-campaign.functions.ts`; campaign view at `/campaigns/$campaignId` with **copyable post text** (نسخ + تم النسخ) and **manual per-platform publish** buttons (clipboard + composer URL + image download).
-- **Post previews** — realistic mocks for **5 platforms** (Facebook, Instagram, TikTok, LinkedIn, X/Twitter); **3 image sources** (AI generate / upload / paste URL) via `ImageSlot`. **Auto AI images on campaign generation:** Imagen always receives a **text-free** prompt (`enrichMediaBrief` + `buildPostImagePrompt`); when `image_text_language` is `ar` or `en`, `burnTextOnImage()` overlays `image_text` server-side before upload. 60s timeout per image step, per-item failure resilient, quota-aware via `plan-limits` + `usage_counters`.
+- **Post previews** — realistic mocks for **5 platforms** (Facebook, Instagram, TikTok, LinkedIn, X/Twitter); **3 image sources** (AI generate / upload / paste URL) via `ImageSlot`. **Auto AI images on campaign generation:** Imagen always receives a **text-free** prompt (`enrichMediaBrief` + `buildPostImagePrompt`); when `image_text_enabled`, `burnTextOnImage()` overlays each post's `image_text` using that row's `locale` (resvg + Cairo) before upload. 60s timeout per image step, per-item failure resilient, quota-aware via `plan-limits` + `usage_counters`.
 - **URL auto-normalize** — `normalizeWebsiteUrl()` + `projectSchema`; project edit form on detail page.
 - **Full i18n pass** — ~160 UI strings moved to locale files (commit `a17b7bc`).
 - **Content language + image text** — `content_language` and `image_text_enabled` stored on `campaign_plan`. User picks content **ar** / **en** / **both** and a simple **with text / no text** toggle before generate. When enabled, `burnTextOnImage()` overlays each post's `image_text` using that row's `locale` (ar→Arabic, en→English). Pre-generation summary shows post count, channels, language, and frameworks.
@@ -170,12 +170,13 @@ Nav links for `/analysis`, `/review` exist in sidebar but **routes are not imple
 - Full campaign PDF export (overview + posts + ad copies).
 - **My Campaigns** workspace: `/campaigns` list + sidebar link + clone + archive; campaigns persist after reload.
 - Post count formula: `content_items = post slots × channels × languages`. Each post is its own card labelled "بوست {n} · {channel} · {language}", ordered post → language (ar then en) → channel.
+- **Image text burning pipeline** — text-free Imagen + server-side `image_text` overlay via resvg-wasm + Cairo (`burn-text-on-image.server.ts`, shared `resvg-cairo.server.ts`); burn language follows each post's `locale`; layout fixes for wrap/overlap/overflow (2026-07-03).
+- **Campaign generation UX** — image text on/off toggle (`image_text_enabled`), pre-generation summary line, results page framework badge + rationale headings (`a5c4f13`, 2026-07-03).
 
 ### Pending (not yet built / open issues)
 
 | Item | Notes |
 |------|-------|
-| **Arabic text inside AI-generated images** | **Resolved for new images:** Imagen generates text-free; Arabic/English `image_text` burned server-side via resvg + Cairo. POC at `/poc-arabic-image` retained for isolated testing. |
 | **Prompt/media-brief leakage into post copy** | Instructions sometimes leak into visible post text — needs prompt hardening + output sanitization. |
 | **PDF Arabic letter shaping still broken** | Cairo ligatures in `@react-pdf/renderer` don't shape Arabic correctly — affects both analysis and campaign reports. |
 | Manual image flow verification | `توليد صورة` / `رفع صورة` in `ImageSlot` — verify end-to-end after the storage RLS fix. |
@@ -223,15 +224,14 @@ Nav links for `/analysis`, `/review` exist in sidebar but **routes are not imple
 | 2026-06-22 | Campaign view: copyable post text (نسخ / تم النسخ) + manual per-platform publish buttons (composer URL, clipboard hint, image download link). |
 | 2026-06-29 | **Post count = slots × channels × languages** — packages use post count per channel (not divided); generation validates `total_posts × languageCount`; campaign view shows each channel+language variant separately (ordered slot → lang → channel). |
 | 2026-06-29 | **My Campaigns workspace** — `/campaigns` list (open, clone, archive), project Step 4 embed, sidebar link; campaigns reachable after reload. |
-| 2026-07-03 | **Campaign generation UX overhaul** — (1) image text simplified to on/off toggle + `image_text_enabled`, burn language follows each post's `locale`; (2) pre-generation summary line in panel; (3) results page: framework badge, rationale heading, clearer posts/ads sections. |
+| 2026-07-03 | **Campaign generation UX overhaul** (`a5c4f13`) — (1) image text simplified to on/off toggle + `image_text_enabled`, burn language follows each post's `locale`; (2) pre-generation summary line in panel; (3) results page: framework badge, rationale heading, clearer posts/ads sections. |
 | 2026-07-03 | **Imagen text-free prompt fix** — removed contradictory Arabic/English text suffixes from `enrichMediaBrief`; `buildPostImagePrompt` no longer falls back to post copy, doubles text-free rule at start/end. Overlay text via burn only. |
 | 2026-07-03 | **Burn text layout fix** — separate `<text>` per wrapped line (fixes stacked overlap), 80% width word-wrap, hook truncation guard (6 words / 40 chars), smaller base font, vertical centering; RTL/LTR centered at `x=width/2`. |
-| 2026-07-03 | **Image text burning in production pipeline** — Imagen always text-free; `burn-text-on-image.server.ts` overlays `image_text` via resvg + Cairo (shared `resvg-cairo.server.ts`); wired in `generateAndStorePostImage` for auto + manual image gen. |
+| 2026-07-03 | **Image text burning in production pipeline** — text-free Imagen; `burn-text-on-image.server.ts` overlays `image_text` via resvg-wasm + Cairo (`resvg-cairo.server.ts`); wired in `generateAndStorePostImage` for auto + manual image gen. POC at `/poc-arabic-image` retained. |
 | 2026-07-03 | **Preview deploy retrigger** — commit `2a27a32` built cleanly locally but Lovable's Dynamic Worker Loader never received the bundle (`Worker bundle not found: dwl:pre:…:2a27a32d:_worker_bundle.json` → 404 on preview). Not a Cloudflare size rejection; total gzipped server code is ~1.46 MB, well under the 3 MB/10 MB limits. Retriggered with a fresh commit. |
 | 2026-07-03 | **`image_text` insert coverage** — centralized `ensureImageText()` + `mapContentItemForInsert()` so every `content_items` insert path (AR primary, EN adaptation, single-locale) guarantees non-null `image_text` via copy fallback. |
-| 2026-07-02 | **Lovable preview boot stability** — removed the blocking SSR boot fallback that caused hydration mismatch/double-mount blank preview states in Lovable. |
-| 2026-07-02 | **`image_text` mandatory** — prompts treat `image_text` as required (same tier as `framework_applied`); `normalizeBatch` warns and falls back to first ~5 words of `copy` when AI omits it. Burning still pending. |
-| 2026-06-30 | **`image_text` field** — campaign generation prompts + JSON schema now produce a short on-image hook per post; `content_items.image_text` column (nullable migration). Burning text onto images still pending. |
-| 2026-06-30 | End-to-end run on masaarat.ai confirmed: analyze → plan → generate → AI images → copy/publish → PDF → My Campaigns persistence. Tracker updated with confirmed-working list and open issues (Arabic-in-image garbled, prompt leakage in copy, PDF Arabic shaping, Browserbase connect deferred on workerd). |
-
 | 2026-07-03 | **Force preview rebuild** — commit `a5c4f13` (image text on/off toggle + pre-gen summary line) did not deploy to Lovable's DWL pipeline; retriggering with a fresh commit so preview picks up the new CampaignGeneratePanel UI. |
+| 2026-07-02 | **Lovable preview boot stability** — removed the blocking SSR boot fallback that caused hydration mismatch/double-mount blank preview states in Lovable. |
+| 2026-07-02 | **`image_text` mandatory** — prompts treat `image_text` as required (same tier as `framework_applied`); `normalizeBatch` warns and falls back to first ~5 words of `copy` when AI omits it. |
+| 2026-06-30 | **`image_text` field** — campaign generation prompts + JSON schema now produce a short on-image hook per post; `content_items.image_text` column (nullable migration). |
+| 2026-06-30 | End-to-end run on masaarat.ai confirmed: analyze → plan → generate → AI images → copy/publish → PDF → My Campaigns persistence. Tracker updated with confirmed-working list and open issues (Arabic-in-image garbled, prompt leakage in copy, PDF Arabic shaping, Browserbase connect deferred on workerd). |
