@@ -2,13 +2,17 @@
  * POC — burn Arabic text onto a PNG via @resvg/resvg-wasm (workerd / Cloudflare).
  * ISOLATED: not wired into production flows.
  *
- * Wasm + font are bundled as Vite URL assets (?url) and fetched at runtime —
- * no node:fs / createRequire (unavailable on Cloudflare Workers).
+ * Assets live in /public/poc/ and are fetched via an absolute URL derived
+ * from the incoming request. `?url` imports resolve to a bare "/src/..." path,
+ * which fetch() cannot parse on the server ("Failed to parse URL"), so we
+ * build an absolute URL from the request origin instead.
  */
 
 import { initWasm, Resvg } from "@resvg/resvg-wasm";
-import RESVG_WASM_URL from "@resvg/resvg-wasm/index_bg.wasm?url";
-import CAIRO_FONT_URL from "./report/fonts/Cairo-Regular.ttf?url";
+import { getWebRequest } from "@tanstack/react-start/server";
+
+const WASM_PATH = "/poc/resvg_bg.wasm";
+const FONT_PATH = "/poc/Cairo-Regular.ttf";
 
 let wasmInit: Promise<void> | null = null;
 
@@ -21,8 +25,14 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
+function assetUrl(path: string): string {
+  const req = getWebRequest();
+  const origin = req ? new URL(req.url).origin : "http://localhost:8080";
+  return new URL(path, origin).toString();
+}
+
 async function loadCairoFontBytes(): Promise<Uint8Array> {
-  const res = await fetch(CAIRO_FONT_URL);
+  const res = await fetch(assetUrl(FONT_PATH));
   if (!res.ok) {
     throw new Error(`Failed to fetch Cairo font (${res.status})`);
   }
@@ -32,7 +42,7 @@ async function loadCairoFontBytes(): Promise<Uint8Array> {
 async function ensureResvgWasm(): Promise<void> {
   if (!wasmInit) {
     wasmInit = (async () => {
-      const res = await fetch(RESVG_WASM_URL);
+      const res = await fetch(assetUrl(WASM_PATH));
       if (!res.ok) {
         throw new Error(`Failed to fetch resvg wasm (${res.status})`);
       }
