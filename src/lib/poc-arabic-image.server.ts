@@ -45,8 +45,10 @@ function bytesToBase64(bytes: Uint8Array): string {
  * self-fetch to the Worker origin.
  */
 async function loadResvgWasm(): Promise<WebAssembly.Module | ArrayBuffer | Uint8Array> {
-  // Strategy 1: direct wasm import. On workerd/nitro this returns a
-  // real WebAssembly.Module compiled at build time.
+  const attempts: string[] = [];
+
+  // Strategy 1: direct wasm import. On workerd/nitro this returns a real
+  // `WebAssembly.Module` compiled at build time (no fetch, no fs).
   try {
     const wasmSpecifier = "@resvg/resvg-wasm/index_bg.wasm";
     const mod: unknown = await import(/* @vite-ignore */ wasmSpecifier);
@@ -54,21 +56,52 @@ async function loadResvgWasm(): Promise<WebAssembly.Module | ArrayBuffer | Uint8
     if (value instanceof WebAssembly.Module) return value;
     if (value instanceof ArrayBuffer) return value;
     if (value instanceof Uint8Array) return value;
-  } catch {
-    // fall through
+    attempts.push(`direct-import: unexpected type ${Object.prototype.toString.call(value)}`);
+  } catch (err) {
+    attempts.push(`direct-import: ${err instanceof Error ? err.message : String(err)}`);
   }
 
-  // Strategy 2: fetch the ?url asset. In Vite SSR dev the URL is like
-  // "/src/…" or "/@fs/…"; resolving it against import.meta.url yields a
-  // file:// URL, which Node's undici fetch reads from disk (no HTTP call).
-  // On workerd the ?url resolves to an absolute asset URL served by the
-  // static asset binding — still no origin self-fetch.
-  const resolved = new URL(RESVG_WASM_URL, import.meta.url);
-  const res = await fetch(resolved);
-  if (!res.ok) {
-    throw new Error(`Failed to load resvg wasm from ${resolved.toString()} (${res.status})`);
+  // Strategy 2: Node dev — read the ?url asset from disk via node:fs. In Vite
+  // SSR the URL is a served path (e.g. "/@fs/abs/path" or "/node_modules/…");
+  // we resolve it against the on-disk node_modules copy.
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { readFile } = await import("node:fs/promises");
+    // Node's require.resolve isn't available in ESM; use import.meta.resolve
+    // when present, else fall back to the well-known node_modules path.
+    let filePath: string | null = null;
+    try {
+      // @ts-expect-error import.meta.resolve is available in Node 20+
+      const resolved: string | undefined = await import.meta.resolve?.(
+        "@resvg/resvg-wasm/index_bg.wasm",
+      );
+      if (resolved?.startsWith("file://")) {
+        filePath = new URL(resolved).pathname;
+      }
+    } catch {
+      // ignore
+    }
+    if (!filePath) filePath = "/dev-server/node_modules/@resvg/resvg-wasm/index_bg.wasm";
+    const buf = await readFile(filePath);
+    return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+  } catch (err) {
+    attempts.push(`node-fs: ${err instanceof Error ? err.message : String(err)}`);
   }
-  return await res.arrayBuffer();
+
+  // Strategy 3: fetch the ?url asset relative to this module. Last resort.
+  try {
+    const resolved = new URL(RESVG_WASM_URL, import.meta.url);
+    const res = await fetch(resolved);
+    if (!res.ok) {
+      attempts.push(`fetch-url ${resolved.toString()}: ${res.status}`);
+    } else {
+      return await res.arrayBuffer();
+    }
+  } catch (err) {
+    attempts.push(`fetch-url: ${err instanceof Error ? err.message : String(err)}`);
+  }
+
+  throw new Error(`Could not load resvg wasm. Attempts: ${attempts.join(" | ")}`);
 }
 
 async function ensureResvgWasm(): Promise<void> {
