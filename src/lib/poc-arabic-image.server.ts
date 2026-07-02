@@ -2,19 +2,34 @@
  * POC — burn Arabic text onto a PNG via @resvg/resvg-wasm (workerd / Cloudflare).
  * ISOLATED: not wired into production flows.
  *
- * Assets live in /public/poc/ and are fetched via an absolute URL derived
- * from the incoming request. `?url` imports resolve to a bare "/src/..." path,
- * which fetch() cannot parse on the server ("Failed to parse URL"), so we
- * build an absolute URL from the request origin instead.
+ * Asset strategy (no self-fetch to the Worker's own origin, no public/, no
+ * runtime node:fs):
+ *   - Font: embedded as base64 at build time (Cairo Regular ~600 KB → ~800 KB
+ *     base64). Small enough to inline and 100% reliable in every runtime.
+ *   - Wasm: obtained via a chain of loader strategies that each work in one of
+ *     our environments (workerd/nitro at runtime, Vite SSR dev in Node).
+ *     Order:
+ *       1. Direct `import "…index_bg.wasm"` (nitro/wrangler-style — yields a
+ *          real `WebAssembly.Module`).
+ *       2. Vite `?init` (returns an instantiator; we instead re-fetch via
+ *          `?url` when needed — see step 3).
+ *       3. `?url` + `fetch(new URL(url, import.meta.url))` — resolves to a
+ *          `file://` URL in Node dev, which undici's fetch DOES support (it
+ *          reads the file from disk, no HTTP self-fetch involved).
  */
 
 import { initWasm, Resvg } from "@resvg/resvg-wasm";
-import { getRequest } from "@tanstack/react-start/server";
-
-const WASM_PATH = "/poc/resvg_bg.wasm";
-const FONT_PATH = "/poc/Cairo-Regular.ttf";
+import RESVG_WASM_URL from "@resvg/resvg-wasm/index_bg.wasm?url";
+import { CAIRO_REGULAR_BASE64 } from "./poc-cairo-font.base64";
 
 let wasmInit: Promise<void> | null = null;
+
+function base64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
 
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";
@@ -25,30 +40,45 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-function assetUrl(path: string): string {
-  const req = getRequest();
-  const origin = req ? new URL(req.url).origin : "http://localhost:8080";
-  return new URL(path, origin).toString();
-}
-
-async function loadCairoFontBytes(): Promise<Uint8Array> {
-  const res = await fetch(assetUrl(FONT_PATH));
-  if (!res.ok) {
-    throw new Error(`Failed to fetch Cairo font (${res.status})`);
+/**
+ * Load the resvg wasm as a WebAssembly.Module or raw bytes, without any
+ * self-fetch to the Worker origin.
+ */
+async function loadResvgWasm(): Promise<WebAssembly.Module | ArrayBuffer | Uint8Array> {
+  // Strategy 1: direct wasm import. On workerd/nitro this returns a
+  // real WebAssembly.Module compiled at build time.
+  try {
+    const mod: unknown = await import(
+      /* @vite-ignore */ "@resvg/resvg-wasm/index_bg.wasm"
+    );
+    const value = (mod as { default?: unknown })?.default ?? mod;
+    if (value instanceof WebAssembly.Module) return value;
+    if (value instanceof ArrayBuffer) return value;
+    if (value instanceof Uint8Array) return value;
+  } catch {
+    // fall through
   }
-  return new Uint8Array(await res.arrayBuffer());
+
+  // Strategy 2: fetch the ?url asset. In Vite SSR dev the URL is like
+  // "/src/…" or "/@fs/…"; resolving it against import.meta.url yields a
+  // file:// URL, which Node's undici fetch reads from disk (no HTTP call).
+  // On workerd the ?url resolves to an absolute asset URL served by the
+  // static asset binding — still no origin self-fetch.
+  const resolved = new URL(RESVG_WASM_URL, import.meta.url);
+  const res = await fetch(resolved);
+  if (!res.ok) {
+    throw new Error(`Failed to load resvg wasm from ${resolved.toString()} (${res.status})`);
+  }
+  return await res.arrayBuffer();
 }
 
 async function ensureResvgWasm(): Promise<void> {
   if (!wasmInit) {
     wasmInit = (async () => {
-      const res = await fetch(assetUrl(WASM_PATH));
-      if (!res.ok) {
-        throw new Error(`Failed to fetch resvg wasm (${res.status})`);
-      }
-      const wasmBytes = await res.arrayBuffer();
+      const asset = await loadResvgWasm();
       try {
-        await initWasm(wasmBytes);
+        // initWasm accepts BufferSource | WebAssembly.Module | Promise<…> | Response
+        await initWasm(asset as WebAssembly.Module);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         if (!msg.toLowerCase().includes("already initialized")) {
@@ -83,9 +113,8 @@ function buildArabicPocSvg(cairoBase64: string): string {
 
 /** Render 800×800 Arabic text PNG; returns raw base64 (no data: prefix). */
 export async function runArabicImagePoc(): Promise<string> {
-  const fontBytes = await loadCairoFontBytes();
-  const cairoBase64 = bytesToBase64(fontBytes);
-  const svg = buildArabicPocSvg(cairoBase64);
+  const fontBytes = base64ToBytes(CAIRO_REGULAR_BASE64);
+  const svg = buildArabicPocSvg(CAIRO_REGULAR_BASE64);
 
   await ensureResvgWasm();
 
