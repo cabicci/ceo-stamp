@@ -44,9 +44,12 @@ function PocArabicImagePage() {
       dir="rtl"
       lang="ar"
     >
-      <h1 className="text-xl font-semibold mb-2">POC: Arabic text on image (resvg-wasm)</h1>
+      <h1 className="text-xl font-semibold mb-2">POC: Arabic bidi on image (resvg-wasm)</h1>
       <p className="text-sm mb-6 opacity-70">
         مسار الاختبار: <code dir="ltr">/poc-arabic-image</code>
+        {" — "}
+        ثلاث نسخ (V1/V2/V3) لـ{" "}
+        <code dir="ltr">زملاؤك سبقوك بالـ AI</code>
       </p>
 
       {loading && <p>جاري التوليد…</p>}
