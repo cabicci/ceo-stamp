@@ -318,16 +318,9 @@ export async function autoGenerateImagesForContentItems(args: {
   const stats: AutoImageGenerationStats = { generated: 0, failed: 0, skippedQuota: 0 };
   if (args.items.length === 0) return stats;
 
-  let remaining = await getRemainingImageQuota(args.supabase, args.ownerId);
-
+  // Pay-as-you-go: no monthly image quota enforcement.
   for (const item of args.items) {
-    if (remaining !== null && remaining <= 0) {
-      stats.skippedQuota += 1;
-      console.warn(
-        `[campaign-gen] image skipped (quota): content_item=${item.id} platform=${item.platform}`,
-      );
-      continue;
-    }
+
 
     try {
       const burnLocale = item.locale === "en" ? "en" : "ar";
@@ -347,7 +340,7 @@ export async function autoGenerateImagesForContentItems(args: {
         ownerId: args.ownerId,
       });
       stats.generated += 1;
-      if (remaining !== null) remaining -= 1;
+
     } catch (err) {
       stats.failed += 1;
       const detail = err instanceof Error ? err.message : String(err);
