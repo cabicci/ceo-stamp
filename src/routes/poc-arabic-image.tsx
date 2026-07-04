@@ -48,7 +48,7 @@ function PocArabicImagePage() {
       <p className="text-sm mb-6 opacity-70">
         مسار الاختبار: <code dir="ltr">/poc-arabic-image</code>
         {" — "}
-        ثلاث نسخ (V1/V2/V3) لـ{" "}
+        أربع نسخ (V1–V4) — آخرها إعادة ترتيب يدوي للـ runs — لـ{" "}
         <code dir="ltr">زملاؤك سبقوك بالـ AI</code>
       </p>
 
