@@ -151,6 +151,17 @@ function buildBurnSvg(args: {
   const direction = language === "ar" ? "rtl" : "ltr";
   const langAttr = language === "ar" ? ' xml:lang="ar"' : ' xml:lang="en"';
 
+  const maxLineChars = Math.max(...lines.map((line) => line.length), 1);
+  const textBlockWidth = maxLineChars * fontSize * CHAR_WIDTH_FACTOR;
+  const textBlockHeight = lines.length * lineHeight;
+  const pad = fontSize * 0.5;
+  const boxW = textBlockWidth + pad * 2;
+  const boxH = textBlockHeight + pad * 2;
+  const boxX = cx - boxW / 2;
+  const boxY = (height - boxH) / 2;
+  const boxRx = fontSize * 0.3;
+  const contrastRect = `<rect x="${boxX}" y="${boxY}" width="${boxW}" height="${boxH}" rx="${boxRx}" ry="${boxRx}" fill="black" fill-opacity="0.4"/>`;
+
   const textElements = lines
     .map((line, index) => {
       const y = Math.round(firstBaselineY + index * lineHeight);
@@ -182,6 +193,7 @@ function buildBurnSvg(args: {
     ]]></style>
   </defs>
   <image href="data:${imageMime};base64,${imageBase64}" width="${width}" height="${height}" preserveAspectRatio="xMidYMid slice"/>
+  ${contrastRect}
   ${textElements}
 </svg>`;
 }

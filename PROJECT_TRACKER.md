@@ -170,7 +170,7 @@ Nav links for `/analysis`, `/review` exist in sidebar but **routes are not imple
 - Full campaign PDF export (overview + posts + ad copies).
 - **My Campaigns** workspace: `/campaigns` list + sidebar link + clone + archive; campaigns persist after reload.
 - Post count formula: `content_items = post slots × channels × languages`. Each post is its own card labelled "بوست {n} · {channel} · {language}", ordered post → language (ar then en) → channel.
-- **Image text burning pipeline** — text-free Imagen + server-side `image_text` overlay via resvg-wasm + Cairo (`burn-text-on-image.server.ts`, shared `resvg-cairo.server.ts`); burn language follows each post's `locale`; layout fixes for wrap/overlap/overflow (2026-07-03).
+- **Image text burning pipeline** — text-free Imagen + server-side `image_text` overlay via resvg-wasm + Cairo (`burn-text-on-image.server.ts`, shared `resvg-cairo.server.ts`); burn language follows each post's `locale`; layout fixes for wrap/overlap/overflow; semi-transparent dark contrast box behind text for legibility on mixed backgrounds (2026-07-04).
 - **Campaign generation UX** — image text on/off toggle (`image_text_enabled`), pre-generation summary line, results page framework badge + rationale headings (`a5c4f13`, 2026-07-03).
 
 ### Pending (not yet built / open issues)
@@ -224,6 +224,7 @@ Nav links for `/analysis`, `/review` exist in sidebar but **routes are not imple
 | 2026-06-22 | Campaign view: copyable post text (نسخ / تم النسخ) + manual per-platform publish buttons (composer URL, clipboard hint, image download link). |
 | 2026-06-29 | **Post count = slots × channels × languages** — packages use post count per channel (not divided); generation validates `total_posts × languageCount`; campaign view shows each channel+language variant separately (ordered slot → lang → channel). |
 | 2026-06-29 | **My Campaigns workspace** — `/campaigns` list (open, clone, archive), project Step 4 embed, sidebar link; campaigns reachable after reload. |
+| 2026-07-04 | **Burn text contrast box** — semi-transparent dark rounded rect (`fill-opacity="0.4"`) behind burned `image_text` block (between `<image>` and `<text>`), plus existing `feDropShadow`, for legibility on mixed/split backgrounds. |
 | 2026-07-03 | **Campaign generation UX overhaul** (`a5c4f13`) — (1) image text simplified to on/off toggle + `image_text_enabled`, burn language follows each post's `locale`; (2) pre-generation summary line in panel; (3) results page: framework badge, rationale heading, clearer posts/ads sections. |
 | 2026-07-03 | **Imagen text-free prompt fix** — removed contradictory Arabic/English text suffixes from `enrichMediaBrief`; `buildPostImagePrompt` no longer falls back to post copy, doubles text-free rule at start/end. Overlay text via burn only. |
 | 2026-07-03 | **Burn text layout fix** — separate `<text>` per wrapped line (fixes stacked overlap), 80% width word-wrap, hook truncation guard (6 words / 40 chars), smaller base font, vertical centering; RTL/LTR centered at `x=width/2`. |
