@@ -340,7 +340,7 @@ export async function autoGenerateImagesForContentItems(args: {
         ownerId: args.ownerId,
       });
       stats.generated += 1;
-      if (remaining !== null) remaining -= 1;
+
     } catch (err) {
       stats.failed += 1;
       const detail = err instanceof Error ? err.message : String(err);
