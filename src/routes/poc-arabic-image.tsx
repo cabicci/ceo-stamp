@@ -48,7 +48,7 @@ function PocArabicImagePage() {
       <p className="text-sm mb-6 opacity-70">
         مسار الاختبار: <code dir="ltr">/poc-arabic-image</code>
         {" — "}
-        bidi-js visual order + separate <code dir="ltr">&lt;text&gt;</code> per word, no direction attr
+        bidi-js visual order + fontkit Cairo widths + separate <code dir="ltr">&lt;text&gt;</code> per word
       </p>
 
       {loading && <p>جاري التوليد…</p>}

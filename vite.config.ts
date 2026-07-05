@@ -15,7 +15,7 @@ export default defineConfig({
   vite: {
     ssr: {
       // Prevent rolldown from deduping bidi-js default export with @react-pdf/layout.
-      noExternal: ["bidi-js"],
+      noExternal: ["bidi-js", "fontkit"],
     },
   },
 });

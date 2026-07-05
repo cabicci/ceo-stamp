@@ -2,11 +2,11 @@
  * POC — per-word absolute layout for resvg (isolated).
  * ISOLATED: not wired into production flows.
  *
- * Diagnostic (cb52a8b) proved: separate <text> per word + absolute x works.
- * bidi-js supplies L→R visual word order; no direction attr on <text>.
+ * bidi-js visual word order + fontkit-measured widths + separate <text> per word.
  */
 
 import { Resvg } from "@resvg/resvg-wasm";
+import { measureWordWidthPx, wordGapPx } from "./cairo-text-metrics.server";
 import { getVisualWordOrder } from "./bidi-visual.server";
 import {
   bytesToBase64,
@@ -34,11 +34,9 @@ const BIDI_TESTS = [
   { label: "Arabic + digits", logical: "وفّر 50% دلوقتي" },
 ] as const;
 
-const ARABIC_RE = /[\u0600-\u06FF]/;
-const LATIN_DIGIT_RE = /[A-Za-z0-9]/;
-
 /** Re-export for future production burn pipeline. */
 export { getVisualWordOrder } from "./bidi-visual.server";
+export { measureWordWidthPx, wordGapPx } from "./cairo-text-metrics.server";
 
 function escapeXml(text: string): string {
   return text
@@ -49,24 +47,9 @@ function escapeXml(text: string): string {
     .replace(/'/g, "&apos;");
 }
 
-function widthFactorForWord(word: string): number {
-  const hasArabic = [...word].some((ch) => ARABIC_RE.test(ch));
-  const hasLatinDigit = [...word].some((ch) => LATIN_DIGIT_RE.test(ch));
-  if (hasLatinDigit && !hasArabic) return 0.6;
-  return 0.55;
-}
-
-function estimateWordWidth(word: string, fontSize: number): number {
-  return word.length * fontSize * widthFactorForWord(word);
-}
-
-function wordGap(fontSize: number): number {
-  return fontSize * 0.3;
-}
-
 /**
  * One burned line: separate <text> per word, L→R by visual order, no direction attr.
- * Visual index 0 → smallest x (leftmost); advance right after each word.
+ * Widths from fontkit Cairo metrics (approach A).
  */
 function layoutWordLine(args: {
   words: string[];
@@ -77,8 +60,8 @@ function layoutWordLine(args: {
   const { words, y, cx, fontSize } = args;
   if (words.length === 0) return "";
 
-  const gap = wordGap(fontSize);
-  const widths = words.map((word) => estimateWordWidth(word, fontSize));
+  const gap = wordGapPx(fontSize);
+  const widths = words.map((word) => measureWordWidthPx(word, fontSize));
   const totalWidth =
     widths.reduce((sum, w) => sum + w, 0) + gap * Math.max(0, words.length - 1);
 
