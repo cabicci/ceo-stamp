@@ -123,6 +123,8 @@ const JSON_OUTPUT_SHAPE = `{
 
 const SYSTEM_PROMPT_AR = `أنت استراتيجي تسويق سينيور بتشتغل لعلامة تجارية في السوق العربي. مهمتك تبني خطة محتوى وإعلانات لحملة واحدة، مبنية على بيانات البراند المعطاية، مش كلام عام.
 
+فصل الحقول (إلزامي): copy = النص النهائي للبوست اللي القارئ هيشوفه بس (النص المنشور). ممنوع تكتب جواه توجيهات بصرية، أو media briefs، أو labels للحقول، أو أسماء الأطر، أو ملاحظات بين أقواس زي [Image: ...]، أو أي meta-instructions. التوجيه البصري في media_brief؛ الهوك على الصورة في image_text؛ شرح الإطار في rationale.
+
 التزم بالقواعد دي:
 1) كل النصوص باللهجة المصرية الدارجة (عامية مصرية)، طبيعية ومش حرفية. ممنوع الفصحى وممنوع ترجمة من الإنجليزي.
 2) كل content_item لازم يحتوي على:
@@ -145,6 +147,8 @@ ${getFrameworkVocabularyForPrompt()}
 ${JSON_OUTPUT_SHAPE}`;
 
 const SYSTEM_PROMPT_EN = `You are a senior marketing strategist writing for an English-speaking audience. Build one campaign's content and ads grounded in the brand data provided — no generic filler.
+
+Field separation (mandatory): copy = the final publishable post text ONLY (what the reader sees). NEVER put visual directions, media briefs, field labels, framework names, bracketed notes like [Image: ...], or any meta-instructions inside copy. Visual direction goes in media_brief; the on-image hook goes in image_text; the framework explanation goes in rationale.
 
 Rules:
 1) All copy in natural, idiomatic English marketing language (US/international neutral). Not a translation — write natively for English readers while honoring the brand's positioning.
@@ -170,6 +174,8 @@ ${JSON_OUTPUT_SHAPE}`;
 function buildAdaptationSystemPromptEn(frameworkIds: string[]): string {
   const knowledge = renderFrameworkKnowledgeForPrompt(frameworkIds);
   const base = `You are a senior marketing strategist. You will receive Arabic campaign content written for an Egyptian Arabic-speaking audience. Produce culturally ADAPTED English versions for an English-speaking audience.
+
+Field separation (mandatory): copy = the final publishable post text ONLY (what the reader sees). NEVER put visual directions, media briefs, field labels, framework names, bracketed notes like [Image: ...], or any meta-instructions inside copy. Visual direction goes in media_brief; the on-image hook goes in image_text; the framework explanation goes in rationale.
 
 CRITICAL: This is NOT literal translation. Same offer, intent, framework, and scheduled dates — but native English phrasing and cultural framing that resonates with English readers.
 
@@ -258,7 +264,7 @@ function mapContentItemForInsert(
     campaign_id: args.campaignId,
     platform: ci.platform,
     content_type: ci.content_type ?? null,
-    copy: ci.copy ?? null,
+    copy: sanitizePostCopy(ci.copy) || null,
     media_brief: ci.media_brief ?? null,
     image_text: ensureImageText(ci),
     framework_applied: ci.framework_applied ?? null,
@@ -272,6 +278,19 @@ function mapContentItemForInsert(
 
 const MEDIA_BRIEF_NO_TEXT_SUFFIX =
   "[Image: purely visual scene — no text, words, letters, typography, logos, or watermarks anywhere.]";
+
+/** Strip obvious instruction/meta leakage from AI copy before insert — conservative only. */
+function sanitizePostCopy(copy: string | undefined | null): string {
+  if (!copy) return "";
+
+  let text = copy.replace(/\[(Image|Visual|Note|Brief|Media)[^\]]*\]/gi, "");
+  text = text.replaceAll(MEDIA_BRIEF_NO_TEXT_SUFFIX, "");
+  text = text.replace(/^(copy|post|caption)\s*:\s*/i, "");
+  text = text.trim();
+  text = text.replace(/\n{3,}/g, "\n\n");
+
+  return text;
+}
 
 function enrichMediaBrief(brief: string | undefined | null): string {
   const base = (brief ?? "").trim();

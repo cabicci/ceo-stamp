@@ -140,6 +140,7 @@ RLS pattern: **owner read/write** on project-scoped data; **`is_admin()` read-on
 - **PDF render hardening** — campaign/analysis PDF report styles avoid React-PDF crash paths: no border primitives, no oversized `wrap={false}` cards, and no dynamic total-pages footer render; separators use filled bars instead.
 - **My Campaigns workspace** — `/campaigns` lists all saved campaigns (RLS-scoped); project Step 4 embeds the same list. Per row: objective/package name, channels, dates, status, post count. Actions: open, clone (`cloned_from_id` + full `content_items`/`ad_copies` copy with ` (نسخة)` suffix), archive/unarchive with archived filter. Sidebar **الحملات** links to the list — campaigns persist and are reachable after reload.
 - **`image_text` on campaign generation** — AI must return a short punchy hook (3–6 words) per `content_item`; `ensureImageText()` guarantees non-null on insert. **Burning:** Imagen always text-free; optional `image_text_enabled` toggle burns hook per post locale via resvg + Cairo.
+- **Copy field hardening (problem #2)** — explicit field-separation rules in AR/EN/adaptation generation prompts; `sanitizePostCopy()` strips bracketed instruction blocks and field-label prefixes before `content_items` insert (2026-07-05).
 
 ### Routes (implemented)
 
@@ -193,6 +194,7 @@ Nav links for `/analysis`, `/review` exist in sidebar but **routes are not imple
 
 | Date | Change |
 |------|--------|
+| 2026-07-05 | **Problem #2 — copy leakage prevention** — field-separation prompt rule in `SYSTEM_PROMPT_AR`, `SYSTEM_PROMPT_EN`, and adaptation prompt; conservative `sanitizePostCopy()` applied on every `content_items` insert path. |
 | 2026-07-05 | **Bidi fix wired into production burn** — `burn-text-on-image.server.ts` uses per-word layout: bidi-js visual order (`getVisualWordOrder`), fontkit lazy width measurement (`dynamic import("fontkit")` cached on first burn), separate `<text>` per word (no `direction` attr), contrast box from measured line width; POC at `/poc-arabic-image` retained. |
 | 2026-06-22 | Created `PROJECT_TRACKER.md` as cross-session memory file. |
 | 2026-06-22 | Full i18n pass: ~160 hardcoded UI strings → `t()` + `ar.json`/`en.json`. |
