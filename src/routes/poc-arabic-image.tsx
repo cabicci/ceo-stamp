@@ -44,11 +44,11 @@ function PocArabicImagePage() {
       dir="rtl"
       lang="ar"
     >
-      <h1 className="text-xl font-semibold mb-2">POC: bidi-js + resvg-wasm</h1>
+      <h1 className="text-xl font-semibold mb-2">POC: per-word bidi layout + resvg</h1>
       <p className="text-sm mb-6 opacity-70">
         مسار الاختبار: <code dir="ltr">/poc-arabic-image</code>
         {" — "}
-        أربع أسطر بـ bidi-js (UAX#9) + <code dir="ltr">direction=ltr</code>
+        bidi-js لترتيب الكلمات + موضع يدوي لكل كلمة (بدون bidi في resvg)
       </p>
 
       {loading && <p>جاري التوليد…</p>}

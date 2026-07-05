@@ -2,11 +2,11 @@
  * POC — burn Arabic text onto a PNG via @resvg/resvg-wasm (workerd / Cloudflare).
  * ISOLATED: not wired into production flows.
  *
- * Bidi via bidi-js (UAX#9): visual paint string + direction=ltr for resvg.
+ * Per-word SVG layout: bidi-js for visual token order, manual x positions (no resvg bidi).
  */
 
 import { Resvg } from "@resvg/resvg-wasm";
-import { computeVisualPaintString } from "./bidi-visual.server";
+import { getVisualWordOrder } from "./bidi-visual.server";
 import {
   bytesToBase64,
   cairoResvgFontOptions,
@@ -33,8 +33,11 @@ const BIDI_TESTS = [
   },
 ] as const;
 
+const ARABIC_RE = /[\u0600-\u06FF]/;
+const LATIN_DIGIT_RE = /[A-Za-z0-9]/;
+
 /** Re-export for future production burn pipeline. */
-export { computeVisualPaintString as visualPaintStringForRtl } from "./bidi-visual.server";
+export { getVisualWordOrder } from "./bidi-visual.server";
 
 function escapeXml(text: string): string {
   return text
@@ -45,9 +48,45 @@ function escapeXml(text: string): string {
     .replace(/'/g, "&apos;");
 }
 
-function hookText(args: { y: number; text: string; fontSize?: number }): string {
-  const fontSize = args.fontSize ?? 28;
-  return `<text x="400" y="${args.y}" direction="ltr" text-anchor="middle" font-family="Cairo" font-size="${fontSize}" fill="#ffffff" xml:lang="ar">${escapeXml(args.text)}</text>`;
+function widthFactorForWord(word: string): number {
+  const hasArabic = [...word].some((ch) => ARABIC_RE.test(ch));
+  const hasLatinDigit = [...word].some((ch) => LATIN_DIGIT_RE.test(ch));
+  if (hasLatinDigit && !hasArabic) return 0.6;
+  return 0.55;
+}
+
+function estimateWordWidth(word: string, fontSize: number): number {
+  return word.length * fontSize * widthFactorForWord(word);
+}
+
+function wordGap(fontSize: number): number {
+  return fontSize * 0.28;
+}
+
+/** Build one line of separate <text> nodes at computed x positions (L→R visual order). */
+function layoutWordTexts(args: {
+  words: string[];
+  y: number;
+  cx: number;
+  fontSize: number;
+}): string {
+  const { words, y, cx, fontSize } = args;
+  if (words.length === 0) return "";
+
+  const gap = wordGap(fontSize);
+  const widths = words.map((word) => estimateWordWidth(word, fontSize));
+  const totalWidth =
+    widths.reduce((sum, w) => sum + w, 0) + gap * Math.max(0, words.length - 1);
+
+  let x = cx - totalWidth / 2;
+
+  return words
+    .map((word, index) => {
+      const xPos = Math.round(x);
+      x += widths[index] + gap;
+      return `<text x="${xPos}" y="${y}" text-anchor="start" direction="ltr" font-family="Cairo" font-size="${fontSize}" fill="#ffffff" xml:lang="ar">${escapeXml(word)}</text>`;
+    })
+    .join("\n  ");
 }
 
 function labelText(y: number, label: string, fontSize = 12): string {
@@ -57,6 +96,7 @@ function labelText(y: number, label: string, fontSize = 12): string {
 function buildArabicPocSvg(cairoBase64: string): string {
   const fontData = `data:font/truetype;base64,${cairoBase64}`;
   const hookFont = 28;
+  const cx = 400;
   const lineGap = 88;
   const topPad = 48;
   const height = topPad + BIDI_TESTS.length * lineGap + 40;
@@ -64,9 +104,9 @@ function buildArabicPocSvg(cairoBase64: string): string {
   const lines = BIDI_TESTS.map((test, index) => {
     const labelY = topPad + index * lineGap;
     const textY = labelY + 36;
-    const paintText = computeVisualPaintString(test.logical);
-    return `${labelText(labelY, `bidi-js — ${test.label}`)}
-  ${hookText({ y: textY, text: paintText, fontSize: hookFont })}`;
+    const words = getVisualWordOrder(test.logical);
+    return `${labelText(labelY, `per-word layout — ${test.label}`)}
+  ${layoutWordTexts({ words, y: textY, cx, fontSize: hookFont })}`;
   }).join("\n  ");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -86,7 +126,7 @@ function buildArabicPocSvg(cairoBase64: string): string {
 </svg>`;
 }
 
-/** Render bidi-js comparison PNG; returns raw base64 (no data: prefix). */
+/** Render per-word bidi POC PNG; returns raw base64 (no data: prefix). */
 export async function runArabicImagePoc(): Promise<string> {
   const svg = buildArabicPocSvg(getCairoFontBase64());
 
