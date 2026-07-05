@@ -12,4 +12,10 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    ssr: {
+      // Prevent rolldown from deduping bidi-js default export with @react-pdf/layout.
+      noExternal: ["bidi-js"],
+    },
+  },
 });
