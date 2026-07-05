@@ -1,12 +1,11 @@
 /**
- * POC — burn Arabic text onto a PNG via @resvg/resvg-wasm (workerd / Cloudflare).
+ * POC — resvg text positioning diagnostic (isolated).
  * ISOLATED: not wired into production flows.
  *
- * Per-word SVG layout: bidi-js for visual token order, manual x positions (no resvg bidi).
+ * Tests absolute x placement of separate <text> elements vs direction=rtl.
  */
 
 import { Resvg } from "@resvg/resvg-wasm";
-import { getVisualWordOrder } from "./bidi-visual.server";
 import {
   bytesToBase64,
   cairoResvgFontOptions,
@@ -14,30 +13,9 @@ import {
   getCairoFontBase64,
 } from "./resvg-cairo.server";
 
-const BIDI_TESTS = [
-  {
-    label: "mixed Latin end: زملاؤك سبقوك بالـ AI",
-    logical: "زملاؤك سبقوك بالـ AI",
-  },
-  {
-    label: "embedded Latin: ابدأ مع masaarat دلوقتي",
-    logical: "ابدأ مع masaarat دلوقتي",
-  },
-  {
-    label: "pure Arabic: جرّب مجاناً النهاردة",
-    logical: "جرّب مجاناً النهاردة",
-  },
-  {
-    label: "Arabic + digits: وفّر 50% دلوقتي",
-    logical: "وفّر 50% دلوقتي",
-  },
-] as const;
-
-const ARABIC_RE = /[\u0600-\u06FF]/;
-const LATIN_DIGIT_RE = /[A-Za-z0-9]/;
-
-/** Re-export for future production burn pipeline. */
-export { getVisualWordOrder } from "./bidi-visual.server";
+const FONT_SIZE = 32;
+const WORD_X = [100, 250, 400, 550] as const;
+const WORDS = ["زملاؤك", "سبقوك", "بالـ", "AI"] as const;
 
 function escapeXml(text: string): string {
   return text
@@ -48,69 +26,42 @@ function escapeXml(text: string): string {
     .replace(/'/g, "&apos;");
 }
 
-function widthFactorForWord(word: string): number {
-  const hasArabic = [...word].some((ch) => ARABIC_RE.test(ch));
-  const hasLatinDigit = [...word].some((ch) => LATIN_DIGIT_RE.test(ch));
-  if (hasLatinDigit && !hasArabic) return 0.6;
-  return 0.55;
+function labelText(y: number, label: string): string {
+  return `<text x="400" y="${y}" text-anchor="middle" font-family="Cairo" font-size="13" fill="#888888" xml:lang="en">${escapeXml(label)}</text>`;
 }
 
-function estimateWordWidth(word: string, fontSize: number): number {
-  return word.length * fontSize * widthFactorForWord(word);
-}
-
-function wordGap(fontSize: number): number {
-  return fontSize * 0.28;
-}
-
-/** Build one line of separate <text> nodes at computed x positions (L→R visual order). */
-function layoutWordTexts(args: {
-  words: string[];
-  y: number;
-  cx: number;
-  fontSize: number;
-}): string {
-  const { words, y, cx, fontSize } = args;
-  if (words.length === 0) return "";
-
-  const gap = wordGap(fontSize);
-  const widths = words.map((word) => estimateWordWidth(word, fontSize));
-  const totalWidth =
-    widths.reduce((sum, w) => sum + w, 0) + gap * Math.max(0, words.length - 1);
-
-  let x = cx - totalWidth / 2;
-
-  return words
-    .map((word, index) => {
-      const xPos = Math.round(x);
-      x += widths[index] + gap;
-      return `<text x="${xPos}" y="${y}" text-anchor="start" direction="ltr" font-family="Cairo" font-size="${fontSize}" fill="#ffffff" xml:lang="ar">${escapeXml(word)}</text>`;
-    })
+function verticalGuides(args: { xPositions: readonly number[]; yTop: number; yBottom: number }): string {
+  return args.xPositions
+    .map(
+      (x) =>
+        `<line x1="${x}" y1="${args.yTop}" x2="${x}" y2="${args.yBottom}" stroke="#ff5555" stroke-width="1" stroke-opacity="0.85"/>` +
+        `<text x="${x}" y="${args.yBottom + 14}" text-anchor="middle" font-family="Cairo" font-size="10" fill="#ff5555" xml:lang="en">x=${x}</text>`,
+    )
     .join("\n  ");
 }
 
-function labelText(y: number, label: string, fontSize = 12): string {
-  return `<text x="400" y="${y}" direction="ltr" text-anchor="middle" font-family="Cairo" font-size="${fontSize}" fill="#888888" xml:lang="en">${escapeXml(label)}</text>`;
+function wordTextsAtFixedX(args: {
+  y: number;
+  direction?: "rtl";
+}): string {
+  return WORDS.map((word, index) => {
+    const x = WORD_X[index];
+    const directionAttr = args.direction ? ` direction="${args.direction}"` : "";
+    return `<text x="${x}" y="${args.y}" text-anchor="start" font-family="Cairo" font-size="${FONT_SIZE}" fill="#ffffff" xml:lang="ar"${directionAttr}>${escapeXml(word)}</text>`;
+  }).join("\n  ");
 }
 
-function buildArabicPocSvg(cairoBase64: string): string {
+function buildDiagnosticSvg(cairoBase64: string): string {
   const fontData = `data:font/truetype;base64,${cairoBase64}`;
-  const hookFont = 28;
-  const cx = 400;
-  const lineGap = 88;
-  const topPad = 48;
-  const height = topPad + BIDI_TESTS.length * lineGap + 40;
 
-  const lines = BIDI_TESTS.map((test, index) => {
-    const labelY = topPad + index * lineGap;
-    const textY = labelY + 36;
-    const words = getVisualWordOrder(test.logical);
-    return `${labelText(labelY, `per-word layout — ${test.label}`)}
-  ${layoutWordTexts({ words, y: textY, cx, fontSize: hookFont })}`;
-  }).join("\n  ");
+  const testAY = 100;
+  const testBY = 240;
+  const testCY = 380;
+  const guideTop = 72;
+  const guideBottom = 128;
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="${height}" viewBox="0 0 800 ${height}">
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="480" viewBox="0 0 800 480">
   <defs>
     <style type="text/css"><![CDATA[
       @font-face {
@@ -121,14 +72,26 @@ function buildArabicPocSvg(cairoBase64: string): string {
       }
     ]]></style>
   </defs>
-  <rect width="800" height="${height}" fill="#1a1a1a"/>
-  ${lines}
+  <rect width="800" height="480" fill="#1a1a1a"/>
+
+  ${labelText(36, "Test A — separate <text> per word, NO direction attr, text-anchor=start, x=100/250/400/550")}
+  ${verticalGuides({ xPositions: WORD_X, yTop: guideTop, yBottom: guideBottom })}
+  ${wordTextsAtFixedX({ y: testAY })}
+
+  ${labelText(176, "Test B — same as A but direction=rtl on each <text>")}
+  ${verticalGuides({ xPositions: WORD_X, yTop: 212, yBottom: 268 })}
+  ${wordTextsAtFixedX({ y: testBY, direction: "rtl" })}
+
+  ${labelText(316, "Test C — single <text> direction=rtl, text-anchor=start, x=400, content: بالـ AI")}
+  <line x1="400" y1="348" x2="400" y2="404" stroke="#ff5555" stroke-width="1" stroke-opacity="0.85"/>
+  <text x="400" y="418" text-anchor="middle" font-family="Cairo" font-size="10" fill="#ff5555" xml:lang="en">x=400</text>
+  <text x="400" y="${testCY}" direction="rtl" text-anchor="start" font-family="Cairo" font-size="${FONT_SIZE}" fill="#ffffff" xml:lang="ar">بالـ AI</text>
 </svg>`;
 }
 
-/** Render per-word bidi POC PNG; returns raw base64 (no data: prefix). */
+/** Render diagnostic PNG; returns raw base64 (no data: prefix). */
 export async function runArabicImagePoc(): Promise<string> {
-  const svg = buildArabicPocSvg(getCairoFontBase64());
+  const svg = buildDiagnosticSvg(getCairoFontBase64());
 
   await ensureResvgWasm();
 
