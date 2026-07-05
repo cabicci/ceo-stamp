@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as Char91indexChar93RouteImport } from './routes/[index]'
+import { Route as PocArabicPdfRouteImport } from './routes/poc-arabic-pdf'
 import { Route as PocArabicImageRouteImport } from './routes/poc-arabic-image'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -23,6 +24,11 @@ import { Route as AuthenticatedCampaignsCampaignIdRouteImport } from './routes/_
 const Char91indexChar93Route = Char91indexChar93RouteImport.update({
   id: '/index',
   path: '/index',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PocArabicPdfRoute = PocArabicPdfRouteImport.update({
+  id: '/poc-arabic-pdf',
+  path: '/poc-arabic-pdf',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PocArabicImageRoute = PocArabicImageRouteImport.update({
@@ -78,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/index': typeof Char91indexChar93Route
   '/poc-arabic-image': typeof PocArabicImageRoute
+  '/poc-arabic-pdf': typeof PocArabicPdfRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/post-previews': typeof AuthenticatedPostPreviewsRoute
   '/campaigns/$campaignId': typeof AuthenticatedCampaignsCampaignIdRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/index': typeof Char91indexChar93Route
   '/poc-arabic-image': typeof PocArabicImageRoute
+  '/poc-arabic-pdf': typeof PocArabicPdfRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/post-previews': typeof AuthenticatedPostPreviewsRoute
   '/': typeof AuthenticatedIndexRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/index': typeof Char91indexChar93Route
   '/poc-arabic-image': typeof PocArabicImageRoute
+  '/poc-arabic-pdf': typeof PocArabicPdfRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/post-previews': typeof AuthenticatedPostPreviewsRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/index'
     | '/poc-arabic-image'
+    | '/poc-arabic-pdf'
     | '/admin'
     | '/post-previews'
     | '/campaigns/$campaignId'
@@ -125,6 +135,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/index'
     | '/poc-arabic-image'
+    | '/poc-arabic-pdf'
     | '/admin'
     | '/post-previews'
     | '/'
@@ -137,6 +148,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/index'
     | '/poc-arabic-image'
+    | '/poc-arabic-pdf'
     | '/_authenticated/admin'
     | '/_authenticated/post-previews'
     | '/_authenticated/'
@@ -150,6 +162,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   Char91indexChar93Route: typeof Char91indexChar93Route
   PocArabicImageRoute: typeof PocArabicImageRoute
+  PocArabicPdfRoute: typeof PocArabicPdfRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -159,6 +172,13 @@ declare module '@tanstack/react-router' {
       path: '/index'
       fullPath: '/index'
       preLoaderRoute: typeof Char91indexChar93RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/poc-arabic-pdf': {
+      id: '/poc-arabic-pdf'
+      path: '/poc-arabic-pdf'
+      fullPath: '/poc-arabic-pdf'
+      preLoaderRoute: typeof PocArabicPdfRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/poc-arabic-image': {
@@ -253,6 +273,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   Char91indexChar93Route: Char91indexChar93Route,
   PocArabicImageRoute: PocArabicImageRoute,
+  PocArabicPdfRoute: PocArabicPdfRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

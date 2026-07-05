@@ -178,7 +178,7 @@ Nav links for `/analysis`, `/review` exist in sidebar but **routes are not imple
 
 | Item | Notes |
 |------|-------|
-| **PDF Arabic letter shaping still broken** | Cairo ligatures in `@react-pdf/renderer` don't shape Arabic correctly — affects both analysis and campaign reports. |
+| **PDF Arabic letter shaping still broken** | Cairo ligatures in `@react-pdf/renderer` don't shape Arabic correctly — affects both analysis and campaign reports. **POC:** `/poc-arabic-pdf` tests presentation-forms pre-shaping + bidi visual order before wiring into real reports. |
 | Manual image flow verification | `توليد صورة` / `رفع صورة` in `ImageSlot` — verify end-to-end after the storage RLS fix. |
 | **Browserbase authenticated login (deferred)** | Code-complete but blocked at runtime after account upgrade: connect fails with `fetch failed` / `hasWebSocket:false` in Lovable's workerd runtime. Likely needs a real `ws` client or Playwright `connectOverCDP` instead of the hand-rolled fetch-upgrade. Deferred. |
 | Review / approve workflow for generated content | Nav stub only; `content_items.status` exists |
@@ -194,6 +194,7 @@ Nav links for `/analysis`, `/review` exist in sidebar but **routes are not imple
 
 | Date | Change |
 |------|--------|
+| 2026-07-05 | **Problem #3 POC — Arabic PDF pre-shaping** — isolated `/poc-arabic-pdf` route: `shapeArabicForPdf()` (arabic-persian-reshaper presentation forms + bidi-js visual word order) vs raw lines in react-pdf; production report modules unchanged. |
 | 2026-07-05 | **Problem #2 — copy leakage prevention** — field-separation prompt rule in `SYSTEM_PROMPT_AR`, `SYSTEM_PROMPT_EN`, and adaptation prompt; conservative `sanitizePostCopy()` applied on every `content_items` insert path. |
 | 2026-07-05 | **Bidi fix wired into production burn** — `burn-text-on-image.server.ts` uses per-word layout: bidi-js visual order (`getVisualWordOrder`), fontkit lazy width measurement (`dynamic import("fontkit")` cached on first burn), separate `<text>` per word (no `direction` attr), contrast box from measured line width; POC at `/poc-arabic-image` retained. |
 | 2026-06-22 | Created `PROJECT_TRACKER.md` as cross-session memory file. |
