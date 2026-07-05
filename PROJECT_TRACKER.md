@@ -170,14 +170,13 @@ Nav links for `/analysis`, `/review` exist in sidebar but **routes are not imple
 - Full campaign PDF export (overview + posts + ad copies).
 - **My Campaigns** workspace: `/campaigns` list + sidebar link + clone + archive; campaigns persist after reload.
 - Post count formula: `content_items = post slots × channels × languages`. Each post is its own card labelled "بوست {n} · {channel} · {language}", ordered post → language (ar then en) → channel.
-- **Image text burning pipeline** — text-free Imagen + server-side `image_text` overlay via resvg-wasm + Cairo (`burn-text-on-image.server.ts`, shared `resvg-cairo.server.ts`); burn language follows each post's `locale`; layout fixes for wrap/overlap/overflow; semi-transparent dark contrast box behind text for legibility on mixed backgrounds (2026-07-04).
+- **Image text burning pipeline** — text-free Imagen + server-side `image_text` overlay via resvg-wasm + Cairo (`burn-text-on-image.server.ts`, shared `resvg-cairo.server.ts`); burn language follows each post's `locale`; per-word bidi layout (bidi-js visual order + fontkit lazy width measurement); contrast box sized from measured line width; semi-transparent dark contrast box behind text for legibility on mixed backgrounds (2026-07-05).
 - **Campaign generation UX** — image text on/off toggle (`image_text_enabled`), pre-generation summary line, results page framework badge + rationale headings (`a5c4f13`, 2026-07-03).
 
 ### Pending (not yet built / open issues)
 
 | Item | Notes |
 |------|-------|
-| **Mixed Arabic+Latin bidi in burned image text** | resvg misplaces embedded Latin (e.g. "AI") in RTL hooks — POC at `/poc-arabic-image` compares V1/V2/V3 fixes before wiring into `burn-text-on-image.server.ts`. |
 | **PDF Arabic letter shaping still broken** | Cairo ligatures in `@react-pdf/renderer` don't shape Arabic correctly — affects both analysis and campaign reports. |
 | Manual image flow verification | `توليد صورة` / `رفع صورة` in `ImageSlot` — verify end-to-end after the storage RLS fix. |
 | **Browserbase authenticated login (deferred)** | Code-complete but blocked at runtime after account upgrade: connect fails with `fetch failed` / `hasWebSocket:false` in Lovable's workerd runtime. Likely needs a real `ws` client or Playwright `connectOverCDP` instead of the hand-rolled fetch-upgrade. Deferred. |
@@ -194,6 +193,7 @@ Nav links for `/analysis`, `/review` exist in sidebar but **routes are not imple
 
 | Date | Change |
 |------|--------|
+| 2026-07-05 | **Bidi fix wired into production burn** — `burn-text-on-image.server.ts` uses per-word layout: bidi-js visual order (`getVisualWordOrder`), fontkit lazy width measurement (`dynamic import("fontkit")` cached on first burn), separate `<text>` per word (no `direction` attr), contrast box from measured line width; POC at `/poc-arabic-image` retained. |
 | 2026-06-22 | Created `PROJECT_TRACKER.md` as cross-session memory file. |
 | 2026-06-22 | Full i18n pass: ~160 hardcoded UI strings → `t()` + `ar.json`/`en.json`. |
 | 2026-06-22 | Added content-language choice (ar/en/both) + image-text-language choice to campaign generation. |

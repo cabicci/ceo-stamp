@@ -47,21 +47,17 @@ function escapeXml(text: string): string {
     .replace(/'/g, "&apos;");
 }
 
-/**
- * One burned line: separate <text> per word, L→R by visual order, no direction attr.
- * Widths from fontkit Cairo metrics (approach A).
- */
-function layoutWordLine(args: {
+async function layoutWordLine(args: {
   words: string[];
   y: number;
   cx: number;
   fontSize: number;
-}): string {
+}): Promise<string> {
   const { words, y, cx, fontSize } = args;
   if (words.length === 0) return "";
 
   const gap = wordGapPx(fontSize);
-  const widths = words.map((word) => measureWordWidthPx(word, fontSize));
+  const widths = await Promise.all(words.map((word) => measureWordWidthPx(word, fontSize)));
   const totalWidth =
     widths.reduce((sum, w) => sum + w, 0) + gap * Math.max(0, words.length - 1);
 
@@ -80,7 +76,7 @@ function labelText(y: number, label: string): string {
   return `<text x="400" y="${y}" text-anchor="middle" font-family="Cairo" font-size="12" fill="#888888" xml:lang="en">${escapeXml(label)}</text>`;
 }
 
-function buildArabicPocSvg(cairoBase64: string): string {
+async function buildArabicPocSvg(cairoBase64: string): Promise<string> {
   const fontData = `data:font/truetype;base64,${cairoBase64}`;
   const hookFont = 28;
   const cx = 400;
@@ -88,13 +84,16 @@ function buildArabicPocSvg(cairoBase64: string): string {
   const topPad = 48;
   const height = topPad + BIDI_TESTS.length * lineGap + 40;
 
-  const lines = BIDI_TESTS.map((test, index) => {
-    const labelY = topPad + index * lineGap;
-    const textY = labelY + 36;
-    const words = getVisualWordOrder(test.logical);
-    return `${labelText(labelY, `${test.label}: ${test.logical}`)}
-  ${layoutWordLine({ words, y: textY, cx, fontSize: hookFont })}`;
-  }).join("\n  ");
+  const lineBlocks = await Promise.all(
+    BIDI_TESTS.map(async (test, index) => {
+      const labelY = topPad + index * lineGap;
+      const textY = labelY + 36;
+      const words = getVisualWordOrder(test.logical);
+      const wordSvg = await layoutWordLine({ words, y: textY, cx, fontSize: hookFont });
+      return `${labelText(labelY, `${test.label}: ${test.logical}`)}
+  ${wordSvg}`;
+    }),
+  );
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="800" height="${height}" viewBox="0 0 800 ${height}">
@@ -109,13 +108,13 @@ function buildArabicPocSvg(cairoBase64: string): string {
     ]]></style>
   </defs>
   <rect width="800" height="${height}" fill="#1a1a1a"/>
-  ${lines}
+  ${lineBlocks.join("\n  ")}
 </svg>`;
 }
 
 /** Render per-word layout POC PNG; returns raw base64 (no data: prefix). */
 export async function runArabicImagePoc(): Promise<string> {
-  const svg = buildArabicPocSvg(getCairoFontBase64());
+  const svg = await buildArabicPocSvg(getCairoFontBase64());
 
   await ensureResvgWasm();
 

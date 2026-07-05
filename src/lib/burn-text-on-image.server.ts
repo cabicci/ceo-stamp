@@ -3,6 +3,8 @@
  */
 
 import { Resvg } from "@resvg/resvg-wasm";
+import { getVisualWordOrder } from "./bidi-visual.server";
+import { measureWordWidthPx, wordGapPx } from "./cairo-text-metrics.server";
 import {
   bytesToBase64,
   cairoResvgFontOptions,
@@ -131,7 +133,41 @@ function layoutBurnText(
   };
 }
 
-function buildBurnSvg(args: {
+async function layoutWordLineSvg(args: {
+  line: string;
+  y: number;
+  cx: number;
+  fontSize: number;
+  language: "ar" | "en";
+  langAttr: string;
+}): Promise<{ svg: string; lineWidth: number }> {
+  const baseDirection = args.language === "ar" ? "rtl" : "ltr";
+  const words = getVisualWordOrder(args.line, baseDirection);
+  if (words.length === 0) {
+    return { svg: "", lineWidth: 0 };
+  }
+
+  const gap = wordGapPx(args.fontSize);
+  const widths = await Promise.all(
+    words.map((word) => measureWordWidthPx(word, args.fontSize)),
+  );
+  const lineWidth =
+    widths.reduce((sum, w) => sum + w, 0) + gap * Math.max(0, words.length - 1);
+
+  let x = args.cx - lineWidth / 2;
+
+  const svg = words
+    .map((word, index) => {
+      const xPos = Math.round(x);
+      x += widths[index] + gap;
+      return `<text x="${xPos}" y="${args.y}" text-anchor="start" font-family="Cairo" font-size="${args.fontSize}" fill="#ffffff" filter="url(#textShadow)"${args.langAttr}>${escapeXml(word)}</text>`;
+    })
+    .join("\n  ");
+
+  return { svg, lineWidth };
+}
+
+async function buildBurnSvg(args: {
   imageBase64: string;
   imageMime: "image/png" | "image/jpeg";
   text: string;
@@ -139,7 +175,7 @@ function buildBurnSvg(args: {
   width: number;
   height: number;
   cairoBase64: string;
-}): string {
+}): Promise<string> {
   const { width, height, language, imageBase64, imageMime, cairoBase64 } = args;
   const fontData = `data:font/truetype;base64,${cairoBase64}`;
   const safeText = sanitizeHookText(args.text);
@@ -148,34 +184,33 @@ function buildBurnSvg(args: {
     width,
     height,
   );
-  const direction = language === "ar" ? "rtl" : "ltr";
   const langAttr = language === "ar" ? ' xml:lang="ar"' : ' xml:lang="en"';
 
-  const maxLineChars = Math.max(...lines.map((line) => line.length), 1);
-  const textBlockWidth = maxLineChars * fontSize * CHAR_WIDTH_FACTOR;
+  const lineLayouts = await Promise.all(
+    lines.map((line, index) =>
+      layoutWordLineSvg({
+        line,
+        y: Math.round(firstBaselineY + index * lineHeight),
+        cx,
+        fontSize,
+        language,
+        langAttr,
+      }),
+    ),
+  );
+
+  const maxLineWidth = Math.max(...lineLayouts.map((layout) => layout.lineWidth), 0);
+
   const textBlockHeight = lines.length * lineHeight;
   const pad = fontSize * 0.5;
-  const boxW = textBlockWidth + pad * 2;
+  const boxW = maxLineWidth + pad * 2;
   const boxH = textBlockHeight + pad * 2;
   const boxX = cx - boxW / 2;
   const boxY = (height - boxH) / 2;
   const boxRx = fontSize * 0.3;
   const contrastRect = `<rect x="${boxX}" y="${boxY}" width="${boxW}" height="${boxH}" rx="${boxRx}" ry="${boxRx}" fill="black" fill-opacity="0.4"/>`;
 
-  const textElements = lines
-    .map((line, index) => {
-      const y = Math.round(firstBaselineY + index * lineHeight);
-      return `<text
-    x="${cx}"
-    y="${y}"
-    direction="${direction}"
-    text-anchor="middle"
-    font-family="Cairo"
-    font-size="${fontSize}"
-    fill="#ffffff"
-    filter="url(#textShadow)"${langAttr}>${escapeXml(line)}</text>`;
-    })
-    .join("\n  ");
+  const textElements = lineLayouts.map((layout) => layout.svg).filter(Boolean).join("\n  ");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
@@ -214,7 +249,7 @@ export async function burnTextOnImage(args: {
   await ensureResvgWasm();
 
   const imageMime = mimeFromImageBase64(args.imageBase64);
-  const svg = buildBurnSvg({
+  const svg = await buildBurnSvg({
     imageBase64: args.imageBase64,
     imageMime,
     text: trimmed,
