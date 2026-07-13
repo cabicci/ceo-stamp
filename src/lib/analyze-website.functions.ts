@@ -135,7 +135,6 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
       await markAnalysisError(supabase, analysisRow.id, err);
       const { errorKeyFromUnknown } = await import("@/lib/analysis-lifecycle.server");
       return { analysisId: analysisRow.id, error: errorKeyFromUnknown(err) };
-      throw err;
     }
   });
 
