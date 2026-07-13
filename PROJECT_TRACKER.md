@@ -241,3 +241,5 @@ Nav links for `/analysis`, `/review` exist in sidebar but **routes are not imple
 | 2026-07-02 | **`image_text` mandatory** — prompts treat `image_text` as required (same tier as `framework_applied`); `normalizeBatch` warns and falls back to first ~5 words of `copy` when AI omits it. |
 | 2026-06-30 | **`image_text` field** — campaign generation prompts + JSON schema now produce a short on-image hook per post; `content_items.image_text` column (nullable migration). |
 | 2026-06-30 | End-to-end run on masaarat.ai confirmed: analyze → plan → generate → AI images → copy/publish → PDF → My Campaigns persistence. Tracker updated with confirmed-working list and open issues (Arabic-in-image garbled, prompt leakage in copy, PDF Arabic shaping, Browserbase connect deferred on workerd). |
+
+- 2026-07-13 — Trigger preview redeploy (poc-arabic-pdf CJS error investigated).
