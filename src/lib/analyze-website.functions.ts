@@ -52,29 +52,49 @@ function stripHtml(html: string): string {
 }
 
 async function fetchPage(url: string): Promise<{ url: string; text: string }> {
+  const apiKey = process.env.FIRECRAWL_API_KEY;
+  if (!apiKey) {
+    throw new AnalysisPipelineError(ANALYSIS_ERROR.pipelineFailed, {
+      reason: "FIRECRAWL_API_KEY missing",
+    });
+  }
+
   const signal = AbortSignal.timeout(HOMEPAGE_FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(url, {
+    const res = await fetch("https://api.firecrawl.dev/v2/scrape", {
+      method: "POST",
       signal,
       headers: {
-        "user-agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        accept: "text/html,application/xhtml+xml",
-        "accept-language": "ar,en;q=0.8",
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        url,
+        formats: ["markdown"],
+        onlyMainContent: true,
+      }),
     });
+
     if (!res.ok) {
+      const errBody = await res.text().catch(() => "");
+      console.error(`[analyze] Firecrawl scrape failed [${res.status}]: ${errBody}`);
       throw new AnalysisPipelineError(ANALYSIS_ERROR.fetchHttp, { status: res.status });
     }
-    const html = await res.text();
-    return { url, text: stripHtml(html).slice(0, 20_000) };
+
+    const payload = (await res.json()) as {
+      success?: boolean;
+      data?: { markdown?: string };
+      markdown?: string;
+      error?: string;
+    };
+    const markdown = payload.data?.markdown ?? payload.markdown ?? "";
+    if (!markdown) {
+      throw new AnalysisPipelineError(ANALYSIS_ERROR.thinContent);
+    }
+    return { url, text: markdown.slice(0, 20_000) };
   } catch (err) {
-    if (
-      err instanceof AnalysisPipelineError ||
-      (err instanceof Error &&
-        (err.name === "TimeoutError" || err.name === "AbortError"))
-    ) {
-      if (err instanceof AnalysisPipelineError) throw err;
+    if (err instanceof AnalysisPipelineError) throw err;
+    if (err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError")) {
       throw new AnalysisPipelineError(ANALYSIS_ERROR.fetchTimeout, err);
     }
     throw err;
