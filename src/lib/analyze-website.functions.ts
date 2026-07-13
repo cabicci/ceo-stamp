@@ -130,9 +130,11 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
         pages,
       });
 
-      return { analysisId: analysisRow.id };
+      return { analysisId: analysisRow.id, error: null as string | null };
     } catch (err) {
       await markAnalysisError(supabase, analysisRow.id, err);
+      const { errorKeyFromUnknown } = await import("@/lib/analysis-lifecycle.server");
+      return { analysisId: analysisRow.id, error: errorKeyFromUnknown(err) };
       throw err;
     }
   });
